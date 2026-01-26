@@ -1,0 +1,36 @@
+{
+  "name": "privacy-router-sdk-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A monorepo for Privacy Router SDKs",
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter \"./packages/*\" run build",
+    "dev": "pnpm --filter \"./packages/*\" run dev",
+    "test": "pnpm --filter \"./packages/*\" run test",
+    "test:watch": "pnpm --filter \"./packages/*\" run test:watch",
+    "test:coverage": "pnpm --filter \"./packages/*\" run test:coverage",
+    "lint": "pnpm --filter \"./packages/*\" run lint",
+    "lint:fix": "pnpm --filter \"./packages/*\" run lint:fix",
+    "format": "prettier --write \"packages/**/src/**/*.ts\" \"packages/**/tests/**/*.ts\"",
+    "format:check": "prettier --check \"packages/**/src/**/*.ts\" \"packages/**/tests/**/*.ts\"",
+    "typecheck": "pnpm --filter \"./packages/*\" run typecheck",
+    "clean": "pnpm --filter \"./packages/*\" run clean"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "happy-dom": "^15.11.7",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
