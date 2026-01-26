@@ -42,6 +42,11 @@ export class SolanaAccount implements Account {
    * Get default RPC URL based on network
    */
   private getDefaultRpcUrl(): string {
+    // Check env first
+    if (process.env['SOLANA_RPC_URL']) {
+      return process.env['SOLANA_RPC_URL'];
+    }
+
     switch (this.network) {
       case 'mainnet':
         return 'https://solana-mainnet.nu.fi';

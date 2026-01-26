@@ -14,13 +14,28 @@ import type {
 } from './types';
 
 export type OneClickApiConfig = {
-  jwtToken: string;
-  apiBaseUrl: string;
+  jwtToken?: string;
+  apiBaseUrl?: string;
 };
 
-export const OneClickApi = (config: OneClickApiConfig): SwapApi => {
-  OpenAPI.BASE = config.apiBaseUrl;
-  OpenAPI.TOKEN = config.jwtToken;
+const DEFAULT_API_URL = 'https://1click.chaindefuser.com';
+
+export const OneClickApi = (config: OneClickApiConfig = {}): SwapApi => {
+  const apiBaseUrl =
+    config.apiBaseUrl ||
+    process.env['NEAR_INTENTS_API_URL'] ||
+    DEFAULT_API_URL;
+
+  const jwtToken = config.jwtToken || process.env['NEAR_INTENTS_JWT_TOKEN'];
+
+  if (!jwtToken) {
+    throw new Error(
+      'JWT token required. Provide via config or NEAR_INTENTS_JWT_TOKEN env var.'
+    );
+  }
+
+  OpenAPI.BASE = apiBaseUrl;
+  OpenAPI.TOKEN = jwtToken;
 
   return {
     getTokens: async () => {
