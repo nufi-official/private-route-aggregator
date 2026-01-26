@@ -1,0 +1,41 @@
+{
+  "name": "@privacy-router-sdk/example-app",
+  "version": "0.1.0",
+  "description": "Example React app demonstrating privacy-router-sdk usage",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix"
+  },
+  "dependencies": {
+    "@privacy-router-sdk/signers-core": "workspace:*",
+    "@privacy-router-sdk/solana-mnemonic": "workspace:*",
+    "@privacy-router-sdk/private-routers-core": "workspace:*",
+    "@privacy-router-sdk/privacy-cash": "workspace:*",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^6.4.0",
+    "@solana/web3.js": "^1.95.8",
+    "buffer": "^6.0.3",
+    "process": "^0.11.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "stream-browserify": "^3.0.0"
+  },
+  "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "crypto-browserify": "^3.12.0",
+    "typescript": "^5.7.2",
+    "util": "^0.12.5",
+    "vite": "^6.0.3"
+  }
+}
