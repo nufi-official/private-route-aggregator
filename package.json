@@ -7,17 +7,17 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "pnpm --filter \"./packages/*\" run build",
-    "dev": "pnpm --filter \"./packages/*\" run dev",
-    "test": "pnpm --filter \"./packages/*\" run test",
-    "test:watch": "pnpm --filter \"./packages/*\" run test:watch",
-    "test:coverage": "pnpm --filter \"./packages/*\" run test:coverage",
-    "lint": "pnpm --filter \"./packages/*\" run lint",
-    "lint:fix": "pnpm --filter \"./packages/*\" run lint:fix",
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r run dev",
+    "test": "pnpm -r run test",
+    "test:watch": "pnpm -r run test:watch",
+    "test:coverage": "pnpm -r run test:coverage",
+    "lint": "pnpm -r run lint",
+    "lint:fix": "pnpm -r run lint:fix",
     "format": "prettier --write \"packages/**/src/**/*.ts\" \"packages/**/tests/**/*.ts\"",
     "format:check": "prettier --check \"packages/**/src/**/*.ts\" \"packages/**/tests/**/*.ts\"",
-    "typecheck": "pnpm --filter \"./packages/*\" run typecheck",
-    "clean": "pnpm --filter \"./packages/*\" run clean"
+    "typecheck": "pnpm -r run typecheck",
+    "clean": "pnpm -r run clean"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
