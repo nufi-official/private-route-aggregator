@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { Container, Typography, Box, Grid2 as Grid } from '@mui/material';
+import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
 import { WithdrawForm } from './components/WithdrawForm';
+import { BalanceDisplay } from './components/BalanceDisplay';
+import type { Account } from '@privacy-router-sdk/signers-core';
 
 const darkTheme = createTheme({
   palette: {
@@ -49,6 +53,23 @@ const darkTheme = createTheme({
 });
 
 function App() {
+  const [account, setAccount] = useState<Account | null>(null);
+  const [privateBalance, setPrivateBalance] = useState<bigint>(0n);
+
+  const handleLogin = (acc: Account) => {
+    setAccount(acc);
+  };
+
+  const handleLogout = () => {
+    setAccount(null);
+    setPrivateBalance(0n);
+  };
+
+  const refreshBalance = async () => {
+    // TODO: Implement actual balance refresh from privacy provider
+    // For now this is a placeholder
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
@@ -73,14 +94,33 @@ function App() {
           </Typography>
         </Box>
 
-        <Grid container spacing={4} justifyContent="center">
-          <Grid size={{ xs: 12, md: 6 }}>
-            <FundForm />
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <WithdrawForm />
-          </Grid>
-        </Grid>
+        {!account ? (
+          <Box maxWidth="sm" mx="auto">
+            <LoginForm onLogin={handleLogin} />
+          </Box>
+        ) : (
+          <>
+            <BalanceDisplay
+              account={account}
+              privateBalance={privateBalance}
+              onLogout={handleLogout}
+              onRefresh={refreshBalance}
+            />
+
+            <Grid container spacing={4} justifyContent="center" mt={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <FundForm account={account} onSuccess={refreshBalance} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <WithdrawForm
+                  account={account}
+                  privateBalance={privateBalance}
+                  onSuccess={refreshBalance}
+                />
+              </Grid>
+            </Grid>
+          </>
+        )}
       </Container>
     </ThemeProvider>
   );

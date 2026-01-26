@@ -13,13 +13,13 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix"
   },
   "dependencies": {
-    "@privacy-router-sdk/signers-core": "workspace:*",
-    "@privacy-router-sdk/solana-mnemonic": "workspace:*",
-    "@privacy-router-sdk/private-routers-core": "workspace:*",
-    "@privacy-router-sdk/privacy-cash": "workspace:*",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.4.0",
+    "@privacy-router-sdk/privacy-cash": "workspace:*",
+    "@privacy-router-sdk/private-routers-core": "workspace:*",
+    "@privacy-router-sdk/signers-core": "workspace:*",
+    "@privacy-router-sdk/solana-mnemonic": "workspace:*",
     "@solana/web3.js": "^1.95.8",
     "buffer": "^6.0.3",
     "process": "^0.11.10",
@@ -36,6 +36,7 @@
     "crypto-browserify": "^3.12.0",
     "typescript": "^5.7.2",
     "util": "^0.12.5",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vite-plugin-node-polyfills": "^0.25.0"
   }
 }

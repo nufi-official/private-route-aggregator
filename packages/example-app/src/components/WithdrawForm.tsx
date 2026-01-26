@@ -9,8 +9,15 @@ import {
   CircularProgress,
 } from '@mui/material';
 import type { WithdrawStatus } from '@privacy-router-sdk/private-routers-core';
+import type { Account } from '@privacy-router-sdk/signers-core';
 
-export function WithdrawForm() {
+interface WithdrawFormProps {
+  account: Account;
+  privateBalance: bigint;
+  onSuccess: () => void;
+}
+
+export function WithdrawForm({ account, privateBalance, onSuccess }: WithdrawFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<WithdrawStatus | null>(null);
@@ -32,14 +39,21 @@ export function WithdrawForm() {
     setStatus({ stage: 'preparing' });
 
     try {
-      // TODO: Implement actual withdrawal logic
-      // This would use the PrivacyCashProvider or other provider
+      // Convert SOL to lamports
+      const lamports = account.assetToBaseUnits(amount);
+
       setStatus({ stage: 'processing' });
 
-      // Simulate delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // TODO: Implement actual withdrawal logic with PrivacyCashProvider
+      console.log('Would withdraw:', lamports.toString(), 'lamports to', destinationAddress);
 
-      setStatus({ stage: 'completed', txHash: 'demo_tx_hash' });
+      // Simulate delay for demo
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      setStatus({ stage: 'completed', txHash: 'not_implemented' });
+      setAmount('');
+      setDestinationAddress('');
+      onSuccess();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
@@ -104,13 +118,16 @@ export function WithdrawForm() {
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.0"
           disabled={loading}
-          sx={{ mb: 3 }}
+          sx={{ mb: 1 }}
           slotProps={{
             input: {
               inputProps: { min: 0, step: 0.001 },
             },
           }}
+          helperText={`Available: ${(Number(privateBalance) / 1_000_000_000).toFixed(4)} SOL`}
         />
+
+        <Box mb={2} />
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>

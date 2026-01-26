@@ -9,8 +9,14 @@ import {
   CircularProgress,
 } from '@mui/material';
 import type { FundingStatus } from '@privacy-router-sdk/private-routers-core';
+import type { Account } from '@privacy-router-sdk/signers-core';
 
-export function FundForm() {
+interface FundFormProps {
+  account: Account;
+  onSuccess: () => void;
+}
+
+export function FundForm({ account, onSuccess }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,14 +33,21 @@ export function FundForm() {
     setStatus({ stage: 'preparing' });
 
     try {
-      // TODO: Implement actual funding logic
-      // This would use the PrivacyCashProvider or other provider
+      // Convert SOL to lamports
+      const lamports = account.assetToBaseUnits(amount);
+
       setStatus({ stage: 'depositing' });
 
-      // Simulate delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // TODO: Implement actual funding logic with PrivacyCashProvider
+      // For now, just show the conversion worked
+      console.log('Would fund:', lamports.toString(), 'lamports');
 
-      setStatus({ stage: 'completed', txHash: 'demo_tx_hash' });
+      // Simulate delay for demo
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      setStatus({ stage: 'completed', txHash: 'not_implemented' });
+      setAmount('');
+      onSuccess();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
