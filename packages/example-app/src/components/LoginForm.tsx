@@ -8,11 +8,10 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { createSolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
-import type { Account } from '@privacy-router-sdk/signers-core';
+import { createSolanaAccount, SolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
 
 interface LoginFormProps {
-  onLogin: (account: Account) => void;
+  onLogin: (account: SolanaAccount) => void;
 }
 
 export function LoginForm({ onLogin }: LoginFormProps) {

@@ -12,6 +12,7 @@ import type { Account } from '@privacy-router-sdk/signers-core';
 interface BalanceDisplayProps {
   account: Account;
   privateBalance: bigint;
+  balanceLoading?: boolean;
   onLogout: () => void;
   onRefresh: () => void;
 }
@@ -19,6 +20,7 @@ interface BalanceDisplayProps {
 export function BalanceDisplay({
   account,
   privateBalance,
+  balanceLoading,
   onLogout,
   onRefresh,
 }: BalanceDisplayProps) {
@@ -89,7 +91,7 @@ export function BalanceDisplay({
                 Private Balance
               </Typography>
               <Typography variant="h6" fontWeight={600} color="secondary">
-                {formatSol(privateBalance)} SOL
+                {balanceLoading ? '...' : `${formatSol(privateBalance)} SOL`}
               </Typography>
             </Box>
           </Box>

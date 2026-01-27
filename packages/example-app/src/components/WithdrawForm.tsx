@@ -10,14 +10,16 @@ import {
 } from '@mui/material';
 import type { WithdrawStatus } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
+import type { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
 
 interface WithdrawFormProps {
   account: Account;
+  provider: PrivacyCashProvider | null;
   privateBalance: bigint;
   onSuccess: () => void;
 }
 
-export function WithdrawForm({ account, privateBalance, onSuccess }: WithdrawFormProps) {
+export function WithdrawForm({ account, provider, privateBalance, onSuccess }: WithdrawFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<WithdrawStatus | null>(null);
@@ -33,6 +35,10 @@ export function WithdrawForm({ account, privateBalance, onSuccess }: WithdrawFor
       setError('Please enter an amount');
       return;
     }
+    if (!provider) {
+      setError('Provider not initialized');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -42,15 +48,12 @@ export function WithdrawForm({ account, privateBalance, onSuccess }: WithdrawFor
       // Convert SOL to lamports
       const lamports = account.assetToBaseUnits(amount);
 
-      setStatus({ stage: 'processing' });
+      await provider.withdraw({
+        destination: { address: destinationAddress },
+        amount: lamports.toString(),
+        onStatusChange: setStatus,
+      });
 
-      // TODO: Implement actual withdrawal logic with PrivacyCashProvider
-      console.log('Would withdraw:', lamports.toString(), 'lamports to', destinationAddress);
-
-      // Simulate delay for demo
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      setStatus({ stage: 'completed', txHash: 'not_implemented' });
       setAmount('');
       setDestinationAddress('');
       onSuccess();
@@ -85,7 +88,7 @@ export function WithdrawForm({ account, privateBalance, onSuccess }: WithdrawFor
       case 'confirming':
         return 'Confirming transaction...';
       case 'completed':
-        return 'Withdrawal completed!';
+        return `Withdrawal completed! TX: ${status.txHash?.slice(0, 8)}...`;
       case 'failed':
         return `Failed: ${status.error}`;
       default:
@@ -146,7 +149,7 @@ export function WithdrawForm({ account, privateBalance, onSuccess }: WithdrawFor
           variant="contained"
           size="large"
           onClick={handleWithdraw}
-          disabled={loading || !destinationAddress || !amount}
+          disabled={loading || !destinationAddress || !amount || !provider}
           sx={{
             py: 1.5,
             background: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',

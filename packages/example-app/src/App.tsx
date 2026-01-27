@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { Container, Typography, Box, Grid2 as Grid } from '@mui/material';
 import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
 import { WithdrawForm } from './components/WithdrawForm';
 import { BalanceDisplay } from './components/BalanceDisplay';
-import type { Account } from '@privacy-router-sdk/signers-core';
+import { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
+import type { SolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
 
 const darkTheme = createTheme({
   palette: {
@@ -53,22 +54,48 @@ const darkTheme = createTheme({
 });
 
 function App() {
-  const [account, setAccount] = useState<Account | null>(null);
+  const [account, setAccount] = useState<SolanaAccount | null>(null);
+  const [provider, setProvider] = useState<PrivacyCashProvider | null>(null);
   const [privateBalance, setPrivateBalance] = useState<bigint>(0n);
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
-  const handleLogin = (acc: Account) => {
+  const handleLogin = (acc: SolanaAccount) => {
     setAccount(acc);
+
+    // Create privacy cash provider with the account's secret key
+    const privacyProvider = new PrivacyCashProvider({
+      rpcUrl: acc.getRpcUrl(),
+      owner: acc.getSecretKey(),
+    });
+    setProvider(privacyProvider);
   };
 
   const handleLogout = () => {
     setAccount(null);
+    setProvider(null);
     setPrivateBalance(0n);
   };
 
-  const refreshBalance = async () => {
-    // TODO: Implement actual balance refresh from privacy provider
-    // For now this is a placeholder
-  };
+  const refreshBalance = useCallback(async () => {
+    if (!provider) return;
+
+    setBalanceLoading(true);
+    try {
+      const balance = await provider.getPrivateBalance();
+      setPrivateBalance(balance);
+    } catch (err) {
+      console.error('Failed to fetch private balance:', err);
+    } finally {
+      setBalanceLoading(false);
+    }
+  }, [provider]);
+
+  // Fetch private balance when provider is ready
+  useEffect(() => {
+    if (provider) {
+      refreshBalance();
+    }
+  }, [provider, refreshBalance]);
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -103,17 +130,23 @@ function App() {
             <BalanceDisplay
               account={account}
               privateBalance={privateBalance}
+              balanceLoading={balanceLoading}
               onLogout={handleLogout}
               onRefresh={refreshBalance}
             />
 
             <Grid container spacing={4} justifyContent="center" mt={2}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <FundForm account={account} onSuccess={refreshBalance} />
+                <FundForm
+                  account={account}
+                  provider={provider}
+                  onSuccess={refreshBalance}
+                />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <WithdrawForm
                   account={account}
+                  provider={provider}
                   privateBalance={privateBalance}
                   onSuccess={refreshBalance}
                 />

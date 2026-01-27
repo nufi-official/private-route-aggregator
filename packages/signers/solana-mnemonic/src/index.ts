@@ -1,5 +1,6 @@
 // Main export
 export { createSolanaAccount } from './createSolanaAccount';
+export { SolanaAccount } from './solanaAccount';
 
 // Types
 export type {

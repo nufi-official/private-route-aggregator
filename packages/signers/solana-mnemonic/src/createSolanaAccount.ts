@@ -1,4 +1,3 @@
-import type { Account } from '@privacy-router-sdk/signers-core';
 import type { CreateSolanaAccountParams } from './types';
 import { SolanaAccount } from './solanaAccount';
 
@@ -6,7 +5,7 @@ import { SolanaAccount } from './solanaAccount';
  * Factory function to create a Solana account from mnemonic
  *
  * @param params - Account creation parameters
- * @returns Account instance
+ * @returns SolanaAccount instance
  *
  * @example
  * ```typescript
@@ -25,7 +24,7 @@ import { SolanaAccount } from './solanaAccount';
  * });
  * ```
  */
-export function createSolanaAccount(params: CreateSolanaAccountParams): Account {
+export function createSolanaAccount(params: CreateSolanaAccountParams): SolanaAccount {
   const { mnemonic, accountIndex, network, rpcUrl } = params;
 
   return new SolanaAccount({

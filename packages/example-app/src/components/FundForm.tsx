@@ -10,13 +10,15 @@ import {
 } from '@mui/material';
 import type { FundingStatus } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
+import type { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
 
 interface FundFormProps {
   account: Account;
+  provider: PrivacyCashProvider | null;
   onSuccess: () => void;
 }
 
-export function FundForm({ account, onSuccess }: FundFormProps) {
+export function FundForm({ account, provider, onSuccess }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,6 +27,10 @@ export function FundForm({ account, onSuccess }: FundFormProps) {
   const handleFund = async () => {
     if (!amount) {
       setError('Please enter an amount');
+      return;
+    }
+    if (!provider) {
+      setError('Provider not initialized');
       return;
     }
 
@@ -36,16 +42,12 @@ export function FundForm({ account, onSuccess }: FundFormProps) {
       // Convert SOL to lamports
       const lamports = account.assetToBaseUnits(amount);
 
-      setStatus({ stage: 'depositing' });
+      await provider.fund({
+        sourceAccount: account,
+        amount: lamports.toString(),
+        onStatusChange: setStatus,
+      });
 
-      // TODO: Implement actual funding logic with PrivacyCashProvider
-      // For now, just show the conversion worked
-      console.log('Would fund:', lamports.toString(), 'lamports');
-
-      // Simulate delay for demo
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      setStatus({ stage: 'completed', txHash: 'not_implemented' });
       setAmount('');
       onSuccess();
     } catch (err) {
@@ -79,7 +81,7 @@ export function FundForm({ account, onSuccess }: FundFormProps) {
       case 'confirming':
         return 'Confirming transaction...';
       case 'completed':
-        return 'Funding completed!';
+        return `Funding completed! TX: ${status.txHash?.slice(0, 8)}...`;
       case 'failed':
         return `Failed: ${status.error}`;
       default:
@@ -127,7 +129,7 @@ export function FundForm({ account, onSuccess }: FundFormProps) {
           variant="contained"
           size="large"
           onClick={handleFund}
-          disabled={loading || !amount}
+          disabled={loading || !amount || !provider}
           sx={{
             py: 1.5,
             background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',

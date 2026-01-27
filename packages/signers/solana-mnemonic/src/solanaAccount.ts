@@ -196,4 +196,20 @@ export class SolanaAccount implements Account {
     const keypair = this.getKeypair();
     return nacl.sign.detached(message, keypair.secretKey);
   };
+
+  /**
+   * Get the secret key as base58 string
+   * Used by PrivacyCash SDK
+   */
+  getSecretKey = (): Uint8Array => {
+    const keypair = this.getKeypair();
+    return keypair.secretKey;
+  };
+
+  /**
+   * Get the RPC URL used by this account
+   */
+  getRpcUrl = (): string => {
+    return this.connection.rpcEndpoint;
+  };
 }
