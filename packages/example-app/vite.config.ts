@@ -1,17 +1,66 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
 import nodePath from 'path';
+import fs from 'fs';
+
+// Plugin to serve WASM files from node_modules with correct MIME type
+function serveWasmPlugin(): Plugin {
+  return {
+    name: 'serve-wasm',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        // Strip query parameters and check for .wasm extension
+        const urlPath = req.url?.split('?')[0] || '';
+        if (urlPath.endsWith('.wasm')) {
+          console.log('[WASM] Request:', req.url);
+          const wasmFileName = urlPath.split('/').pop();
+          // Preserve the full path for public folder lookups (e.g., /circuit2/transaction2.wasm)
+          const publicPath = urlPath.startsWith('/') ? urlPath.slice(1) : urlPath;
+
+          const wasmPaths = [
+            // Public folder with full path (for /circuit2/*.wasm etc.)
+            nodePath.resolve(__dirname, 'public', publicPath),
+            // Direct in example-app node_modules
+            nodePath.resolve(__dirname, 'node_modules/@lightprotocol/hasher.rs/dist', wasmFileName!),
+            // In pnpm store
+            nodePath.resolve(__dirname, '../../node_modules/.pnpm/@lightprotocol+hasher.rs@0.2.1/node_modules/@lightprotocol/hasher.rs/dist', wasmFileName!),
+            // In privacy-cash node_modules
+            nodePath.resolve(__dirname, '../private-routers/privacy-cash/node_modules/@lightprotocol/hasher.rs/dist', wasmFileName!),
+            // Public folder (filename only, for backwards compatibility)
+            nodePath.resolve(__dirname, 'public', wasmFileName!),
+          ];
+
+          for (const wasmPath of wasmPaths) {
+            if (fs.existsSync(wasmPath)) {
+              console.log('[WASM] Serving from:', wasmPath);
+              res.setHeader('Content-Type', 'application/wasm');
+              fs.createReadStream(wasmPath).pipe(res);
+              return;
+            }
+          }
+          console.log('[WASM] NOT FOUND:', urlPath, '- tried:', wasmPaths);
+        }
+        next();
+      });
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
+    serveWasmPlugin(),
+    wasm(),
+    topLevelAwait(),
     react(),
     nodePolyfills({
       include: ['buffer', 'crypto', 'stream', 'util', 'events'],
       globals: {
         Buffer: true,
         global: true,
-        process: false, // We inject process via index.html
+        process: false,
       },
       protocolImports: true,
     }),
@@ -19,6 +68,9 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    fs: {
+      allow: ['../..'],
+    },
   },
   define: {
     global: 'globalThis',
@@ -28,6 +80,8 @@ export default defineConfig({
     esbuildOptions: {
       target: 'esnext',
     },
+    // Include all deps for proper pre-bundling
+    include: ['@lightprotocol/hasher.rs', 'privacycash'],
   },
   build: {
     commonjsOptions: {
@@ -42,6 +96,9 @@ export default defineConfig({
       'node:os': nodePath.resolve(__dirname, 'src/shims/os.ts'),
       path: nodePath.resolve(__dirname, 'src/shims/path.ts'),
       'node:path': nodePath.resolve(__dirname, 'src/shims/path.ts'),
+      // Resolve privacycash/utils subpath export
+      'privacycash/utils': nodePath.resolve(__dirname, '../private-routers/privacy-cash/node_modules/privacycash/dist/exportUtils.js'),
     },
   },
+  assetsInclude: ['**/*.wasm'],
 });

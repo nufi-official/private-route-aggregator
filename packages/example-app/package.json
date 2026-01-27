@@ -15,6 +15,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@lightprotocol/hasher.rs": "^0.2.1",
     "@mui/material": "^6.4.0",
     "@privacy-router-sdk/privacy-cash": "workspace:*",
     "@privacy-router-sdk/private-routers-core": "workspace:*",
@@ -26,6 +27,7 @@
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.95.8",
     "buffer": "^6.0.3",
+    "privacycash": "^1.1.11",
     "process": "^0.11.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -42,6 +44,8 @@
     "typescript": "^5.7.2",
     "util": "^0.12.5",
     "vite": "^6.0.3",
-    "vite-plugin-node-polyfills": "^0.25.0"
+    "vite-plugin-node-polyfills": "^0.25.0",
+    "vite-plugin-top-level-await": "^1.6.0",
+    "vite-plugin-wasm": "^3.5.0"
   }
 }

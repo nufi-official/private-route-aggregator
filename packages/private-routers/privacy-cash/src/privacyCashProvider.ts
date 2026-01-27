@@ -5,9 +5,23 @@ import type {
   WithdrawDestination,
 } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
-import { Keypair } from '@solana/web3.js';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+import { Connection, Keypair, PublicKey, VersionedTransaction } from '@solana/web3.js';
+import { WasmFactory } from '@lightprotocol/hasher.rs';
+import type { LightWasm } from '@lightprotocol/hasher.rs';
+// Main PrivacyCash class for private key mode
 import { PrivacyCash } from 'privacycash';
+// Low-level functions for browser wallet support (direct signing, no middleman)
+import {
+  deposit as privacyCashDeposit,
+  withdraw as privacyCashWithdraw,
+  getUtxos,
+  getBalanceFromUtxos,
+  EncryptionService,
+  depositSPL as privacyCashDepositSPL,
+  withdrawSPL as privacyCashWithdrawSPL,
+  getUtxosSPL,
+  getBalanceFromUtxosSPL,
+} from 'privacycash/utils';
 import type {
   PrivacyCashConfig,
   PrivacyCashAsset,
@@ -37,15 +51,26 @@ type PrivacyCashClient = {
   getPrivateBalanceSpl(mintAddress: string): Promise<SplBalanceResult>;
 };
 
+// Constants
+const KEY_BASE_PATH = '/circuit2/transaction2';
+
 /**
- * Derive a Keypair from a signature using SHA-256 hash
- * The signature is hashed to get 32 bytes which are used as the seed
+ * Get browser storage (localStorage in browser, mock for Node)
  */
-async function deriveKeypairFromSignature(signature: Uint8Array): Promise<Keypair> {
-  // Use the first 32 bytes of the signature as seed for the keypair
-  // For ed25519, we need exactly 32 bytes for the seed
-  const seed = signature.slice(0, 32);
-  return Keypair.fromSeed(seed);
+function getStorage(): Storage {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return window.localStorage;
+  }
+  // For Node.js environments, use a simple in-memory storage
+  const store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { Object.keys(store).forEach(k => delete store[k]); },
+    key: (index: number) => Object.keys(store)[index] || null,
+    length: Object.keys(store).length,
+  } as Storage;
 }
 
 /**
@@ -53,17 +78,28 @@ async function deriveKeypairFromSignature(signature: Uint8Array): Promise<Keypai
  * Implements PrivacyProvider using Privacy Cash on Solana
  *
  * Supports two modes:
- * 1. Private key mode: Direct private key/keypair (for mnemonic wallets)
- * 2. Wallet signer mode: Derives keys from a wallet signature (for browser extension wallets)
+ * 1. Private key mode: Uses PrivacyCash class directly (for mnemonic wallets)
+ * 2. Wallet signer mode: Uses low-level functions with transactionSigner (for browser extension wallets)
+ *    - NO intermediate keypair holding SOL
+ *    - Wallet signs deposit transaction directly
+ *    - Only signature needed to derive encryption key for notes
  */
 export class PrivacyCashProvider implements PrivacyProvider {
   readonly name = 'privacy-cash';
 
+  // For private key mode (mnemonic wallets)
   private client: PrivacyCashClient | null = null;
+  private ownerKeypair: Keypair | null = null;
+
+  // For wallet signer mode (browser wallets) - NO middleman keypair
+  private walletSigner: WalletSigner | null = null;
+  private encryptionService: EncryptionService | null = null;
+  private connection: Connection | null = null;
+  private lightWasm: LightWasm | null = null;
+
+  // Common
   private asset: PrivacyCashAsset;
   private config: PrivacyCashConfig;
-  private walletSigner: WalletSigner | null = null;
-  private derivedKeypair: Keypair | null = null;
   private initialized = false;
 
   constructor(config: PrivacyCashConfig, asset: PrivacyCashAsset = 'SOL') {
@@ -93,16 +129,26 @@ export class PrivacyCashProvider implements PrivacyProvider {
       );
     }
 
+    // Store the owner keypair for address lookup
+    if (owner instanceof Keypair) {
+      this.ownerKeypair = owner;
+    } else if (owner instanceof Uint8Array) {
+      this.ownerKeypair = Keypair.fromSecretKey(owner);
+    } else if (Array.isArray(owner)) {
+      this.ownerKeypair = Keypair.fromSecretKey(new Uint8Array(owner));
+    }
+
     this.client = new PrivacyCash({
       RPC_url: finalRpcUrl,
-      owner: owner as string | number[] | Uint8Array | Keypair,
+      owner,
       enableDebug,
     }) as PrivacyCashClient;
   }
 
   /**
-   * Initialize the client using wallet signature
-   * This will prompt the user to sign a message
+   * Initialize for wallet signer mode (browser extension wallets)
+   * This prompts the user to sign a message to derive encryption keys
+   * NO keypair is created to hold SOL - wallet signs transactions directly
    */
   private async initializeWithWalletSigner(): Promise<void> {
     if (this.initialized || !this.walletSigner) {
@@ -119,19 +165,19 @@ export class PrivacyCashProvider implements PrivacyProvider {
       );
     }
 
-    // Ask user to sign message
+    // Initialize connection
+    this.connection = new Connection(rpcUrl, 'confirmed');
+
+    // Load WASM module
+    this.lightWasm = await WasmFactory.getInstance();
+
+    // Ask user to sign message (one-time for encryption key derivation)
     const messageBytes = new TextEncoder().encode(PRIVACY_CASH_SIGN_MESSAGE);
     const signature = await this.walletSigner.signMessage(messageBytes);
 
-    // Derive keypair from signature
-    this.derivedKeypair = await deriveKeypairFromSignature(signature);
-
-    // Initialize client with derived keypair
-    this.client = new PrivacyCash({
-      RPC_url: rpcUrl,
-      owner: this.derivedKeypair.secretKey,
-      enableDebug: (this.config as { enableDebug?: boolean }).enableDebug,
-    }) as PrivacyCashClient;
+    // Create encryption service and derive key from signature
+    this.encryptionService = new EncryptionService();
+    this.encryptionService.deriveEncryptionKeyFromSignature(signature);
 
     this.initialized = true;
   }
@@ -144,21 +190,37 @@ export class PrivacyCashProvider implements PrivacyProvider {
   }
 
   /**
-   * Get the derived keypair's public key (only available after initialization in wallet signer mode)
+   * Get the user's public key
+   * - For wallet signer mode: returns the wallet's public key
+   * - For private key mode: returns the owner keypair's public key
    */
-  getDerivedAddress(): string | null {
-    return this.derivedKeypair?.publicKey.toBase58() ?? null;
+  getPublicKey(): PublicKey | null {
+    if (this.walletSigner) {
+      return new PublicKey(this.walletSigner.publicKey.toBase58());
+    }
+    if (this.ownerKeypair) {
+      return this.ownerKeypair.publicKey;
+    }
+    return null;
   }
 
   /**
-   * Ensure client is initialized before use
+   * Get the user's address as string
+   */
+  getAddress(): string | null {
+    const pubkey = this.getPublicKey();
+    return pubkey?.toBase58() ?? null;
+  }
+
+  /**
+   * Ensure provider is initialized before use
    */
   private async ensureInitialized(): Promise<void> {
     if (!this.initialized) {
       await this.initializeWithWalletSigner();
     }
-    if (!this.client) {
-      throw new Error('Privacy Cash client not initialized');
+    if (!this.initialized) {
+      throw new Error('Privacy Cash provider not initialized');
     }
   }
 
@@ -171,14 +233,15 @@ export class PrivacyCashProvider implements PrivacyProvider {
 
   /**
    * Fund the privacy pool
-   * Note: sourceAccount is not used as Privacy Cash manages its own keypair
+   * - For wallet signer mode: wallet signs deposit tx directly (1 transaction, no middleman)
+   * - For private key mode: deposits directly from owner address
    */
   async fund(params: {
     sourceAccount: Account;
     amount: string;
     onStatusChange?: (status: FundingStatus) => void;
   }): Promise<void> {
-    const { sourceAccount, amount, onStatusChange } = params;
+    const { amount, onStatusChange } = params;
 
     try {
       onStatusChange?.({ stage: 'preparing' });
@@ -187,39 +250,19 @@ export class PrivacyCashProvider implements PrivacyProvider {
 
       const baseUnits = BigInt(amount);
 
-      // For wallet signer mode, we need to transfer from user's wallet to the derived keypair first
-      // The derived keypair is what the PrivacyCash SDK uses internally
-      if (this.isWalletSignerMode() && this.derivedKeypair) {
-        const derivedAddress = this.derivedKeypair.publicKey.toBase58();
-
-        // Add extra lamports for transaction fees (the privacycash SDK will need to pay fees)
-        // 0.0005 SOL (500,000 lamports) should be enough for deposit transaction fees
-        const FEE_BUFFER = 500_000n; // 0.0005 SOL in lamports
-        const totalAmount = baseUnits + FEE_BUFFER;
-
-        onStatusChange?.({ stage: 'preparing' });
-
-        // Transfer from user's wallet to derived address
-        await sourceAccount.sendDeposit({
-          address: derivedAddress,
-          amount: totalAmount.toString(),
-        });
-      }
-
       onStatusChange?.({ stage: 'depositing' });
 
-      let result: TxResult;
-      if (this.asset === 'SOL') {
-        result = await this.client!.deposit({ lamports: Number(baseUnits) });
+      let txHash: string;
+
+      if (this.isWalletSignerMode()) {
+        // Browser wallet mode - direct deposit, no middleman!
+        txHash = await this.depositWithWalletSigner(baseUnits);
       } else {
-        const mintAddress = SPL_MINTS[this.asset];
-        result = await this.client!.depositSPL({
-          base_units: Number(baseUnits),
-          mintAddress,
-        });
+        // Private key mode - use PrivacyCash class
+        txHash = await this.depositWithClient(baseUnits);
       }
 
-      onStatusChange?.({ stage: 'completed', txHash: result.tx });
+      onStatusChange?.({ stage: 'completed', txHash });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -229,7 +272,75 @@ export class PrivacyCashProvider implements PrivacyProvider {
   }
 
   /**
+   * Deposit using wallet signer (browser extension)
+   * Wallet signs the transaction directly - no intermediate keypair
+   */
+  private async depositWithWalletSigner(baseUnits: bigint): Promise<string> {
+    if (!this.walletSigner || !this.connection || !this.encryptionService || !this.lightWasm) {
+      throw new Error('Wallet signer mode not properly initialized');
+    }
+
+    const publicKey = new PublicKey(this.walletSigner.publicKey.toBase58());
+    const storage = getStorage();
+
+    // Create transaction signer callback that uses the wallet
+    const transactionSigner = async (tx: VersionedTransaction): Promise<VersionedTransaction> => {
+      return await this.walletSigner!.signTransaction(tx);
+    };
+
+    if (this.asset === 'SOL') {
+      const result = await privacyCashDeposit({
+        lightWasm: this.lightWasm,
+        connection: this.connection,
+        amount_in_lamports: Number(baseUnits),
+        keyBasePath: KEY_BASE_PATH,
+        publicKey,
+        transactionSigner,
+        storage,
+        encryptionService: this.encryptionService,
+      });
+      return result.tx;
+    } else {
+      const mintAddress = new PublicKey(SPL_MINTS[this.asset]);
+      const result = await privacyCashDepositSPL({
+        lightWasm: this.lightWasm,
+        connection: this.connection,
+        base_units: Number(baseUnits),
+        keyBasePath: KEY_BASE_PATH,
+        publicKey,
+        transactionSigner,
+        storage,
+        encryptionService: this.encryptionService,
+        mintAddress,
+      });
+      return result.tx;
+    }
+  }
+
+  /**
+   * Deposit using PrivacyCash client (private key mode)
+   */
+  private async depositWithClient(baseUnits: bigint): Promise<string> {
+    if (!this.client) {
+      throw new Error('PrivacyCash client not initialized');
+    }
+
+    if (this.asset === 'SOL') {
+      const result = await this.client.deposit({ lamports: Number(baseUnits) });
+      return result.tx;
+    } else {
+      const mintAddress = SPL_MINTS[this.asset];
+      const result = await this.client.depositSPL({
+        base_units: Number(baseUnits),
+        mintAddress,
+      });
+      return result.tx;
+    }
+  }
+
+  /**
    * Withdraw from the privacy pool
+   * No wallet signature needed - uses ZK proof
    */
   async withdraw(params: {
     destination: WithdrawDestination;
@@ -247,22 +358,17 @@ export class PrivacyCashProvider implements PrivacyProvider {
 
       onStatusChange?.({ stage: 'processing' });
 
-      let result: TxResult;
-      if (this.asset === 'SOL') {
-        result = await this.client!.withdraw({
-          lamports: Number(baseUnits),
-          recipientAddress: destination.address,
-        });
+      let txHash: string;
+
+      if (this.isWalletSignerMode()) {
+        // Browser wallet mode
+        txHash = await this.withdrawWithWalletSigner(baseUnits, destination.address);
       } else {
-        const mintAddress = SPL_MINTS[this.asset];
-        result = await this.client!.withdrawSPL({
-          base_units: Number(baseUnits),
-          mintAddress,
-          recipientAddress: destination.address,
-        });
+        // Private key mode
+        txHash = await this.withdrawWithClient(baseUnits, destination.address);
       }
 
-      onStatusChange?.({ stage: 'completed', txHash: result.tx });
+      onStatusChange?.({ stage: 'completed', txHash });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -272,18 +378,152 @@ export class PrivacyCashProvider implements PrivacyProvider {
   }
 
   /**
+   * Withdraw using wallet signer mode
+   * No wallet signature needed - just the encryption key for proof
+   */
+  private async withdrawWithWalletSigner(
+    baseUnits: bigint,
+    recipientAddress: string
+  ): Promise<string> {
+    if (!this.walletSigner || !this.connection || !this.encryptionService || !this.lightWasm) {
+      throw new Error('Wallet signer mode not properly initialized');
+    }
+
+    const publicKey = new PublicKey(this.walletSigner.publicKey.toBase58());
+    const recipient = new PublicKey(recipientAddress);
+    const storage = getStorage();
+
+    if (this.asset === 'SOL') {
+      const result = await privacyCashWithdraw({
+        lightWasm: this.lightWasm,
+        connection: this.connection,
+        amount_in_lamports: Number(baseUnits),
+        keyBasePath: KEY_BASE_PATH,
+        publicKey,
+        recipient,
+        storage,
+        encryptionService: this.encryptionService,
+      });
+      return result.tx;
+    } else {
+      const mintAddress = new PublicKey(SPL_MINTS[this.asset]);
+      const result = await privacyCashWithdrawSPL({
+        lightWasm: this.lightWasm,
+        connection: this.connection,
+        base_units: Number(baseUnits),
+        keyBasePath: KEY_BASE_PATH,
+        publicKey,
+        recipient,
+        storage,
+        encryptionService: this.encryptionService,
+        mintAddress,
+      });
+      return result.tx;
+    }
+  }
+
+  /**
+   * Withdraw using PrivacyCash client (private key mode)
+   */
+  private async withdrawWithClient(
+    baseUnits: bigint,
+    recipientAddress: string
+  ): Promise<string> {
+    if (!this.client) {
+      throw new Error('PrivacyCash client not initialized');
+    }
+
+    if (this.asset === 'SOL') {
+      const result = await this.client.withdraw({
+        lamports: Number(baseUnits),
+        recipientAddress,
+      });
+      return result.tx;
+    } else {
+      const mintAddress = SPL_MINTS[this.asset];
+      const result = await this.client.withdrawSPL({
+        base_units: Number(baseUnits),
+        mintAddress,
+        recipientAddress,
+      });
+      return result.tx;
+    }
+  }
+
+  /**
    * Get private balance
    */
   async getPrivateBalance(): Promise<bigint> {
     await this.ensureInitialized();
 
+    if (this.isWalletSignerMode()) {
+      return this.getBalanceWithWalletSigner();
+    } else {
+      return this.getBalanceWithClient();
+    }
+  }
+
+  /**
+   * Get balance using wallet signer mode
+   */
+  private async getBalanceWithWalletSigner(): Promise<bigint> {
+    if (!this.walletSigner || !this.connection || !this.encryptionService) {
+      throw new Error('Wallet signer mode not properly initialized');
+    }
+
+    const publicKey = new PublicKey(this.walletSigner.publicKey.toBase58());
+    const storage = getStorage();
+
     if (this.asset === 'SOL') {
-      const result = await this.client!.getPrivateBalance();
+      const utxos = await getUtxos({
+        publicKey,
+        connection: this.connection,
+        encryptionService: this.encryptionService,
+        storage,
+      });
+      const balance = getBalanceFromUtxos(utxos);
+      return BigInt(balance.lamports);
+    } else {
+      const mintAddress = new PublicKey(SPL_MINTS[this.asset]);
+      const utxos = await getUtxosSPL({
+        publicKey,
+        connection: this.connection,
+        encryptionService: this.encryptionService,
+        storage,
+        mintAddress,
+      });
+      const balance = getBalanceFromUtxosSPL(utxos);
+      return BigInt(balance.base_units);
+    }
+  }
+
+  /**
+   * Get balance using PrivacyCash client (private key mode)
+   */
+  private async getBalanceWithClient(): Promise<bigint> {
+    if (!this.client) {
+      throw new Error('PrivacyCash client not initialized');
+    }
+
+    if (this.asset === 'SOL') {
+      const result = await this.client.getPrivateBalance();
       return BigInt(result.lamports);
     } else {
       const mintAddress = SPL_MINTS[this.asset];
-      const result = await this.client!.getPrivateBalanceSpl(mintAddress);
+      const result = await this.client.getPrivateBalanceSpl(mintAddress);
       return BigInt(result.base_units);
     }
+  }
+
+  // ============================================
+  // Legacy methods for backward compatibility
+  // ============================================
+
+  /**
+   * @deprecated Use getAddress() instead
+   * Get the derived address (only relevant for old implementation)
+   */
+  getDerivedAddress(): string | null {
+    return this.getAddress();
   }
 }
