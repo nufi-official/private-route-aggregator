@@ -16,6 +16,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.4.0",
+    "@privacy-router-sdk/privacy-aggregator": "workspace:*",
     "@privacy-router-sdk/privacy-cash": "workspace:*",
     "@privacy-router-sdk/private-routers-core": "workspace:*",
     "@privacy-router-sdk/signers-core": "workspace:*",

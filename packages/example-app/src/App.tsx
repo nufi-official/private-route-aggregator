@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { Container, Typography, Box, Grid2 as Grid, Alert } from '@mui/material';
+import { Container, Typography, Box, Grid2 as Grid, Alert, Tabs, Tab } from '@mui/material';
 import { WalletProvider } from './providers/WalletProvider';
 import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
 import { WithdrawForm } from './components/WithdrawForm';
 import { BalanceDisplay } from './components/BalanceDisplay';
-import { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
+import { CrossChainFundForm } from './components/CrossChainFundForm';
+import { PrivacyAggregatorProvider } from '@privacy-router-sdk/privacy-aggregator';
 import type { SolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
 import type { WalletAdapterAccount } from '@privacy-router-sdk/solana-wallet-adapter';
 import type { Account } from '@privacy-router-sdk/signers-core';
@@ -70,26 +71,32 @@ const darkTheme = createTheme({
 
 function AppContent() {
   const [account, setAccount] = useState<AccountType | null>(null);
-  const [provider, setProvider] = useState<PrivacyCashProvider | null>(null);
+  const [accountAddress, setAccountAddress] = useState<string>('');
+  const [provider, setProvider] = useState<PrivacyAggregatorProvider | null>(null);
   const [privateBalance, setPrivateBalance] = useState<bigint>(0n);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [isPrivacyEnabled, setIsPrivacyEnabled] = useState(false);
+  const [fundTab, setFundTab] = useState(0);
 
-  const handleLogin = (acc: AccountType) => {
+  const handleLogin = async (acc: AccountType) => {
     setAccount(acc);
 
     try {
-      let privacyProvider: PrivacyCashProvider;
+      // Get account address
+      const address = await acc.getAddress();
+      setAccountAddress(address);
+
+      let privacyProvider: PrivacyAggregatorProvider;
 
       if (isMnemonicAccount(acc)) {
         // Mnemonic-based account - use private key directly
-        privacyProvider = new PrivacyCashProvider({
+        privacyProvider = new PrivacyAggregatorProvider({
           rpcUrl: acc.getRpcUrl(),
           owner: acc.getSecretKey(),
         });
       } else if (isWalletAdapterAccount(acc)) {
         // Browser wallet - use wallet signer mode (derives keys from signature)
-        privacyProvider = new PrivacyCashProvider({
+        privacyProvider = new PrivacyAggregatorProvider({
           rpcUrl: acc.getRpcUrl(),
           walletSigner: acc.getWalletSigner(),
         });
@@ -108,9 +115,11 @@ function AppContent() {
 
   const handleLogout = () => {
     setAccount(null);
+    setAccountAddress('');
     setProvider(null);
     setPrivateBalance(0n);
     setIsPrivacyEnabled(false);
+    setFundTab(0);
   };
 
   const refreshBalance = useCallback(async () => {
@@ -178,16 +187,34 @@ function AppContent() {
 
           <Grid container spacing={4} justifyContent="center" mt={2}>
             <Grid size={{ xs: 12, md: 6 }}>
-              <FundForm
-                account={account as Account}
-                provider={provider}
-                onSuccess={refreshBalance}
-              />
+              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                <Tabs
+                  value={fundTab}
+                  onChange={(_, v) => setFundTab(v)}
+                  variant="fullWidth"
+                >
+                  <Tab label="Direct (SOL)" />
+                  <Tab label="Cross-Chain" />
+                </Tabs>
+              </Box>
+              {fundTab === 0 ? (
+                <FundForm
+                  account={account as Account}
+                  provider={provider?.getPrivacyCashProvider() ?? null}
+                  onSuccess={refreshBalance}
+                />
+              ) : (
+                <CrossChainFundForm
+                  provider={provider}
+                  senderAddress={accountAddress}
+                  onSuccess={refreshBalance}
+                />
+              )}
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <WithdrawForm
                 account={account as Account}
-                provider={provider}
+                provider={provider?.getPrivacyCashProvider() ?? null}
                 privateBalance={privateBalance}
                 onSuccess={refreshBalance}
               />

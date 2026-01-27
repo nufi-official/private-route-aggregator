@@ -1,0 +1,37 @@
+{
+  "name": "@privacy-router-sdk/privacy-aggregator",
+  "version": "0.1.0",
+  "description": "Privacy aggregator combining cross-chain swaps (NEAR Intents) with privacy pools (Privacy Cash)",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "dependencies": {
+    "@privacy-router-sdk/private-routers-core": "workspace:*",
+    "@privacy-router-sdk/signers-core": "workspace:*",
+    "@privacy-router-sdk/privacy-cash": "workspace:*",
+    "@privacy-router-sdk/near-intents": "workspace:*",
+    "@solana/web3.js": "^1.95.8"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.2"
+  }
+}

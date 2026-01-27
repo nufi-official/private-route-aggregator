@@ -63,6 +63,7 @@ export class PrivacyCashProvider implements PrivacyProvider {
   private asset: PrivacyCashAsset;
   private config: PrivacyCashConfig;
   private walletSigner: WalletSigner | null = null;
+  private ownerKeypair: Keypair | null = null;
   private derivedKeypair: Keypair | null = null;
   private initialized = false;
 
@@ -93,9 +94,19 @@ export class PrivacyCashProvider implements PrivacyProvider {
       );
     }
 
+    // Store the owner keypair for address lookup
+    if (owner instanceof Keypair) {
+      this.ownerKeypair = owner;
+    } else if (owner instanceof Uint8Array) {
+      this.ownerKeypair = Keypair.fromSecretKey(owner);
+    } else if (Array.isArray(owner)) {
+      this.ownerKeypair = Keypair.fromSecretKey(new Uint8Array(owner));
+    }
+    // Note: string format (base58) is not parsed here - would need additional handling
+
     this.client = new PrivacyCash({
       RPC_url: finalRpcUrl,
-      owner: owner as string | number[] | Uint8Array | Keypair,
+      owner,
       enableDebug,
     }) as PrivacyCashClient;
   }
@@ -144,10 +155,20 @@ export class PrivacyCashProvider implements PrivacyProvider {
   }
 
   /**
-   * Get the derived keypair's public key (only available after initialization in wallet signer mode)
+   * Get the funding address for the privacy pool
+   * - For wallet signer mode: returns the derived keypair's address (after initialization)
+   * - For private key mode: returns the owner keypair's address
    */
   getDerivedAddress(): string | null {
-    return this.derivedKeypair?.publicKey.toBase58() ?? null;
+    // For wallet signer mode, return derived keypair address
+    if (this.derivedKeypair) {
+      return this.derivedKeypair.publicKey.toBase58();
+    }
+    // For private key mode, return owner keypair address
+    if (this.ownerKeypair) {
+      return this.ownerKeypair.publicKey.toBase58();
+    }
+    return null;
   }
 
   /**
@@ -171,7 +192,8 @@ export class PrivacyCashProvider implements PrivacyProvider {
 
   /**
    * Fund the privacy pool
-   * Note: sourceAccount is not used as Privacy Cash manages its own keypair
+   * For wallet signer mode: transfers from user's wallet to derived address, then deposits
+   * For private key mode: deposits directly from owner address
    */
   async fund(params: {
     sourceAccount: Account;
@@ -206,26 +228,66 @@ export class PrivacyCashProvider implements PrivacyProvider {
         });
       }
 
-      onStatusChange?.({ stage: 'depositing' });
-
-      let result: TxResult;
-      if (this.asset === 'SOL') {
-        result = await this.client!.deposit({ lamports: Number(baseUnits) });
-      } else {
-        const mintAddress = SPL_MINTS[this.asset];
-        result = await this.client!.depositSPL({
-          base_units: Number(baseUnits),
-          mintAddress,
-        });
-      }
-
-      onStatusChange?.({ stage: 'completed', txHash: result.tx });
+      // Deposit from derived/owner address to privacy pool
+      const result = await this.depositToPool(baseUnits, onStatusChange);
+      onStatusChange?.({ stage: 'completed', txHash: result });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       onStatusChange?.({ stage: 'failed', error: errorMessage });
       throw error;
     }
+  }
+
+  /**
+   * Deposit directly to the privacy pool from the derived/owner address
+   * Use this when funds are already in the derived address (e.g., from cross-chain swap)
+   * No wallet signature required - uses the derived keypair
+   */
+  async depositDirect(params: {
+    amount: string;
+    onStatusChange?: (status: FundingStatus) => void;
+  }): Promise<void> {
+    const { amount, onStatusChange } = params;
+
+    try {
+      onStatusChange?.({ stage: 'preparing' });
+
+      await this.ensureInitialized();
+
+      const baseUnits = BigInt(amount);
+      const result = await this.depositToPool(baseUnits, onStatusChange);
+
+      onStatusChange?.({ stage: 'completed', txHash: result });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      onStatusChange?.({ stage: 'failed', error: errorMessage });
+      throw error;
+    }
+  }
+
+  /**
+   * Internal method to deposit from derived/owner address to privacy pool
+   */
+  private async depositToPool(
+    baseUnits: bigint,
+    onStatusChange?: (status: FundingStatus) => void
+  ): Promise<string> {
+    onStatusChange?.({ stage: 'depositing' });
+
+    let result: TxResult;
+    if (this.asset === 'SOL') {
+      result = await this.client!.deposit({ lamports: Number(baseUnits) });
+    } else {
+      const mintAddress = SPL_MINTS[this.asset];
+      result = await this.client!.depositSPL({
+        base_units: Number(baseUnits),
+        mintAddress,
+      });
+    }
+
+    return result.tx;
   }
 
   /**
