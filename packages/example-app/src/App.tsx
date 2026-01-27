@@ -88,17 +88,22 @@ function AppContent() {
 
       let privacyProvider: PrivacyAggregatorProvider;
 
+      // Get NEAR Intents JWT token from environment (optional for cross-chain)
+      const nearIntentsJwtToken = import.meta.env.VITE_NEAR_INTENTS_JWT_TOKEN;
+
       if (isMnemonicAccount(acc)) {
         // Mnemonic-based account - use private key directly
         privacyProvider = new PrivacyAggregatorProvider({
           rpcUrl: acc.getRpcUrl(),
           owner: acc.getSecretKey(),
+          nearIntentsJwtToken,
         });
       } else if (isWalletAdapterAccount(acc)) {
         // Browser wallet - use wallet signer mode (derives keys from signature)
         privacyProvider = new PrivacyAggregatorProvider({
           rpcUrl: acc.getRpcUrl(),
           walletSigner: acc.getWalletSigner(),
+          nearIntentsJwtToken,
         });
       } else {
         throw new Error('Unknown account type');

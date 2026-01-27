@@ -26,7 +26,7 @@ export class PrivacyAggregatorProvider implements PrivacyProvider {
   readonly name = 'privacy-aggregator';
 
   private privacyCashProvider: PrivacyCashProvider;
-  private swapApi: SwapApi;
+  private _swapApi: SwapApi | null = null;
   private config: PrivacyAggregatorConfig;
   private asset: PrivacyCashAsset;
 
@@ -56,12 +56,20 @@ export class PrivacyAggregatorProvider implements PrivacyProvider {
     } else {
       throw new Error('Invalid config: must provide either owner or walletSigner');
     }
+  }
 
-    // Initialize NEAR Intents API
-    this.swapApi = OneClickApi({
-      jwtToken: config.nearIntentsJwtToken,
-      apiBaseUrl: config.nearIntentsApiUrl,
-    });
+  /**
+   * Get or create the NEAR Intents swap API (lazy initialization)
+   * Only needed for cross-chain swaps, not for direct SOL deposits
+   */
+  private getOrCreateSwapApi(): SwapApi {
+    if (!this._swapApi) {
+      this._swapApi = OneClickApi({
+        jwtToken: this.config.nearIntentsJwtToken,
+        apiBaseUrl: this.config.nearIntentsApiUrl,
+      });
+    }
+    return this._swapApi;
   }
 
   /**
@@ -72,10 +80,11 @@ export class PrivacyAggregatorProvider implements PrivacyProvider {
   }
 
   /**
-   * Get the NEAR Intents swap API
+   * Get the NEAR Intents swap API (creates it if needed)
+   * Throws if JWT token was not provided
    */
   getSwapApi(): SwapApi {
-    return this.swapApi;
+    return this.getOrCreateSwapApi();
   }
 
   /**
@@ -171,7 +180,7 @@ export class PrivacyAggregatorProvider implements PrivacyProvider {
 
       // Execute the swap
       await swap({
-        swapApi: this.swapApi,
+        swapApi: this.getOrCreateSwapApi(),
         quote: quoteParams,
         sendDeposit,
         onStatusChange: handleSwapStatusChange,
@@ -241,6 +250,6 @@ export class PrivacyAggregatorProvider implements PrivacyProvider {
    * Get available tokens for cross-chain swaps
    */
   async getAvailableSourceAssets() {
-    return this.swapApi.getTokens();
+    return this.getOrCreateSwapApi().getTokens();
   }
 }

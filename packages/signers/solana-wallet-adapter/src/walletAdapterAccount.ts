@@ -192,9 +192,15 @@ export class WalletAdapterAccount implements Account {
 
   /**
    * Get a WalletSigner-compatible object for use with PrivacyCashProvider
-   * This allows browser wallet users to use privacy features via signature-based key derivation
+   * This allows browser wallet users to use privacy features
+   * - signMessage: for deriving encryption keys (one-time)
+   * - signTransaction: for signing deposit transactions directly (no middleman)
    */
-  getWalletSigner = (): { publicKey: { toBase58(): string }; signMessage(message: Uint8Array): Promise<Uint8Array> } => {
+  getWalletSigner = (): {
+    publicKey: { toBase58(): string };
+    signMessage(message: Uint8Array): Promise<Uint8Array>;
+    signTransaction?(tx: VersionedTransaction): Promise<VersionedTransaction>;
+  } => {
     if (!this.wallet.publicKey) {
       throw new Error('Wallet not connected');
     }
@@ -205,6 +211,7 @@ export class WalletAdapterAccount implements Account {
     return {
       publicKey: this.wallet.publicKey,
       signMessage: this.wallet.signMessage,
+      signTransaction: this.wallet.signTransaction,
     };
   };
 }

@@ -1,4 +1,4 @@
-import type { Keypair } from '@solana/web3.js';
+import type { Keypair, VersionedTransaction } from '@solana/web3.js';
 
 /**
  * Signer interface for wallet adapter support
@@ -6,6 +6,7 @@ import type { Keypair } from '@solana/web3.js';
 export interface WalletSigner {
   publicKey: { toBase58(): string };
   signMessage(message: Uint8Array): Promise<Uint8Array>;
+  signTransaction?(tx: VersionedTransaction): Promise<VersionedTransaction>;
 }
 
 /**
