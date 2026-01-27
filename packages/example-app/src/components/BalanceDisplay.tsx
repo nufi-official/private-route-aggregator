@@ -76,7 +76,11 @@ export function BalanceDisplay({
               <Chip
                 label={shortenAddress(address)}
                 size="small"
-                sx={{ fontFamily: 'monospace' }}
+                onClick={() => {
+                  navigator.clipboard.writeText(address);
+                }}
+                sx={{ fontFamily: 'monospace', cursor: 'pointer' }}
+                title="Click to copy full address"
               />
             )}
           </Box>
