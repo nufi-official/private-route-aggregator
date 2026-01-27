@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Paper,
   Typography,
@@ -28,24 +28,29 @@ export function BalanceDisplay({
   const [walletBalance, setWalletBalance] = useState<bigint>(0n);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const addr = await account.getAddress();
-        setAddress(addr);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const addr = await account.getAddress();
+      setAddress(addr);
 
-        const balance = await account.getBalance();
-        setWalletBalance(balance);
-      } catch (err) {
-        console.error('Failed to fetch account data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+      const balance = await account.getBalance();
+      setWalletBalance(balance);
+    } catch (err) {
+      console.error('Failed to fetch account data:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [account]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleRefresh = () => {
+    fetchData();
+    onRefresh();
+  };
 
   const formatSol = (lamports: bigint): string => {
     const sol = Number(lamports) / 1_000_000_000;
@@ -101,8 +106,8 @@ export function BalanceDisplay({
           <Button
             variant="outlined"
             size="small"
-            onClick={onRefresh}
-            disabled={loading}
+            onClick={handleRefresh}
+            disabled={loading || balanceLoading}
           >
             Refresh
           </Button>
