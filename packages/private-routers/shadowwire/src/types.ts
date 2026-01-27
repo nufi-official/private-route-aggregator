@@ -124,10 +124,13 @@ export interface WithdrawRequest {
 
 /**
  * Withdraw response from ShadowWire API
+ * Returns an unsigned transaction that must be signed and submitted
  */
 export interface WithdrawResponse {
   success: boolean;
-  txHash?: string;
+  unsigned_tx_base64?: string;
+  pool_address?: string;
+  amount?: number;
   message?: string;
 }
 

@@ -271,6 +271,11 @@ export class ShadowWireProvider {
   /**
    * Withdraw from the privacy pool
    * Matches PrivacyProvider interface
+   *
+   * Flow:
+   * 1. Request unsigned transaction from API
+   * 2. Sign transaction with wallet
+   * 3. Submit signed transaction
    */
   async withdraw(params: {
     destination: WithdrawDestination;
@@ -291,8 +296,8 @@ export class ShadowWireProvider {
         throw new Error('Amount must be greater than 0');
       }
 
-      onStatusChange?.({ stage: 'processing' });
-
+      // Step 1: Get unsigned transaction from API
+      this.log('Requesting withdraw transaction...');
       const response = await this.apiRequest<WithdrawResponse>('/pool/withdraw', 'POST', {
         wallet,
         amount: Number(baseUnits),
@@ -300,20 +305,127 @@ export class ShadowWireProvider {
         recipient,
       });
 
-      if (!response.success) {
-        throw new Error(response.message || 'Withdrawal failed');
+      if (!response.success || !response.unsigned_tx_base64) {
+        throw new Error(response.message || 'Failed to get withdraw transaction');
       }
 
-      const txHash = response.txHash || 'pending';
+      this.log('Got unsigned transaction, signing...');
+      onStatusChange?.({ stage: 'processing' });
 
-      onStatusChange?.({ stage: 'confirming', txHash });
+      // Step 2: Deserialize the transaction
+      const txBuffer = Buffer.from(response.unsigned_tx_base64, 'base64');
+      const transaction = VersionedTransaction.deserialize(txBuffer);
+
+      // Debug: Log transaction details
+      this.log('Transaction requires', transaction.message.header.numRequiredSignatures, 'signatures');
+      this.log('Current signatures:', transaction.signatures.length);
+      transaction.signatures.forEach((sig, i) => {
+        const isEmpty = sig.every(b => b === 0);
+        this.log(`  Signature ${i}: ${isEmpty ? 'EMPTY' : 'PRESENT'}`);
+      });
+
+      // Sign with wallet
+      if (!this.walletSigner.signTransaction) {
+        throw new Error('Wallet does not support transaction signing');
+      }
+
+      this.log('Requesting wallet signature...');
+      let signedTransaction: VersionedTransaction;
+      try {
+        // The wallet adapter's signTransaction should add the user's signature
+        signedTransaction = await this.walletSigner.signTransaction(transaction);
+        this.log('Wallet signed transaction successfully');
+      } catch (signError) {
+        const errMsg = signError instanceof Error ? signError.message : 'Unknown signing error';
+        this.log('WALLET SIGNING FAILED:', errMsg);
+        throw new Error(`Wallet signing failed: ${errMsg}`);
+      }
+
+      // Debug: Log signatures after signing
+      signedTransaction.signatures.forEach((sig, i) => {
+        const isEmpty = sig.every(b => b === 0);
+        this.log(`  After signing - Signature ${i}: ${isEmpty ? 'EMPTY' : 'PRESENT'}`);
+      });
+
+      // Check for empty signatures
+      const emptySignatures = signedTransaction.signatures.filter(sig => sig.every(b => b === 0));
+      if (emptySignatures.length > 0) {
+        this.log('Transaction has', emptySignatures.length, 'empty signatures, attempting manual signature...');
+
+        // Try manual signing: find which slot needs our signature
+        const walletPubkey = this.walletSigner.publicKey.toBase58();
+        const message = signedTransaction.message;
+        const staticKeys = message.staticAccountKeys || [];
+
+        // Find our signer index
+        let ourSignerIndex = -1;
+        const numSigners = message.header.numRequiredSignatures;
+        for (let i = 0; i < numSigners && i < staticKeys.length; i++) {
+          const key = staticKeys[i];
+          if (key && key.toBase58() === walletPubkey) {
+            ourSignerIndex = i;
+            break;
+          }
+        }
+
+        this.log('Our wallet pubkey:', walletPubkey);
+        this.log('Our signer index:', ourSignerIndex);
+
+        const sigAtIndex = signedTransaction.signatures[ourSignerIndex];
+        if (ourSignerIndex >= 0 && sigAtIndex && sigAtIndex.every(b => b === 0)) {
+          this.log('Manually signing at index', ourSignerIndex);
+          // The signature slot is empty for our key, need to sign manually
+          const messageBytes = signedTransaction.message.serialize();
+          const signatureBytes = await this.walletSigner.signMessage(messageBytes);
+
+          // Add the signature at the correct index
+          signedTransaction.signatures[ourSignerIndex] = signatureBytes;
+          this.log('Manual signature added');
+        }
+
+        // Check again
+        const stillEmpty = signedTransaction.signatures.filter(sig => sig.every(b => b === 0));
+        if (stillEmpty.length > 0) {
+          this.log('ERROR: Still have', stillEmpty.length, 'empty signatures after manual signing');
+          throw new Error(`Transaction missing ${stillEmpty.length} required signatures`);
+        }
+      }
+
+      // Step 3: Submit to blockchain
+      this.log('Submitting transaction to blockchain...');
+
+      let signature: string;
+      try {
+        // Serialize the transaction
+        const serialized = signedTransaction.serialize();
+        this.log('Serialized transaction, size:', serialized.length, 'bytes');
+
+        // Try with skipPreflight first to see raw errors
+        signature = await this.connection.sendRawTransaction(serialized, {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        });
+      } catch (submitError) {
+        const errMsg = submitError instanceof Error ? submitError.message : 'Unknown submit error';
+        this.log('TRANSACTION SUBMIT FAILED:', errMsg);
+        throw new Error(`Transaction submission failed: ${errMsg}`);
+      }
+
+      this.log('Transaction submitted:', signature);
+      onStatusChange?.({ stage: 'confirming', txHash: signature });
 
       // Wait for confirmation
-      await this.waitForConfirmation(txHash);
+      const confirmation = await this.connection.confirmTransaction(signature, 'confirmed');
 
-      onStatusChange?.({ stage: 'completed', txHash });
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+      }
+
+      this.log('Withdraw confirmed!');
+      onStatusChange?.({ stage: 'completed', txHash: signature });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.log('Withdraw failed:', errorMessage);
       onStatusChange?.({ stage: 'failed', error: errorMessage });
       throw error;
     }
