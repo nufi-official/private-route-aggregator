@@ -4,9 +4,11 @@
 class LocalStorage {
   private prefix: string;
 
-  constructor(location: string) {
+  constructor(location?: string, _quota?: number) {
     // Use the location as a prefix for keys to avoid collisions
-    this.prefix = location.replace(/[^a-zA-Z0-9]/g, '_') + '_';
+    // Default to 'privacy_cash' if no location provided
+    const loc = location || 'privacy_cash';
+    this.prefix = loc.replace(/[^a-zA-Z0-9]/g, '_') + '_';
   }
 
   getItem(key: string): string | null {

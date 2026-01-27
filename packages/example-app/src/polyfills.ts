@@ -1,10 +1,9 @@
 import * as BufferModule from 'buffer';
-import * as ProcessModule from 'process';
+import process from './shims/process';
 import * as StreamModule from 'stream-browserify';
 
 const Buffer =
   BufferModule.Buffer || (BufferModule as any).default?.Buffer || BufferModule;
-const process = (ProcessModule as any).default || ProcessModule;
 
 if (typeof window !== 'undefined') {
   (window as any).Buffer = Buffer;

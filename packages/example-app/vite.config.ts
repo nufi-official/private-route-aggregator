@@ -1,18 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import path from 'path';
+import nodePath from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
     nodePolyfills({
-      include: ['buffer', 'crypto', 'stream', 'util', 'process', 'path', 'events'],
+      include: ['buffer', 'crypto', 'stream', 'util', 'events'],
       globals: {
         Buffer: true,
         global: true,
-        process: true,
+        process: false, // We inject process via index.html
       },
+      protocolImports: true,
     }),
   ],
   server: {
@@ -21,6 +22,7 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+    'process.env': 'window.process.env',
   },
   optimizeDeps: {
     esbuildOptions: {
@@ -35,7 +37,11 @@ export default defineConfig({
   resolve: {
     alias: {
       'bn.js': 'bn.js/lib/bn.js',
-      'node-localstorage': path.resolve(__dirname, 'src/shims/node-localstorage.ts'),
+      'node-localstorage': nodePath.resolve(__dirname, 'src/shims/node-localstorage.ts'),
+      os: nodePath.resolve(__dirname, 'src/shims/os.ts'),
+      'node:os': nodePath.resolve(__dirname, 'src/shims/os.ts'),
+      path: nodePath.resolve(__dirname, 'src/shims/path.ts'),
+      'node:path': nodePath.resolve(__dirname, 'src/shims/path.ts'),
     },
   },
 });

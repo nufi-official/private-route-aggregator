@@ -10,6 +10,62 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
     />
+    <script>
+      // Polyfill process before any modules load
+      window.process = window.process || {
+        env: { HOME: '/', NODE_ENV: 'development' },
+        cwd: function() { return '/'; },
+        platform: 'browser',
+        version: 'v18.0.0',
+        versions: {},
+        nextTick: function(fn) { queueMicrotask(fn); },
+        stdout: {
+          write: function(s) { console.log(s); return true; },
+          isTTY: false,
+          columns: 80,
+          rows: 24,
+          on: function() { return this; },
+          once: function() { return this; },
+          emit: function() { return false; },
+          removeListener: function() { return this; },
+        },
+        stderr: {
+          write: function(s) { console.error(s); return true; },
+          isTTY: false,
+          columns: 80,
+          rows: 24,
+          on: function() { return this; },
+          once: function() { return this; },
+          emit: function() { return false; },
+          removeListener: function() { return this; },
+        },
+        stdin: {
+          isTTY: false,
+          on: function() { return this; },
+          once: function() { return this; },
+        },
+        argv: [],
+        exit: function() {},
+        pid: 1,
+        hrtime: function(prev) {
+          var now = performance.now();
+          var sec = Math.floor(now / 1000);
+          var nsec = Math.floor((now % 1000) * 1e6);
+          if (prev) return [sec - prev[0], nsec - prev[1]];
+          return [sec, nsec];
+        },
+        on: function() { return this; },
+        once: function() { return this; },
+        off: function() { return this; },
+        emit: function() { return false; },
+        removeListener: function() { return this; },
+        listeners: function() { return []; },
+      };
+      window.process.hrtime.bigint = function() {
+        return BigInt(Math.floor(performance.now() * 1e6));
+      };
+      window.global = window;
+    </script>
   </head>
   <body>
     <div id="root"></div>
