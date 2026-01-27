@@ -15,6 +15,7 @@ interface BalanceDisplayProps {
   balanceLoading?: boolean;
   onLogout: () => void;
   onRefresh: () => void;
+  providerName?: string;
 }
 
 export function BalanceDisplay({
@@ -23,6 +24,7 @@ export function BalanceDisplay({
   balanceLoading,
   onLogout,
   onRefresh,
+  providerName,
 }: BalanceDisplayProps) {
   const [address, setAddress] = useState<string>('');
   const [walletBalance, setWalletBalance] = useState<bigint>(0n);
@@ -97,7 +99,7 @@ export function BalanceDisplay({
 
             <Box>
               <Typography variant="body2" color="text.secondary">
-                Private Balance
+                Private Balance {providerName && `(${providerName})`}
               </Typography>
               <Typography variant="h6" fontWeight={600} color="secondary">
                 {balanceLoading ? '...' : `${formatSol(privateBalance)} SOL`}

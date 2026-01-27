@@ -11,10 +11,13 @@ import {
 import type { WithdrawStatus } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
 import type { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
+import type { ShadowWireProvider } from '@privacy-router-sdk/shadowwire';
+
+type ProviderType = PrivacyCashProvider | ShadowWireProvider;
 
 interface WithdrawFormProps {
   account: Account;
-  provider: PrivacyCashProvider | null;
+  provider: ProviderType | null;
   privateBalance: bigint;
   onSuccess: () => void;
 }
