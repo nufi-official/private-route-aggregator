@@ -193,8 +193,8 @@ export class PrivacyCashProvider implements PrivacyProvider {
         const derivedAddress = this.derivedKeypair.publicKey.toBase58();
 
         // Add extra lamports for transaction fees (the privacycash SDK will need to pay fees)
-        // 0.01 SOL should be enough for deposit transaction fees
-        const FEE_BUFFER = 10_000_000n; // 0.01 SOL in lamports
+        // 0.0005 SOL (500,000 lamports) should be enough for deposit transaction fees
+        const FEE_BUFFER = 500_000n; // 0.0005 SOL in lamports
         const totalAmount = baseUnits + FEE_BUFFER;
 
         onStatusChange?.({ stage: 'preparing' });
