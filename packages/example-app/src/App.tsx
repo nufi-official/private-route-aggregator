@@ -18,6 +18,11 @@ function isMnemonicAccount(account: AccountType): account is SolanaAccount {
   return 'getSecretKey' in account && typeof account.getSecretKey === 'function';
 }
 
+// Type guard to check if account is a wallet adapter account
+function isWalletAdapterAccount(account: AccountType): account is WalletAdapterAccount {
+  return 'getWallet' in account && typeof account.getWallet === 'function';
+}
+
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
@@ -73,21 +78,29 @@ function AppContent() {
   const handleLogin = (acc: AccountType) => {
     setAccount(acc);
 
-    // Only create privacy provider if account has secret key (mnemonic-based)
-    if (isMnemonicAccount(acc)) {
-      try {
-        const privacyProvider = new PrivacyCashProvider({
+    try {
+      let privacyProvider: PrivacyCashProvider;
+
+      if (isMnemonicAccount(acc)) {
+        // Mnemonic-based account - use private key directly
+        privacyProvider = new PrivacyCashProvider({
           rpcUrl: acc.getRpcUrl(),
           owner: acc.getSecretKey(),
         });
-        setProvider(privacyProvider);
-        setIsPrivacyEnabled(true);
-      } catch (err) {
-        console.error('Failed to create privacy provider:', err);
-        setIsPrivacyEnabled(false);
+      } else if (isWalletAdapterAccount(acc)) {
+        // Browser wallet - use wallet signer mode (derives keys from signature)
+        privacyProvider = new PrivacyCashProvider({
+          rpcUrl: acc.getRpcUrl(),
+          walletSigner: acc.getWalletSigner(),
+        });
+      } else {
+        throw new Error('Unknown account type');
       }
-    } else {
-      // Browser wallet - no privacy features
+
+      setProvider(privacyProvider);
+      setIsPrivacyEnabled(true);
+    } catch (err) {
+      console.error('Failed to create privacy provider:', err);
       setProvider(null);
       setIsPrivacyEnabled(false);
     }
@@ -158,8 +171,8 @@ function AppContent() {
           />
 
           {!isPrivacyEnabled && (
-            <Alert severity="info" sx={{ mb: 4 }}>
-              Privacy features require mnemonic login. Browser wallets can only view balance.
+            <Alert severity="warning" sx={{ mb: 4 }}>
+              Privacy features unavailable. Please reconnect your wallet.
             </Alert>
           )}
 

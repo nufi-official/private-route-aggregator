@@ -182,4 +182,29 @@ export class WalletAdapterAccount implements Account {
   isConnected = (): boolean => {
     return this.wallet.connected && this.wallet.publicKey !== null;
   };
+
+  /**
+   * Get the underlying wallet context
+   */
+  getWallet = (): WalletContextState => {
+    return this.wallet;
+  };
+
+  /**
+   * Get a WalletSigner-compatible object for use with PrivacyCashProvider
+   * This allows browser wallet users to use privacy features via signature-based key derivation
+   */
+  getWalletSigner = (): { publicKey: { toBase58(): string }; signMessage(message: Uint8Array): Promise<Uint8Array> } => {
+    if (!this.wallet.publicKey) {
+      throw new Error('Wallet not connected');
+    }
+    if (!this.wallet.signMessage) {
+      throw new Error('Wallet does not support signing messages');
+    }
+
+    return {
+      publicKey: this.wallet.publicKey,
+      signMessage: this.wallet.signMessage,
+    };
+  };
 }

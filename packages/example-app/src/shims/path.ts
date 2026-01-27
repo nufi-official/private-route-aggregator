@@ -74,11 +74,9 @@ export function resolve(...args: any[]): string {
   let resolvedAbsolute = false;
 
   for (let i = filtered.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-    let path;
-    if (i >= 0) path = filtered[i];
-    else path = '/';
+    const path = i >= 0 ? filtered[i] : '/';
 
-    if (path.length === 0) continue;
+    if (!path || path.length === 0) continue;
 
     resolvedPath = path + '/' + resolvedPath;
     resolvedAbsolute = path.charCodeAt(0) === CHAR_FORWARD_SLASH;
@@ -123,10 +121,10 @@ export function join(...args: any[]): string {
   const filtered = filterArgs(args);
   if (filtered.length === 0) return '.';
 
-  let joined;
+  let joined: string | undefined;
   for (let i = 0; i < filtered.length; ++i) {
     const arg = filtered[i];
-    if (arg.length > 0) {
+    if (arg && arg.length > 0) {
       if (joined === undefined) joined = arg;
       else joined += '/' + arg;
     }

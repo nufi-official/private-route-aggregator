@@ -1,3 +1,14 @@
 export { PrivacyCashProvider } from './privacyCashProvider';
-export type { PrivacyCashConfig, PrivacyCashAsset } from './types';
-export { SPL_MINTS } from './types';
+export type {
+  PrivacyCashConfig,
+  PrivacyCashConfigPrivateKey,
+  PrivacyCashConfigWalletSigner,
+  PrivacyCashAsset,
+  WalletSigner,
+} from './types';
+export {
+  SPL_MINTS,
+  PRIVACY_CASH_SIGN_MESSAGE,
+  isPrivateKeyConfig,
+  isWalletSignerConfig,
+} from './types';
