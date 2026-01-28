@@ -9,22 +9,28 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Chip,
+  Button,
+  Paper,
 } from '@mui/material';
 import { WalletProvider } from './providers/WalletProvider';
 import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
 import { WithdrawForm } from './components/WithdrawForm';
-import { BalanceDisplay } from './components/BalanceDisplay';
 import { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
-import { ShadowWireProvider } from '@privacy-router-sdk/shadowwire';
+import { ShadowWireProvider, SUPPORTED_TOKENS } from '@privacy-router-sdk/shadowwire';
+import type { ShadowWireToken } from '@privacy-router-sdk/shadowwire';
+import type { PrivacyCashAsset } from '@privacy-router-sdk/privacy-cash';
 import type { SolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
 import type { WalletAdapterAccount } from '@privacy-router-sdk/solana-wallet-adapter';
 import type { LedgerAccount } from '@privacy-router-sdk/solana-ledger';
-import type { Account } from '@privacy-router-sdk/signers-core';
 
 type AccountType = SolanaAccount | WalletAdapterAccount | LedgerAccount;
 type ProviderType = PrivacyCashProvider | ShadowWireProvider;
 type ProviderName = 'privacy-cash' | 'shadowwire';
+
+// Assets supported by each provider
+const PRIVACY_CASH_ASSETS: PrivacyCashAsset[] = ['SOL', 'USDC', 'USDT'];
+const SHADOWWIRE_ASSETS: ShadowWireToken[] = [...SUPPORTED_TOKENS];
 
 // Type guard to check if account has getSecretKey (is SolanaAccount with mnemonic)
 function isMnemonicAccount(account: AccountType): account is SolanaAccount {
@@ -88,114 +94,215 @@ const darkTheme = createTheme({
 
 function AppContent() {
   const [account, setAccount] = useState<AccountType | null>(null);
+  const [address, setAddress] = useState<string>('');
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>('shadowwire');
-  const [provider, setProvider] = useState<ProviderType | null>(null);
-  const [privateBalance, setPrivateBalance] = useState<bigint>(0n);
-  const [balanceLoading, setBalanceLoading] = useState(false);
-  const [isPrivacyEnabled, setIsPrivacyEnabled] = useState(false);
   const [providerError, setProviderError] = useState<string | null>(null);
 
-  // Create provider based on selection
-  const createProvider = useCallback((acc: AccountType, providerName: ProviderName): ProviderType | null => {
-    try {
-      setProviderError(null);
+  // Separate state for Fund form
+  const [fundAsset, setFundAsset] = useState<string>('SOL');
+  const [fundProvider, setFundProvider] = useState<ProviderType | null>(null);
+  const [walletBalance, setWalletBalance] = useState<bigint>(0n);
+  const [walletBalanceLoading, setWalletBalanceLoading] = useState(false);
 
+  // Separate state for Withdraw form
+  const [withdrawAsset, setWithdrawAsset] = useState<string>('SOL');
+  const [withdrawProvider, setWithdrawProvider] = useState<ProviderType | null>(null);
+  const [privateBalance, setPrivateBalance] = useState<bigint>(0n);
+  const [privateBalanceLoading, setPrivateBalanceLoading] = useState(false);
+
+  // Get available assets for current provider
+  const availableAssets = selectedProvider === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
+
+  // Get decimals for an asset
+  const getDecimals = (asset: string) => {
+    if (asset === 'SOL') return 9;
+    return 6; // USDC, USDT, and most SPL tokens
+  };
+
+  // Create provider based on selection
+  const createProvider = useCallback((acc: AccountType, providerName: ProviderName, asset: string): ProviderType | null => {
+    try {
       if (providerName === 'privacy-cash') {
         if (isMnemonicAccount(acc)) {
           return new PrivacyCashProvider({
             rpcUrl: acc.getRpcUrl(),
             owner: acc.getSecretKey(),
-          });
+          }, asset as PrivacyCashAsset);
         } else if (isWalletAdapterAccount(acc)) {
           return new PrivacyCashProvider({
             rpcUrl: acc.getRpcUrl(),
             walletSigner: acc.getWalletSigner(),
-          });
+          }, asset as PrivacyCashAsset);
         } else if (isLedgerAccount(acc)) {
-          // Note: PrivacyCash may have issues with Ledger due to message signing limitations
-          // Ledger's off-chain message signing has strict format requirements
           return new PrivacyCashProvider({
             rpcUrl: acc.getRpcUrl(),
             walletSigner: acc.getWalletSigner(),
-          });
+          }, asset as PrivacyCashAsset);
         }
       } else if (providerName === 'shadowwire') {
-        // ShadowWire only supports wallet signer mode
         if (isWalletAdapterAccount(acc)) {
           return new ShadowWireProvider({
             walletSigner: acc.getWalletSigner(),
             rpcUrl: acc.getRpcUrl(),
-            token: 'SOL',
+            token: asset as ShadowWireToken,
             enableDebug: true,
           });
         } else if (isLedgerAccount(acc)) {
           return new ShadowWireProvider({
             walletSigner: acc.getWalletSigner(),
             rpcUrl: acc.getRpcUrl(),
-            token: 'SOL',
+            token: asset as ShadowWireToken,
             enableDebug: true,
           });
         } else if (isMnemonicAccount(acc)) {
-          // For mnemonic accounts, we need to create a mock wallet signer
-          // ShadowWire requires signMessage capability
-          setProviderError('ShadowWire requires a browser wallet or Ledger. Please connect using a wallet adapter or Ledger.');
-          return null;
+          return null; // ShadowWire doesn't support mnemonic accounts
         }
       }
 
-      throw new Error('Unknown account or provider type');
+      return null;
     } catch (err) {
       console.error('Failed to create privacy provider:', err);
-      setProviderError(err instanceof Error ? err.message : 'Unknown error');
       return null;
     }
   }, []);
 
+  // Fetch wallet address on login
+  useEffect(() => {
+    if (account) {
+      account.getAddress().then(setAddress).catch(console.error);
+    }
+  }, [account]);
+
   const handleLogin = (acc: AccountType) => {
     setAccount(acc);
-    const newProvider = createProvider(acc, selectedProvider);
-    setProvider(newProvider);
-    setIsPrivacyEnabled(newProvider !== null);
+    setProviderError(null);
+
+    // Check if provider supports the account type
+    if (selectedProvider === 'shadowwire' && isMnemonicAccount(acc)) {
+      setProviderError('ShadowWire requires a browser wallet or Ledger. Please connect using a wallet adapter or Ledger.');
+    }
+
+    // Create initial providers for both forms
+    const newFundProvider = createProvider(acc, selectedProvider, fundAsset);
+    const newWithdrawProvider = createProvider(acc, selectedProvider, withdrawAsset);
+    setFundProvider(newFundProvider);
+    setWithdrawProvider(newWithdrawProvider);
   };
 
-  const handleProviderChange = (_: React.MouseEvent<HTMLElement>, newProvider: ProviderName | null) => {
-    if (newProvider && account) {
-      setSelectedProvider(newProvider);
+  const handleProviderChange = (_: React.MouseEvent<HTMLElement>, newProviderName: ProviderName | null) => {
+    if (newProviderName && account) {
+      setSelectedProvider(newProviderName);
+      setProviderError(null);
+
+      // Check if new provider supports the account type
+      if (newProviderName === 'shadowwire' && isMnemonicAccount(account)) {
+        setProviderError('ShadowWire requires a browser wallet or Ledger. Please connect using a wallet adapter or Ledger.');
+        setFundProvider(null);
+        setWithdrawProvider(null);
+        return;
+      }
+
+      // Reset to SOL if current assets not supported by new provider
+      const newAssets = newProviderName === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
+
+      const newFundAsset = newAssets.includes(fundAsset as never) ? fundAsset : 'SOL';
+      const newWithdrawAsset = newAssets.includes(withdrawAsset as never) ? withdrawAsset : 'SOL';
+
+      setFundAsset(newFundAsset);
+      setWithdrawAsset(newWithdrawAsset);
       setPrivateBalance(0n);
-      const newProviderInstance = createProvider(account, newProvider);
-      setProvider(newProviderInstance);
-      setIsPrivacyEnabled(newProviderInstance !== null);
+      setWalletBalance(0n);
+
+      // Recreate providers with new provider type
+      const newFundProvider = createProvider(account, newProviderName, newFundAsset);
+      const newWithdrawProvider = createProvider(account, newProviderName, newWithdrawAsset);
+      setFundProvider(newFundProvider);
+      setWithdrawProvider(newWithdrawProvider);
+    }
+  };
+
+  const handleFundAssetChange = (newAsset: string) => {
+    setFundAsset(newAsset);
+    setWalletBalance(0n);
+
+    if (account) {
+      const newProvider = createProvider(account, selectedProvider, newAsset);
+      setFundProvider(newProvider);
+    }
+  };
+
+  const handleWithdrawAssetChange = (newAsset: string) => {
+    setWithdrawAsset(newAsset);
+    setPrivateBalance(0n);
+
+    if (account) {
+      const newProvider = createProvider(account, selectedProvider, newAsset);
+      setWithdrawProvider(newProvider);
     }
   };
 
   const handleLogout = () => {
     setAccount(null);
-    setProvider(null);
+    setAddress('');
+    setFundProvider(null);
+    setWithdrawProvider(null);
     setPrivateBalance(0n);
-    setIsPrivacyEnabled(false);
+    setWalletBalance(0n);
     setProviderError(null);
   };
 
-  const refreshBalance = useCallback(async () => {
-    if (!provider) return;
+  // Fetch wallet balance for fund form
+  const refreshWalletBalance = useCallback(async () => {
+    if (!account) return;
 
-    setBalanceLoading(true);
+    setWalletBalanceLoading(true);
     try {
-      const balance = await provider.getPrivateBalance();
+      if (fundAsset === 'SOL') {
+        const balance = await account.getBalance();
+        setWalletBalance(balance);
+      } else {
+        // TODO: Fetch SPL token balance
+        setWalletBalance(0n);
+      }
+    } catch (err) {
+      console.error('Failed to fetch wallet balance:', err);
+    } finally {
+      setWalletBalanceLoading(false);
+    }
+  }, [account, fundAsset]);
+
+  // Fetch private balance for withdraw form
+  const refreshPrivateBalance = useCallback(async () => {
+    if (!withdrawProvider) return;
+
+    setPrivateBalanceLoading(true);
+    try {
+      const balance = await withdrawProvider.getPrivateBalance();
       setPrivateBalance(balance);
     } catch (err) {
       console.error('Failed to fetch private balance:', err);
     } finally {
-      setBalanceLoading(false);
+      setPrivateBalanceLoading(false);
     }
-  }, [provider]);
+  }, [withdrawProvider]);
 
-  // Fetch private balance when provider is ready
+  // Fetch balances when providers change
   useEffect(() => {
-    if (provider) {
-      refreshBalance();
+    if (account) {
+      refreshWalletBalance();
     }
-  }, [provider, refreshBalance]);
+  }, [account, fundAsset, refreshWalletBalance]);
+
+  useEffect(() => {
+    if (withdrawProvider) {
+      refreshPrivateBalance();
+    }
+  }, [withdrawProvider, refreshPrivateBalance]);
+
+  const shortenAddress = (addr: string): string => {
+    if (addr.length <= 12) return addr;
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -225,8 +332,34 @@ function AppContent() {
         </Box>
       ) : (
         <>
+          {/* Header with address and logout */}
+          <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="body2" color="text.secondary">
+                  Connected:
+                </Typography>
+                <Chip
+                  label={shortenAddress(address)}
+                  size="small"
+                  onClick={() => navigator.clipboard.writeText(address)}
+                  sx={{ fontFamily: 'monospace', cursor: 'pointer' }}
+                  title="Click to copy"
+                />
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </Box>
+          </Paper>
+
           {/* Provider Selector */}
-          <Box display="flex" justifyContent="center" alignItems="center" mb={4} gap={2}>
+          <Box display="flex" justifyContent="center" alignItems="center" mb={2} gap={2}>
             <Typography variant="body2" color="text.secondary">
               Privacy Provider:
             </Typography>
@@ -239,7 +372,7 @@ function AppContent() {
               <ToggleButton value="shadowwire" sx={{ px: 3 }}>
                 <Box display="flex" alignItems="center" gap={1}>
                   ShadowWire
-                  <Chip label="Simple" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />
+                  <Chip label="22 tokens" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />
                 </Box>
               </ToggleButton>
               <ToggleButton value="privacy-cash" sx={{ px: 3 }}>
@@ -255,7 +388,7 @@ function AppContent() {
           <Box textAlign="center" mb={3}>
             {selectedProvider === 'shadowwire' ? (
               <Typography variant="caption" color="text.secondary">
-                API-based privacy pool (custodial) - 0.5% fee - Supports 22 tokens
+                API-based privacy pool (custodial) - 0.5% fee
               </Typography>
             ) : (
               <Typography variant="caption" color="text.secondary">
@@ -264,41 +397,37 @@ function AppContent() {
             )}
           </Box>
 
-          <BalanceDisplay
-            account={account as Account}
-            privateBalance={privateBalance}
-            balanceLoading={balanceLoading}
-            onLogout={handleLogout}
-            onRefresh={refreshBalance}
-            providerName={provider?.name}
-          />
-
           {providerError && (
             <Alert severity="error" sx={{ mb: 4 }}>
               {providerError}
             </Alert>
           )}
 
-          {!isPrivacyEnabled && !providerError && (
-            <Alert severity="warning" sx={{ mb: 4 }}>
-              Privacy features unavailable. Please reconnect your wallet.
-            </Alert>
-          )}
-
           <Grid container spacing={4} justifyContent="center" mt={2}>
             <Grid size={{ xs: 12, md: 6 }}>
               <FundForm
-                account={account as Account}
-                provider={provider}
-                onSuccess={refreshBalance}
+                account={account}
+                provider={fundProvider}
+                onSuccess={refreshPrivateBalance}
+                asset={fundAsset}
+                decimals={getDecimals(fundAsset)}
+                availableAssets={availableAssets as string[]}
+                onAssetChange={handleFundAssetChange}
+                walletBalance={walletBalance}
+                walletBalanceLoading={walletBalanceLoading}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <WithdrawForm
-                account={account as Account}
-                provider={provider}
+                account={account}
+                provider={withdrawProvider}
                 privateBalance={privateBalance}
-                onSuccess={refreshBalance}
+                privateBalanceLoading={privateBalanceLoading}
+                onSuccess={refreshWalletBalance}
+                asset={withdrawAsset}
+                decimals={getDecimals(withdrawAsset)}
+                availableAssets={availableAssets as string[]}
+                onAssetChange={handleWithdrawAssetChange}
               />
             </Grid>
           </Grid>

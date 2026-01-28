@@ -7,6 +7,10 @@ import {
   Box,
   Alert,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import type { WithdrawStatus } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
@@ -19,15 +23,41 @@ interface WithdrawFormProps {
   account: Account;
   provider: ProviderType | null;
   privateBalance: bigint;
+  privateBalanceLoading?: boolean;
   onSuccess: () => void;
+  asset: string;
+  decimals: number;
+  availableAssets: string[];
+  onAssetChange: (asset: string) => void;
 }
 
-export function WithdrawForm({ account, provider, privateBalance, onSuccess }: WithdrawFormProps) {
+export function WithdrawForm({
+  account,
+  provider,
+  privateBalance,
+  privateBalanceLoading,
+  onSuccess,
+  asset,
+  decimals,
+  availableAssets,
+  onAssetChange,
+}: WithdrawFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<WithdrawStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const toBaseUnits = (value: string): bigint => {
+    const [whole = '0', decimal = ''] = value.split('.');
+    const paddedDecimal = decimal.padEnd(decimals, '0').slice(0, decimals);
+    return BigInt(whole + paddedDecimal);
+  };
+
+  const formatBalance = (amount: bigint): string => {
+    const divisor = Math.pow(10, decimals);
+    return (Number(amount) / divisor).toFixed(4);
+  };
 
   const handleWithdraw = async () => {
     if (!destinationAddress) {
@@ -48,12 +78,12 @@ export function WithdrawForm({ account, provider, privateBalance, onSuccess }: W
     setStatus({ stage: 'preparing' });
 
     try {
-      // Convert SOL to lamports
-      const lamports = account.assetToBaseUnits(amount);
+      // Convert to base units
+      const baseUnits = asset === 'SOL' ? account.assetToBaseUnits(amount) : toBaseUnits(amount);
 
       await provider.withdraw({
         destination: { address: destinationAddress },
-        amount: lamports.toString(),
+        amount: baseUnits.toString(),
         onStatusChange: setStatus,
       });
 
@@ -101,11 +131,36 @@ export function WithdrawForm({ account, provider, privateBalance, onSuccess }: W
 
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
-      <Typography variant="h5" fontWeight={600} mb={3}>
+      <Typography variant="h5" fontWeight={600} mb={2}>
         Withdraw
       </Typography>
 
       <Box component="form" noValidate autoComplete="off">
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Asset</InputLabel>
+          <Select
+            value={asset}
+            label="Asset"
+            onChange={(e) => onAssetChange(e.target.value)}
+            disabled={loading}
+          >
+            {availableAssets.map((a) => (
+              <MenuItem key={a} value={a}>
+                {a}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Private Balance
+          </Typography>
+          <Typography variant="h6" fontWeight={600} color="secondary">
+            {privateBalanceLoading ? '...' : `${formatBalance(privateBalance)} ${asset}`}
+          </Typography>
+        </Box>
+
         <TextField
           fullWidth
           label="Destination Address"
@@ -118,22 +173,19 @@ export function WithdrawForm({ account, provider, privateBalance, onSuccess }: W
 
         <TextField
           fullWidth
-          label="Amount (SOL)"
+          label={`Amount (${asset})`}
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.0"
           disabled={loading}
-          sx={{ mb: 1 }}
+          sx={{ mb: 2 }}
           slotProps={{
             input: {
               inputProps: { min: 0, step: 0.001 },
             },
           }}
-          helperText={`Available: ${(Number(privateBalance) / 1_000_000_000).toFixed(4)} SOL`}
         />
-
-        <Box mb={2} />
 
         {error && status?.stage !== 'failed' && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -151,7 +203,7 @@ export function WithdrawForm({ account, provider, privateBalance, onSuccess }: W
           fullWidth
           variant="contained"
           size="large"
-          onClick={handleWithdraw}
+          onClick={() => void handleWithdraw()}
           disabled={loading || !destinationAddress || !amount || !provider}
           sx={{
             py: 1.5,
@@ -164,7 +216,7 @@ export function WithdrawForm({ account, provider, privateBalance, onSuccess }: W
           {loading ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
-            'Withdraw'
+            `Withdraw ${asset}`
           )}
         </Button>
       </Box>
