@@ -100,8 +100,15 @@ function AppContent() {
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>('shadowwire');
   const [providerError, setProviderError] = useState<string | null>(null);
 
-  // Token prices from NEAR Intents
-  const { formatUsdValue } = useTokenPrices();
+  // Token prices and tokens from NEAR Intents
+  const { formatUsdValue, tokens: nearIntentsTokens } = useTokenPrices();
+
+  // Get unique Solana assets from NEAR Intents
+  const nearIntentsSolanaAssets = [...new Set(
+    nearIntentsTokens
+      .filter((t) => t.blockchain === 'sol')
+      .map((t) => t.symbol)
+  )];
 
   // Separate state for Fund form
   const [fundAsset, setFundAsset] = useState<string>('SOL');
@@ -115,13 +122,22 @@ function AppContent() {
   const [privateBalance, setPrivateBalance] = useState<bigint>(0n);
   const [privateBalanceLoading, setPrivateBalanceLoading] = useState(false);
 
-  // Get available assets for current provider
-  const availableAssets = selectedProvider === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
+  // Get available assets: provider assets + NEAR Intents Solana assets
+  const providerAssets = selectedProvider === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
+  const availableAssets = [
+    ...providerAssets,
+    ...nearIntentsSolanaAssets.filter((a) => !providerAssets.includes(a as never)),
+  ];
 
   // Get decimals for an asset
   const getDecimals = (asset: string) => {
     if (asset === 'SOL') return 9;
-    return 6; // USDC, USDT, and most SPL tokens
+    // Check NEAR Intents tokens for decimals
+    const nearToken = nearIntentsTokens.find(
+      (t) => t.symbol === asset && t.blockchain === 'sol'
+    );
+    if (nearToken?.decimals) return nearToken.decimals;
+    return 6; // USDC, USDT, and most SPL tokens default
   };
 
   // Create provider based on selection
@@ -207,11 +223,15 @@ function AppContent() {
         return;
       }
 
-      // Reset to SOL if current assets not supported by new provider
-      const newAssets = newProviderName === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
+      // Reset to SOL if current assets not supported by new provider or NEAR Intents
+      const newProviderAssets = newProviderName === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
+      const allNewAssets = [
+        ...newProviderAssets,
+        ...nearIntentsSolanaAssets.filter((a) => !newProviderAssets.includes(a as never)),
+      ];
 
-      const newFundAsset = newAssets.includes(fundAsset as never) ? fundAsset : 'SOL';
-      const newWithdrawAsset = newAssets.includes(withdrawAsset as never) ? withdrawAsset : 'SOL';
+      const newFundAsset = allNewAssets.includes(fundAsset) ? fundAsset : 'SOL';
+      const newWithdrawAsset = allNewAssets.includes(withdrawAsset) ? withdrawAsset : 'SOL';
 
       setFundAsset(newFundAsset);
       setWithdrawAsset(newWithdrawAsset);
@@ -295,8 +315,16 @@ function AppContent() {
         const rpcUrl = import.meta.env.VITE_SOLANA_RPC_URL as string || 'https://api.mainnet-beta.solana.com';
         const connection = new Connection(rpcUrl, 'confirmed');
 
-        // Get mint address from either ShadowWire or PrivacyCash mints
-        const mintAddress = TOKEN_MINTS[fundAsset as ShadowWireToken] || SPL_MINTS[fundAsset as PrivacyCashAsset];
+        // Get mint address from ShadowWire, PrivacyCash, or NEAR Intents tokens
+        let mintAddress = TOKEN_MINTS[fundAsset as ShadowWireToken] || SPL_MINTS[fundAsset as PrivacyCashAsset];
+
+        // If not found in provider mints, try NEAR Intents tokens
+        if (!mintAddress) {
+          const nearIntentsToken = nearIntentsTokens.find(
+            (t) => t.symbol === fundAsset && t.blockchain === 'sol'
+          );
+          mintAddress = nearIntentsToken?.address;
+        }
 
         if (!mintAddress) {
           console.warn(`No mint address found for ${fundAsset}`);
@@ -329,7 +357,7 @@ function AppContent() {
     } finally {
       setWalletBalanceLoading(false);
     }
-  }, [account, fundAsset]);
+  }, [account, fundAsset, nearIntentsTokens]);
 
   // Fetch private balance for withdraw form
   const refreshPrivateBalance = useCallback(async () => {
@@ -476,6 +504,7 @@ function AppContent() {
                 walletBalance={walletBalance}
                 walletBalanceLoading={walletBalanceLoading}
                 formatUsdValue={formatUsdValue}
+                nearIntentsTokens={nearIntentsTokens}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
