@@ -285,6 +285,7 @@ export class ShadowWireProvider {
   }): Promise<void> {
     const { destination, amount, onStatusChange } = params;
     const wallet = this.getWalletAddress();
+    this.log('Withdraw destination:', destination);
     const recipient = destination.address || wallet;
 
     try {
@@ -299,6 +300,7 @@ export class ShadowWireProvider {
 
       // Step 1: Get unsigned transaction from API
       this.log('Requesting withdraw transaction...');
+      this.log('Withdraw params:', { wallet, recipient, amount: Number(baseUnits), token: this.token });
       const response = await this.apiRequest<WithdrawResponse>('/pool/withdraw', 'POST', {
         wallet,
         amount: Number(baseUnits),
