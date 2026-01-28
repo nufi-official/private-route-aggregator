@@ -64,6 +64,7 @@ export class ShadowWireProvider {
    */
   private log(...args: unknown[]): void {
     if (this.debug) {
+      // eslint-disable-next-line no-console
       console.log('[ShadowWire]', ...args);
     }
   }
