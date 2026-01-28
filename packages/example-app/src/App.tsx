@@ -221,23 +221,47 @@ function AppContent() {
     }
   };
 
-  const handleFundAssetChange = (newAsset: string) => {
+  const handleFundAssetChange = async (newAsset: string) => {
     setFundAsset(newAsset);
     setWalletBalance(0n);
 
     if (account) {
-      const newProvider = createProvider(account, selectedProvider, newAsset);
-      setFundProvider(newProvider);
+      // For PrivacyCash, reuse the existing provider and just change the asset
+      // This avoids requiring a new signature
+      if (selectedProvider === 'privacy-cash' && fundProvider instanceof PrivacyCashProvider) {
+        fundProvider.setAsset(newAsset as PrivacyCashAsset);
+      } else {
+        // For ShadowWire, we need to create a new provider
+        const newProvider = createProvider(account, selectedProvider, newAsset);
+        setFundProvider(newProvider);
+      }
     }
   };
 
-  const handleWithdrawAssetChange = (newAsset: string) => {
+  const handleWithdrawAssetChange = async (newAsset: string) => {
     setWithdrawAsset(newAsset);
     setPrivateBalance(0n);
 
     if (account) {
-      const newProvider = createProvider(account, selectedProvider, newAsset);
-      setWithdrawProvider(newProvider);
+      // For PrivacyCash, reuse the existing provider and just change the asset
+      // This avoids requiring a new signature
+      if (selectedProvider === 'privacy-cash' && withdrawProvider instanceof PrivacyCashProvider) {
+        withdrawProvider.setAsset(newAsset as PrivacyCashAsset);
+        // Fetch balance with new asset
+        setPrivateBalanceLoading(true);
+        try {
+          const balance = await withdrawProvider.getPrivateBalance();
+          setPrivateBalance(balance);
+        } catch (err) {
+          console.error('Failed to fetch private balance:', err);
+        } finally {
+          setPrivateBalanceLoading(false);
+        }
+      } else {
+        // For ShadowWire, we need to create a new provider
+        const newProvider = createProvider(account, selectedProvider, newAsset);
+        setWithdrawProvider(newProvider);
+      }
     }
   };
 

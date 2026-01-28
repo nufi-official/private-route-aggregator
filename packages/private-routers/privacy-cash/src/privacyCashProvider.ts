@@ -102,6 +102,21 @@ export class PrivacyCashProvider implements PrivacyProvider {
   private config: PrivacyCashConfig;
   private initialized = false;
 
+  /**
+   * Change the asset without re-initializing
+   * This avoids requiring a new signature when switching between SOL/USDC/USDT
+   */
+  setAsset(asset: PrivacyCashAsset): void {
+    this.asset = asset;
+  }
+
+  /**
+   * Get the current asset
+   */
+  getAsset(): PrivacyCashAsset {
+    return this.asset;
+  }
+
   constructor(config: PrivacyCashConfig, asset: PrivacyCashAsset = 'SOL') {
     this.config = config;
     this.asset = asset;
