@@ -19,6 +19,7 @@
     "@mui/material": "^6.4.0",
     "@privacy-router-sdk/privacy-cash": "workspace:*",
     "@privacy-router-sdk/shadowwire": "workspace:*",
+    "@privacy-router-sdk/near-intents": "workspace:*",
     "@privacy-router-sdk/private-routers-core": "workspace:*",
     "@privacy-router-sdk/signers-core": "workspace:*",
     "@privacy-router-sdk/solana-mnemonic": "workspace:*",

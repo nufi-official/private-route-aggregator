@@ -29,6 +29,7 @@ interface FundFormProps {
   onAssetChange: (asset: string) => void;
   walletBalance: bigint;
   walletBalanceLoading?: boolean;
+  formatUsdValue?: (symbol: string, amount: string) => string | null;
 }
 
 export function FundForm({
@@ -41,6 +42,7 @@ export function FundForm({
   onAssetChange,
   walletBalance,
   walletBalanceLoading,
+  formatUsdValue,
 }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
@@ -150,9 +152,16 @@ export function FundForm({
           <Typography variant="body2" color="text.secondary">
             Wallet Balance
           </Typography>
-          <Typography variant="h6" fontWeight={600} color="primary">
-            {walletBalanceLoading ? '...' : `${formatBalance(walletBalance)} ${asset}`}
-          </Typography>
+          <Box display="flex" alignItems="baseline" gap={1}>
+            <Typography variant="h6" fontWeight={600} color="primary">
+              {walletBalanceLoading ? '...' : `${formatBalance(walletBalance)} ${asset}`}
+            </Typography>
+            {!walletBalanceLoading && formatUsdValue && (
+              <Typography variant="body2" color="text.secondary">
+                {formatUsdValue(asset, formatBalance(walletBalance)) ?? ''}
+              </Typography>
+            )}
+          </Box>
         </Box>
 
         <TextField
@@ -169,6 +178,7 @@ export function FundForm({
               inputProps: { min: 0, step: 0.001 },
             },
           }}
+          helperText={amount && formatUsdValue ? formatUsdValue(asset, amount) : undefined}
         />
 
         {error && status?.stage !== 'failed' && (

@@ -16,6 +16,7 @@ import { WalletProvider } from './providers/WalletProvider';
 import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
 import { WithdrawForm } from './components/WithdrawForm';
+import { useTokenPrices } from './hooks/useTokenPrices';
 import { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
 import { ShadowWireProvider, SUPPORTED_TOKENS } from '@privacy-router-sdk/shadowwire';
 import type { ShadowWireToken } from '@privacy-router-sdk/shadowwire';
@@ -97,6 +98,9 @@ function AppContent() {
   const [address, setAddress] = useState<string>('');
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>('shadowwire');
   const [providerError, setProviderError] = useState<string | null>(null);
+
+  // Token prices from NEAR Intents
+  const { formatUsdValue } = useTokenPrices();
 
   // Separate state for Fund form
   const [fundAsset, setFundAsset] = useState<string>('SOL');
@@ -439,6 +443,7 @@ function AppContent() {
                 onAssetChange={handleFundAssetChange}
                 walletBalance={walletBalance}
                 walletBalanceLoading={walletBalanceLoading}
+                formatUsdValue={formatUsdValue}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -452,6 +457,7 @@ function AppContent() {
                 decimals={getDecimals(withdrawAsset)}
                 availableAssets={availableAssets as string[]}
                 onAssetChange={handleWithdrawAssetChange}
+                formatUsdValue={formatUsdValue}
               />
             </Grid>
           </Grid>

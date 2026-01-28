@@ -29,6 +29,7 @@ interface WithdrawFormProps {
   decimals: number;
   availableAssets: string[];
   onAssetChange: (asset: string) => void;
+  formatUsdValue?: (symbol: string, amount: string) => string | null;
 }
 
 export function WithdrawForm({
@@ -41,6 +42,7 @@ export function WithdrawForm({
   decimals,
   availableAssets,
   onAssetChange,
+  formatUsdValue,
 }: WithdrawFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
@@ -156,9 +158,16 @@ export function WithdrawForm({
           <Typography variant="body2" color="text.secondary">
             Private Balance
           </Typography>
-          <Typography variant="h6" fontWeight={600} color="secondary">
-            {privateBalanceLoading ? '...' : `${formatBalance(privateBalance)} ${asset}`}
-          </Typography>
+          <Box display="flex" alignItems="baseline" gap={1}>
+            <Typography variant="h6" fontWeight={600} color="secondary">
+              {privateBalanceLoading ? '...' : `${formatBalance(privateBalance)} ${asset}`}
+            </Typography>
+            {!privateBalanceLoading && formatUsdValue && (
+              <Typography variant="body2" color="text.secondary">
+                {formatUsdValue(asset, formatBalance(privateBalance)) ?? ''}
+              </Typography>
+            )}
+          </Box>
         </Box>
 
         <TextField
@@ -185,6 +194,7 @@ export function WithdrawForm({
               inputProps: { min: 0, step: 0.001 },
             },
           }}
+          helperText={amount && formatUsdValue ? formatUsdValue(asset, amount) : undefined}
         />
 
         {error && status?.stage !== 'failed' && (
