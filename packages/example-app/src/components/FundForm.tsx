@@ -115,7 +115,7 @@ export function FundForm({ account, provider, onSuccess }: FundFormProps) {
           }}
         />
 
-        {error && (
+        {error && status?.stage !== 'failed' && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>

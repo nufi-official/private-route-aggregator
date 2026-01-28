@@ -135,7 +135,7 @@ export function WithdrawForm({ account, provider, privateBalance, onSuccess }: W
 
         <Box mb={2} />
 
-        {error && (
+        {error && status?.stage !== 'failed' && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
