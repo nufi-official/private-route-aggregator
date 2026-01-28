@@ -1,0 +1,36 @@
+{
+  "name": "@privacy-router-sdk/solana-ledger",
+  "version": "0.1.0",
+  "description": "Solana Ledger hardware wallet signer for privacy transactions",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "dependencies": {
+    "@privacy-router-sdk/signers-core": "workspace:*",
+    "@ledgerhq/hw-transport-webhid": "^6.29.4",
+    "@ledgerhq/hw-app-solana": "^7.2.4",
+    "@solana/web3.js": "^1.95.8"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.2"
+  }
+}

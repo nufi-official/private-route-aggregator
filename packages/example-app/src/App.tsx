@@ -19,9 +19,10 @@ import { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
 import { ShadowWireProvider } from '@privacy-router-sdk/shadowwire';
 import type { SolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
 import type { WalletAdapterAccount } from '@privacy-router-sdk/solana-wallet-adapter';
+import type { LedgerAccount } from '@privacy-router-sdk/solana-ledger';
 import type { Account } from '@privacy-router-sdk/signers-core';
 
-type AccountType = SolanaAccount | WalletAdapterAccount;
+type AccountType = SolanaAccount | WalletAdapterAccount | LedgerAccount;
 type ProviderType = PrivacyCashProvider | ShadowWireProvider;
 type ProviderName = 'privacy-cash' | 'shadowwire';
 
@@ -33,6 +34,11 @@ function isMnemonicAccount(account: AccountType): account is SolanaAccount {
 // Type guard to check if account is a wallet adapter account
 function isWalletAdapterAccount(account: AccountType): account is WalletAdapterAccount {
   return 'getWallet' in account && typeof account.getWallet === 'function';
+}
+
+// Type guard to check if account is a Ledger account
+function isLedgerAccount(account: AccountType): account is LedgerAccount {
+  return 'getDerivationPath' in account && typeof account.getDerivationPath === 'function';
 }
 
 const darkTheme = createTheme({
@@ -105,6 +111,13 @@ function AppContent() {
             rpcUrl: acc.getRpcUrl(),
             walletSigner: acc.getWalletSigner(),
           });
+        } else if (isLedgerAccount(acc)) {
+          // Note: PrivacyCash may have issues with Ledger due to message signing limitations
+          // Ledger's off-chain message signing has strict format requirements
+          return new PrivacyCashProvider({
+            rpcUrl: acc.getRpcUrl(),
+            walletSigner: acc.getWalletSigner(),
+          });
         }
       } else if (providerName === 'shadowwire') {
         // ShadowWire only supports wallet signer mode
@@ -115,10 +128,17 @@ function AppContent() {
             token: 'SOL',
             enableDebug: true,
           });
+        } else if (isLedgerAccount(acc)) {
+          return new ShadowWireProvider({
+            walletSigner: acc.getWalletSigner(),
+            rpcUrl: acc.getRpcUrl(),
+            token: 'SOL',
+            enableDebug: true,
+          });
         } else if (isMnemonicAccount(acc)) {
           // For mnemonic accounts, we need to create a mock wallet signer
           // ShadowWire requires signMessage capability
-          setProviderError('ShadowWire requires a browser wallet. Please connect using a wallet adapter.');
+          setProviderError('ShadowWire requires a browser wallet or Ledger. Please connect using a wallet adapter or Ledger.');
           return null;
         }
       }

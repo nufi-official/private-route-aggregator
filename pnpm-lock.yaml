@@ -74,6 +74,9 @@ importers:
       '@privacy-router-sdk/signers-core':
         specifier: workspace:*
         version: link:../signers/core
+      '@privacy-router-sdk/solana-ledger':
+        specifier: workspace:*
+        version: link:../signers/solana-ledger
       '@privacy-router-sdk/solana-mnemonic':
         specifier: workspace:*
         version: link:../signers/solana-mnemonic
@@ -194,6 +197,28 @@ importers:
         version: 1.98.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
 
   packages/signers/core: {}
+
+  packages/signers/solana-ledger:
+    dependencies:
+      '@ledgerhq/hw-app-solana':
+        specifier: ^7.2.4
+        version: 7.7.0
+      '@ledgerhq/hw-transport-webhid':
+        specifier: ^6.29.4
+        version: 6.31.0
+      '@privacy-router-sdk/signers-core':
+        specifier: workspace:*
+        version: link:../core
+      '@solana/web3.js':
+        specifier: ^1.95.8
+        version: 1.98.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
+    devDependencies:
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(@swc/core@1.15.10(@swc/helpers@0.5.18))(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/signers/solana-mnemonic:
     dependencies:
@@ -1276,6 +1301,9 @@ packages:
 
   '@ledgerhq/errors@6.29.0':
     resolution: {integrity: sha512-mmDsGN662zd0XGKyjzSKkg+5o1/l9pvV1HkVHtbzaydvHAtRypghmVoWMY9XAQDLXiUBXGIsLal84NgmGeuKWA==}
+
+  '@ledgerhq/hw-app-solana@7.7.0':
+    resolution: {integrity: sha512-aeVno3LwhIraMxxxGcogujUFboscItti51MxVM8eSoCOBBACSA3lI06qbcnm+viEksIaHN5oObh44IT0GVf4dA==}
 
   '@ledgerhq/hw-transport-webhid@6.31.0':
     resolution: {integrity: sha512-XtCFOJ1ooaqCefB6WDfV/ie+GaO/7xQgezwRpyLroMBYboSpnEd3Diu3BAoptXKTNklwZEiUVRLVXlltTBzNvw==}
@@ -3231,6 +3259,9 @@ packages:
 
   bindings@1.5.0:
     resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
+
+  bip32-path@0.4.2:
+    resolution: {integrity: sha512-ZBMCELjJfcNMkz5bDuJ1WrYvjlhEF5k6mQ8vUr4N7MbVRsXei7ZOg8VhhwMfNiW68NWmLkgkc6WvTickrLGprQ==}
 
   bip39@3.1.0:
     resolution: {integrity: sha512-c9kiwdk45Do5GL0vJMe7tS95VjCii65mYAH7DfWl3uW8AVzXKQVUm64i3hzVybBDMp9r7j9iNxR85+ul8MdN/A==}
@@ -7366,6 +7397,12 @@ snapshots:
 
   '@ledgerhq/errors@6.29.0': {}
 
+  '@ledgerhq/hw-app-solana@7.7.0':
+    dependencies:
+      '@ledgerhq/errors': 6.29.0
+      '@ledgerhq/hw-transport': 6.32.0
+      bip32-path: 0.4.2
+
   '@ledgerhq/hw-transport-webhid@6.31.0':
     dependencies:
       '@ledgerhq/devices': 8.10.0
@@ -10684,6 +10721,8 @@ snapshots:
   bindings@1.5.0:
     dependencies:
       file-uri-to-path: 1.0.0
+
+  bip32-path@0.4.2: {}
 
   bip39@3.1.0:
     dependencies:

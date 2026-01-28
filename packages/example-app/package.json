@@ -23,6 +23,7 @@
     "@privacy-router-sdk/signers-core": "workspace:*",
     "@privacy-router-sdk/solana-mnemonic": "workspace:*",
     "@privacy-router-sdk/solana-wallet-adapter": "workspace:*",
+    "@privacy-router-sdk/solana-ledger": "workspace:*",
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/wallet-adapter-wallets": "^0.19.37",

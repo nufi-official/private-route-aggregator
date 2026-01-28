@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Tabs,
   Tab,
+  Chip,
 } from '@mui/material';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -17,8 +18,12 @@ import {
   createWalletAdapterAccount,
   WalletAdapterAccount,
 } from '@privacy-router-sdk/solana-wallet-adapter';
+import {
+  LedgerAccount,
+  type LedgerConnectionStatus,
+} from '@privacy-router-sdk/solana-ledger';
 
-type AccountType = SolanaAccount | WalletAdapterAccount;
+type AccountType = SolanaAccount | WalletAdapterAccount | LedgerAccount;
 
 interface LoginFormProps {
   onLogin: (account: AccountType) => void;
@@ -29,6 +34,11 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   const [mnemonic, setMnemonic] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ledger state
+  const [ledgerAccount, setLedgerAccount] = useState<LedgerAccount | null>(null);
+  const [ledgerStatus, setLedgerStatus] = useState<LedgerConnectionStatus>('disconnected');
+  const [ledgerAddress, setLedgerAddress] = useState<string | null>(null);
 
   const wallet = useWallet();
 
@@ -86,6 +96,80 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     }
   };
 
+  const handleLedgerConnect = async () => {
+    setLoading(true);
+    setError(null);
+    setLedgerStatus('connecting');
+
+    try {
+      const account = new LedgerAccount({
+        network: 'mainnet',
+        accountIndex: 0,
+        rpcUrl: import.meta.env.VITE_SOLANA_RPC_URL,
+      });
+
+      await account.connect();
+
+      const address = await account.getAddress();
+      setLedgerAccount(account);
+      setLedgerAddress(address);
+      setLedgerStatus('connected');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to connect to Ledger';
+      setError(errorMessage);
+      setLedgerStatus('error');
+      setLedgerAccount(null);
+      setLedgerAddress(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLedgerDisconnect = async () => {
+    if (ledgerAccount) {
+      await ledgerAccount.disconnect();
+    }
+    setLedgerAccount(null);
+    setLedgerAddress(null);
+    setLedgerStatus('disconnected');
+  };
+
+  const handleLedgerLogin = () => {
+    if (!ledgerAccount || ledgerStatus !== 'connected') {
+      setError('Please connect your Ledger first');
+      return;
+    }
+
+    setError(null);
+    onLogin(ledgerAccount);
+  };
+
+  const getLedgerStatusColor = () => {
+    switch (ledgerStatus) {
+      case 'connected':
+        return 'success';
+      case 'connecting':
+        return 'warning';
+      case 'error':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getLedgerStatusText = () => {
+    switch (ledgerStatus) {
+      case 'connected':
+        return 'Connected';
+      case 'connecting':
+        return 'Connecting...';
+      case 'error':
+        return 'Error';
+      default:
+        return 'Disconnected';
+    }
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
       <Typography variant="h5" fontWeight={600} mb={1}>
@@ -104,6 +188,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         sx={{ mb: 3 }}
       >
         <Tab label="Browser Wallet" />
+        <Tab label="Ledger" />
         <Tab label="Mnemonic" />
       </Tabs>
 
@@ -113,6 +198,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         </Alert>
       )}
 
+      {/* Browser Wallet Tab */}
       {tab === 0 && (
         <Box>
           <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
@@ -144,7 +230,93 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         </Box>
       )}
 
+      {/* Ledger Tab */}
       {tab === 1 && (
+        <Box>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Connect your Ledger device and open the Solana app before connecting.
+          </Alert>
+
+          <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Typography variant="body2" color="text.secondary">
+                Status:
+              </Typography>
+              <Chip
+                label={getLedgerStatusText()}
+                color={getLedgerStatusColor()}
+                size="small"
+              />
+            </Box>
+
+            {ledgerStatus === 'disconnected' && (
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                onClick={handleLedgerConnect}
+                disabled={loading}
+                sx={{ py: 1.5 }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Connect Ledger'
+                )}
+              </Button>
+            )}
+
+            {ledgerStatus === 'connected' && ledgerAddress && (
+              <>
+                <Typography variant="body2" color="success.main">
+                  Address: {ledgerAddress.slice(0, 8)}...{ledgerAddress.slice(-4)}
+                </Typography>
+
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  onClick={handleLedgerLogin}
+                  sx={{
+                    py: 1.5,
+                    background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
+                    },
+                  }}
+                >
+                  Continue with Ledger
+                </Button>
+
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={handleLedgerDisconnect}
+                  color="inherit"
+                >
+                  Disconnect
+                </Button>
+              </>
+            )}
+
+            {ledgerStatus === 'error' && (
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                onClick={handleLedgerConnect}
+                disabled={loading}
+                sx={{ py: 1.5 }}
+              >
+                Retry Connection
+              </Button>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Mnemonic Tab */}
+      {tab === 2 && (
         <Box component="form" noValidate autoComplete="off">
           <TextField
             fullWidth
