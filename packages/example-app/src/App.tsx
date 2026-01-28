@@ -110,6 +110,12 @@ function AppContent() {
       .map((t) => t.symbol)
   )];
 
+  // Get non-Solana NEAR Intents assets (for cross-chain deposits)
+  // Format: "SYMBOL:CHAIN" (e.g., "USDC:eth")
+  const nearIntentsCrossChainAssets = nearIntentsTokens
+    .filter((t) => t.blockchain !== 'sol')
+    .map((t) => `${t.symbol}:${t.blockchain}`);
+
   // Separate state for Fund form
   const [fundAsset, setFundAsset] = useState<string>('SOL');
   const [fundProvider, setFundProvider] = useState<ProviderType | null>(null);
@@ -124,15 +130,30 @@ function AppContent() {
 
   // Get available assets: provider assets + NEAR Intents Solana assets
   const providerAssets = selectedProvider === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
-  const availableAssets = [
+  const solanaOnlyAssets = [
     ...providerAssets,
     ...nearIntentsSolanaAssets.filter((a) => !providerAssets.includes(a as never)),
   ];
+  // Fund form also gets cross-chain assets for deposits from other chains
+  const fundAvailableAssets = [
+    ...solanaOnlyAssets,
+    ...nearIntentsCrossChainAssets,
+  ];
 
-  // Get decimals for an asset
+  // Get decimals for an asset (handles both "SYMBOL" and "SYMBOL:CHAIN" formats)
   const getDecimals = (asset: string) => {
     if (asset === 'SOL') return 9;
-    // Check NEAR Intents tokens for decimals
+
+    // Check if it's a cross-chain asset (SYMBOL:CHAIN format)
+    if (asset.includes(':')) {
+      const [symbol, chain] = asset.split(':');
+      const nearToken = nearIntentsTokens.find(
+        (t) => t.symbol === symbol && t.blockchain === chain
+      );
+      if (nearToken?.decimals) return nearToken.decimals;
+    }
+
+    // Check NEAR Intents tokens for decimals (Solana)
     const nearToken = nearIntentsTokens.find(
       (t) => t.symbol === asset && t.blockchain === 'sol'
     );
@@ -225,13 +246,14 @@ function AppContent() {
 
       // Reset to SOL if current assets not supported by new provider or NEAR Intents
       const newProviderAssets = newProviderName === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
-      const allNewAssets = [
+      const newSolanaAssets = [
         ...newProviderAssets,
         ...nearIntentsSolanaAssets.filter((a) => !newProviderAssets.includes(a as never)),
       ];
+      const newFundAssets = [...newSolanaAssets, ...nearIntentsCrossChainAssets];
 
-      const newFundAsset = allNewAssets.includes(fundAsset) ? fundAsset : 'SOL';
-      const newWithdrawAsset = allNewAssets.includes(withdrawAsset) ? withdrawAsset : 'SOL';
+      const newFundAsset = newFundAssets.includes(fundAsset) ? fundAsset : 'SOL';
+      const newWithdrawAsset = newSolanaAssets.includes(withdrawAsset) ? withdrawAsset : 'SOL';
 
       setFundAsset(newFundAsset);
       setWithdrawAsset(newWithdrawAsset);
@@ -249,6 +271,12 @@ function AppContent() {
   const handleFundAssetChange = async (newAsset: string) => {
     setFundAsset(newAsset);
     setWalletBalance(0n);
+
+    // Cross-chain assets (format: SYMBOL:CHAIN) don't need a provider
+    // They use NEAR Intents directly
+    if (newAsset.includes(':')) {
+      return;
+    }
 
     if (account) {
       // For PrivacyCash, reuse the existing provider and just change the asset
@@ -303,6 +331,12 @@ function AppContent() {
   // Fetch wallet balance for fund form
   const refreshWalletBalance = useCallback(async () => {
     if (!account) return;
+
+    // Skip balance fetch for cross-chain assets (not on Solana)
+    if (fundAsset.includes(':')) {
+      setWalletBalance(0n);
+      return;
+    }
 
     setWalletBalanceLoading(true);
     try {
@@ -499,7 +533,7 @@ function AppContent() {
                 onSuccess={refreshPrivateBalance}
                 asset={fundAsset}
                 decimals={getDecimals(fundAsset)}
-                availableAssets={availableAssets as string[]}
+                availableAssets={fundAvailableAssets}
                 onAssetChange={handleFundAssetChange}
                 walletBalance={walletBalance}
                 walletBalanceLoading={walletBalanceLoading}
@@ -516,7 +550,7 @@ function AppContent() {
                 onSuccess={refreshWalletBalance}
                 asset={withdrawAsset}
                 decimals={getDecimals(withdrawAsset)}
-                availableAssets={availableAssets as string[]}
+                availableAssets={solanaOnlyAssets}
                 onAssetChange={handleWithdrawAssetChange}
                 formatUsdValue={formatUsdValue}
               />
