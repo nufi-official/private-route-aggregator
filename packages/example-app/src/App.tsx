@@ -17,9 +17,10 @@ import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
 import { WithdrawForm } from './components/WithdrawForm';
 import { useTokenPrices } from './hooks/useTokenPrices';
-import { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
-import { ShadowWireProvider, SUPPORTED_TOKENS } from '@privacy-router-sdk/shadowwire';
+import { PrivacyCashProvider, SPL_MINTS } from '@privacy-router-sdk/privacy-cash';
+import { ShadowWireProvider, SUPPORTED_TOKENS, TOKEN_MINTS } from '@privacy-router-sdk/shadowwire';
 import type { ShadowWireToken } from '@privacy-router-sdk/shadowwire';
+import { Connection, PublicKey } from '@solana/web3.js';
 import type { PrivacyCashAsset } from '@privacy-router-sdk/privacy-cash';
 import type { SolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
 import type { WalletAdapterAccount } from '@privacy-router-sdk/solana-wallet-adapter';
@@ -289,11 +290,42 @@ function AppContent() {
         const balance = await account.getBalance();
         setWalletBalance(balance);
       } else {
-        // TODO: Fetch SPL token balance
-        setWalletBalance(0n);
+        // Fetch SPL token balance
+        const walletAddress = await account.getAddress();
+        const rpcUrl = import.meta.env.VITE_SOLANA_RPC_URL as string || 'https://api.mainnet-beta.solana.com';
+        const connection = new Connection(rpcUrl, 'confirmed');
+
+        // Get mint address from either ShadowWire or PrivacyCash mints
+        const mintAddress = TOKEN_MINTS[fundAsset as ShadowWireToken] || SPL_MINTS[fundAsset as PrivacyCashAsset];
+
+        if (!mintAddress) {
+          console.warn(`No mint address found for ${fundAsset}`);
+          setWalletBalance(0n);
+          return;
+        }
+
+        const walletPubkey = new PublicKey(walletAddress);
+        const mintPubkey = new PublicKey(mintAddress);
+
+        // Find token accounts for this mint owned by the wallet
+        const tokenAccounts = await connection.getTokenAccountsByOwner(walletPubkey, {
+          mint: mintPubkey,
+        });
+
+        if (tokenAccounts.value.length === 0) {
+          setWalletBalance(0n);
+        } else {
+          // Parse the token account data to get balance
+          const accountInfo = tokenAccounts.value[0].account;
+          // Token account data: first 64 bytes are mint (32) and owner (32), then 8 bytes for amount
+          const data = accountInfo.data;
+          const amount = data.readBigUInt64LE(64);
+          setWalletBalance(amount);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch wallet balance:', err);
+      setWalletBalance(0n);
     } finally {
       setWalletBalanceLoading(false);
     }
