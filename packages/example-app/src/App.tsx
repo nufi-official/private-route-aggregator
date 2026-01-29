@@ -445,6 +445,18 @@ function AppContent() {
                   sx={{ fontFamily: 'monospace', cursor: 'pointer' }}
                   title="Click to copy"
                 />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    refreshWalletBalance();
+                    refreshPrivateBalance();
+                  }}
+                  disabled={walletBalanceLoading || privateBalanceLoading}
+                  sx={{ minWidth: 'auto', px: 1.5 }}
+                >
+                  {walletBalanceLoading || privateBalanceLoading ? '...' : 'Refresh'}
+                </Button>
               </Box>
               <Button
                 variant="outlined"
