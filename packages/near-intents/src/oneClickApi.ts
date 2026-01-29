@@ -3,6 +3,7 @@ import {
   OpenAPI,
   OneClickService,
   QuoteRequest,
+  ApiError,
 } from '@defuse-protocol/one-click-sdk-typescript';
 
 import { sleep } from './utils';
@@ -61,7 +62,21 @@ export const OneClickApi = (config: OneClickApiConfig = {}): SwapApi => {
         quoteWaitingTimeMs: 3000,
       };
 
-      return OneClickService.getQuote(quoteRequest);
+      try {
+        return await OneClickService.getQuote(quoteRequest);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          // Extract more details from the API error
+          const errorBody = err.body as { message?: string; error?: string; details?: unknown } | undefined;
+          const errorMessage = errorBody?.message || errorBody?.error || err.message;
+          const detailedError = new Error(
+            `Quote failed (${err.status}): ${errorMessage}${errorBody?.details ? ` - ${JSON.stringify(errorBody.details)}` : ''}`
+          );
+          (detailedError as Error & { cause?: unknown }).cause = err;
+          throw detailedError;
+        }
+        throw err;
+      }
     },
 
     submitTxHash: async (params: SubmitTxHashParams) => {

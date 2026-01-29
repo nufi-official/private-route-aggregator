@@ -97,21 +97,24 @@ function AppContent() {
   const [providerError, setProviderError] = useState<string | null>(null);
 
   // Token prices and tokens from NEAR Intents
-  const { formatUsdValue, convertAmount, tokens: nearIntentsTokens } = useTokenPrices();
+  const { formatUsdValue, convertAmount, tokens: nearIntentsTokens, loading: pricesLoading } = useTokenPrices();
 
   // All NEAR Intents tokens: Solana tokens by symbol, cross-chain as "SYMBOL:CHAIN"
-  const nearIntentsAssets = [
-    // Solana tokens (just symbol)
-    ...new Set(
-      nearIntentsTokens
-        .filter((t) => t.blockchain === 'sol')
-        .map((t) => t.symbol)
-    ),
-    // Cross-chain tokens (SYMBOL:CHAIN format)
-    ...nearIntentsTokens
-      .filter((t) => t.blockchain !== 'sol')
-      .map((t) => `${t.symbol}:${t.blockchain}`),
-  ];
+  // Always include SOL as fallback
+  const nearIntentsAssets = nearIntentsTokens.length > 0
+    ? [
+        // Solana tokens (just symbol)
+        ...new Set(
+          nearIntentsTokens
+            .filter((t) => t.blockchain === 'sol')
+            .map((t) => t.symbol)
+        ),
+        // Cross-chain tokens (SYMBOL:CHAIN format)
+        ...nearIntentsTokens
+          .filter((t) => t.blockchain !== 'sol')
+          .map((t) => `${t.symbol}:${t.blockchain}`),
+      ]
+    : ['SOL', 'USDC', 'USDT']; // Fallback if tokens haven't loaded
 
   // Separate state for Fund form
   const [fundAsset, setFundAsset] = useState<string>('SOL');
@@ -527,6 +530,8 @@ function AppContent() {
                 onAssetChange={handleWithdrawAssetChange}
                 formatUsdValue={formatUsdValue}
                 convertAmount={convertAmount}
+                nearIntentsTokens={nearIntentsTokens}
+                pricesLoading={pricesLoading}
               />
             </Grid>
           </Grid>
