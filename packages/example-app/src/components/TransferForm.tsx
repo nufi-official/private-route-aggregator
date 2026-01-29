@@ -11,6 +11,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  ListSubheader,
 } from '@mui/material';
 import type { WithdrawStatus } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
@@ -23,6 +24,69 @@ import {
 } from '@privacy-router-sdk/near-intents';
 
 type ProviderType = PrivacyCashProvider | ShadowWireProvider;
+
+// Chain display names
+const CHAIN_NAMES: Record<string, string> = {
+  sol: 'Solana',
+  eth: 'Ethereum',
+  base: 'Base',
+  arb: 'Arbitrum',
+  btc: 'Bitcoin',
+  near: 'NEAR',
+  ton: 'TON',
+  doge: 'Dogecoin',
+  xrp: 'XRP',
+  zec: 'Zcash',
+  gnosis: 'Gnosis',
+  bera: 'Berachain',
+  bsc: 'BNB Chain',
+  pol: 'Polygon',
+  tron: 'TRON',
+  sui: 'Sui',
+  op: 'Optimism',
+  avax: 'Avalanche',
+  cardano: 'Cardano',
+  ltc: 'Litecoin',
+  xlayer: 'X Layer',
+  monad: 'Monad',
+  bch: 'Bitcoin Cash',
+  starknet: 'Starknet',
+};
+
+// Group assets by chain
+function groupAssetsByChain(assets: string[]): Map<string, string[]> {
+  const groups = new Map<string, string[]>();
+
+  for (const asset of assets) {
+    const chain = asset.includes(':') ? asset.split(':')[1] ?? 'sol' : 'sol';
+    if (!groups.has(chain)) {
+      groups.set(chain, []);
+    }
+    groups.get(chain)!.push(asset);
+  }
+
+  // Sort: Solana first, then alphabetically by chain name
+  const sortedGroups = new Map<string, string[]>();
+  if (groups.has('sol')) {
+    sortedGroups.set('sol', groups.get('sol')!);
+  }
+  const otherChains = [...groups.keys()].filter(c => c !== 'sol').sort((a, b) =>
+    (CHAIN_NAMES[a] ?? a).localeCompare(CHAIN_NAMES[b] ?? b)
+  );
+  for (const chain of otherChains) {
+    sortedGroups.set(chain, groups.get(chain)!);
+  }
+
+  return sortedGroups;
+}
+
+// Get display name for an asset
+function getAssetDisplayName(asset: string): string {
+  if (asset.includes(':')) {
+    return asset.split(':')[0] ?? asset;
+  }
+  return asset;
+}
 
 // Swap transfer status
 type SwapTransferStatus =
@@ -154,9 +218,40 @@ export function TransferForm({
       throw new Error('Could not convert amount to SOL');
     }
 
-    // Add a small buffer for price fluctuation (2%)
-    const solAmountWithBuffer = (parseFloat(solAmount) * 1.02).toFixed(9);
-    const solBaseUnits = account.assetToBaseUnits(solAmountWithBuffer);
+    // Calculate amounts:
+    // 1. solAmountForSwap = SOL that arrives at NEAR Intents deposit address (with price buffer)
+    // 2. solAmountToWithdraw = SOL to withdraw from pool (adds pool fee on top)
+    //
+    // Flow: Pool → (minus fee) → Deposit Address → NEAR Intents Swap → Destination
+    //
+    const priceBuffer = 1.02; // 2% buffer for price fluctuation during swap
+    const isShadowWire = 'transfer' in provider;
+    const poolFeeRate = isShadowWire ? 0.005 : 0; // ShadowWire: 0.5% fee, PrivacyCash: no fee
+
+    // Amount that will arrive at NEAR Intents (what we tell the API)
+    const solAmountForSwap = (parseFloat(solAmount) * priceBuffer).toFixed(9);
+
+    // Amount to withdraw from pool (compensate for pool fee)
+    // To receive X after fee: withdraw X / (1 - feeRate)
+    const solAmountToWithdraw = poolFeeRate > 0
+      ? (parseFloat(solAmountForSwap) / (1 - poolFeeRate)).toFixed(9)
+      : solAmountForSwap;
+
+    const solBaseUnitsForQuote = account.assetToBaseUnits(solAmountForSwap);
+    const solBaseUnitsToWithdraw = account.assetToBaseUnits(solAmountToWithdraw);
+
+    console.log('[TransferForm] SOL conversion:', {
+      targetAmount: amount,
+      targetAsset: assetSymbol,
+      solAmount,
+      priceBuffer,
+      poolFeeRate,
+      isShadowWire,
+      solAmountForSwap,
+      solAmountToWithdraw,
+      solBaseUnitsForQuote: solBaseUnitsForQuote.toString(),
+      solBaseUnitsToWithdraw: solBaseUnitsToWithdraw.toString(),
+    });
 
     setSwapStatus({ stage: 'getting_quote' });
 
@@ -171,7 +266,7 @@ export function TransferForm({
       recipientAddress: destinationAddress, // Where to send the swapped asset (can be any chain)
       originAsset: solAsset.assetId,
       destinationAsset: targetAsset.assetId,
-      amount: solBaseUnits.toString(),
+      amount: solBaseUnitsForQuote.toString(), // Amount that will arrive at deposit address (after pool fee)
       slippageTolerance: 100, // 1% in basis points
       deadline: new Date(Date.now() + deadlineMs).toISOString(),
     };
@@ -197,17 +292,19 @@ export function TransferForm({
     setSwapStatus({ stage: 'transferring', depositAddress });
 
     // Transfer SOL from privacy pool to the deposit address
+    // We withdraw solBaseUnitsToWithdraw (includes pool fee compensation)
+    // so that solBaseUnitsForQuote arrives at the deposit address
     if ('transfer' in provider) {
       await provider.transfer({
         recipient: depositAddress,
-        amount: solBaseUnits.toString(),
+        amount: solBaseUnitsToWithdraw.toString(),
         type: 'external',
         onStatusChange: setStatus,
       });
     } else {
       await provider.withdraw({
         destination: { address: depositAddress },
-        amount: solBaseUnits.toString(),
+        amount: solBaseUnitsToWithdraw.toString(),
         onStatusChange: setStatus,
       });
     }
@@ -352,12 +449,37 @@ export function TransferForm({
             label="Asset"
             onChange={(e) => onAssetChange(e.target.value)}
             disabled={loading}
+            MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
           >
-            {availableAssets.map((a) => (
-              <MenuItem key={a} value={a}>
-                {a}
-              </MenuItem>
-            ))}
+            {(() => {
+              const grouped = groupAssetsByChain(availableAssets);
+              const items: React.ReactNode[] = [];
+
+              grouped.forEach((assets, chain) => {
+                items.push(
+                  <ListSubheader
+                    key={`header-${chain}`}
+                    sx={{
+                      bgcolor: 'background.paper',
+                      fontWeight: 600,
+                      color: 'primary.main',
+                      lineHeight: '32px',
+                    }}
+                  >
+                    {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
+                  </ListSubheader>
+                );
+                assets.forEach((a) => {
+                  items.push(
+                    <MenuItem key={a} value={a} sx={{ pl: 3 }}>
+                      {getAssetDisplayName(a)}
+                    </MenuItem>
+                  );
+                });
+              });
+
+              return items;
+            })()}
           </Select>
         </FormControl>
 

@@ -46,7 +46,9 @@ export const OneClickApi = (config: OneClickApiConfig = {}): SwapApi => {
     getQuote: async (params: GetQuoteParams) => {
       const quoteRequest: QuoteRequest = {
         dry: params.dry,
-        swapType: QuoteRequest.swapType.EXACT_INPUT,
+        // Use FLEX_INPUT to allow variable deposit amounts (handles fee variations)
+        // FLEX_INPUT: "Any amount higher than minAmountIn is accepted and converted"
+        swapType: QuoteRequest.swapType.FLEX_INPUT,
         slippageTolerance: params.slippageTolerance,
         originAsset: params.originAsset,
         depositType: QuoteRequest.depositType.ORIGIN_CHAIN,

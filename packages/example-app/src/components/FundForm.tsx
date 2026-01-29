@@ -11,6 +11,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  ListSubheader,
   IconButton,
   Tooltip,
 } from '@mui/material';
@@ -27,6 +28,69 @@ import {
 } from '@privacy-router-sdk/near-intents';
 
 type ProviderType = PrivacyCashProvider | ShadowWireProvider;
+
+// Chain display names
+const CHAIN_NAMES: Record<string, string> = {
+  sol: 'Solana',
+  eth: 'Ethereum',
+  base: 'Base',
+  arb: 'Arbitrum',
+  btc: 'Bitcoin',
+  near: 'NEAR',
+  ton: 'TON',
+  doge: 'Dogecoin',
+  xrp: 'XRP',
+  zec: 'Zcash',
+  gnosis: 'Gnosis',
+  bera: 'Berachain',
+  bsc: 'BNB Chain',
+  pol: 'Polygon',
+  tron: 'TRON',
+  sui: 'Sui',
+  op: 'Optimism',
+  avax: 'Avalanche',
+  cardano: 'Cardano',
+  ltc: 'Litecoin',
+  xlayer: 'X Layer',
+  monad: 'Monad',
+  bch: 'Bitcoin Cash',
+  starknet: 'Starknet',
+};
+
+// Group assets by chain
+function groupAssetsByChain(assets: string[]): Map<string, string[]> {
+  const groups = new Map<string, string[]>();
+
+  for (const asset of assets) {
+    const chain = asset.includes(':') ? asset.split(':')[1] ?? 'sol' : 'sol';
+    if (!groups.has(chain)) {
+      groups.set(chain, []);
+    }
+    groups.get(chain)!.push(asset);
+  }
+
+  // Sort: Solana first, then alphabetically by chain name
+  const sortedGroups = new Map<string, string[]>();
+  if (groups.has('sol')) {
+    sortedGroups.set('sol', groups.get('sol')!);
+  }
+  const otherChains = [...groups.keys()].filter(c => c !== 'sol').sort((a, b) =>
+    (CHAIN_NAMES[a] ?? a).localeCompare(CHAIN_NAMES[b] ?? b)
+  );
+  for (const chain of otherChains) {
+    sortedGroups.set(chain, groups.get(chain)!);
+  }
+
+  return sortedGroups;
+}
+
+// Get display name for an asset (just the symbol, without chain suffix)
+function getAssetDisplayName(asset: string): string {
+  if (asset.includes(':')) {
+    return asset.split(':')[0] ?? asset;
+  }
+  return asset;
+}
 
 // Cross-chain deposit status
 type CrossChainStatus =
@@ -327,12 +391,37 @@ export function FundForm({
               setError(null);
             }}
             disabled={loading}
+            MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
           >
-            {availableAssets.map((a) => (
-              <MenuItem key={a} value={a}>
-                {formatAssetDisplay(a)}
-              </MenuItem>
-            ))}
+            {(() => {
+              const grouped = groupAssetsByChain(availableAssets);
+              const items: React.ReactNode[] = [];
+
+              grouped.forEach((assets, chain) => {
+                items.push(
+                  <ListSubheader
+                    key={`header-${chain}`}
+                    sx={{
+                      bgcolor: 'background.paper',
+                      fontWeight: 600,
+                      color: 'primary.main',
+                      lineHeight: '32px',
+                    }}
+                  >
+                    {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
+                  </ListSubheader>
+                );
+                assets.forEach((a) => {
+                  items.push(
+                    <MenuItem key={a} value={a} sx={{ pl: 3 }}>
+                      {getAssetDisplayName(a)}
+                    </MenuItem>
+                  );
+                });
+              });
+
+              return items;
+            })()}
           </Select>
         </FormControl>
 
