@@ -557,7 +557,7 @@ function AppContent() {
                 onSuccess={refreshWalletBalance}
                 asset={withdrawAsset}
                 decimals={getDecimals(withdrawAsset)}
-                availableAssets={solanaOnlyAssets}
+                availableAssets={fundAvailableAssets}
                 onAssetChange={handleWithdrawAssetChange}
                 formatUsdValue={formatUsdValue}
               />
