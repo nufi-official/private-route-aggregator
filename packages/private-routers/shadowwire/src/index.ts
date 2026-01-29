@@ -1,24 +1,31 @@
 export { ShadowWireProvider } from './shadowWireProvider';
 export type {
   ShadowWireConfig,
-  ShadowWireToken,
   WalletSigner,
+  ShadowWireToken,
   TransferType,
-  BalanceResponse,
+  WalletAdapter,
+  PoolBalance,
   DepositRequest,
   DepositResponse,
   WithdrawRequest,
   WithdrawResponse,
   TransferRequest,
   TransferResponse,
-  FeeInfo,
+  ZKTransferResponse,
 } from './types';
 export {
   SUPPORTED_TOKENS,
-  SHADOWWIRE_SIGN_MESSAGE,
-  DEFAULT_API_BASE_URL,
   TOKEN_MINTS,
   TOKEN_DECIMALS,
   TOKEN_FEES,
-  DEFAULT_PROOF_BIT_LENGTH,
+  TOKEN_MINIMUMS,
 } from './types';
+
+// Re-export WASM utilities from official SDK
+export {
+  initWASM,
+  isWASMSupported,
+  generateRangeProof,
+  verifyRangeProof,
+} from '@radr/shadowwire';

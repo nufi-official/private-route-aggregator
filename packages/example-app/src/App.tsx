@@ -15,10 +15,10 @@ import {
 import { WalletProvider } from './providers/WalletProvider';
 import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
-import { WithdrawForm } from './components/WithdrawForm';
+import { TransferForm } from './components/TransferForm';
 import { useTokenPrices } from './hooks/useTokenPrices';
 import { PrivacyCashProvider, SPL_MINTS } from '@privacy-router-sdk/privacy-cash';
-import { ShadowWireProvider, SUPPORTED_TOKENS, TOKEN_MINTS } from '@privacy-router-sdk/shadowwire';
+import { ShadowWireProvider, SUPPORTED_TOKENS, TOKEN_MINTS, initWASM } from '@privacy-router-sdk/shadowwire';
 import type { ShadowWireToken } from '@privacy-router-sdk/shadowwire';
 import { Connection, PublicKey } from '@solana/web3.js';
 import type { PrivacyCashAsset } from '@privacy-router-sdk/privacy-cash';
@@ -122,11 +122,18 @@ function AppContent() {
   const [walletBalance, setWalletBalance] = useState<bigint>(0n);
   const [walletBalanceLoading, setWalletBalanceLoading] = useState(false);
 
-  // Separate state for Withdraw form
+  // Separate state for Transfer form
   const [withdrawAsset, setWithdrawAsset] = useState<string>('SOL');
   const [withdrawProvider, setWithdrawProvider] = useState<ProviderType | null>(null);
   const [privateBalance, setPrivateBalance] = useState<bigint>(0n);
   const [privateBalanceLoading, setPrivateBalanceLoading] = useState(false);
+
+  // Initialize WASM for ShadowWire on mount
+  useEffect(() => {
+    initWASM('/wasm/settler_wasm_bg.wasm').catch((err) => {
+      console.warn('Failed to initialize ShadowWire WASM:', err);
+    });
+  }, []);
 
   // Get available assets: provider assets + NEAR Intents Solana assets
   const providerAssets = selectedProvider === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
@@ -542,7 +549,7 @@ function AppContent() {
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <WithdrawForm
+              <TransferForm
                 account={account}
                 provider={withdrawProvider}
                 privateBalance={privateBalance}

@@ -1,55 +1,134 @@
 import { PublicKey, VersionedTransaction, Connection } from '@solana/web3.js';
+import {
+  ShadowWireClient,
+  initWASM,
+  isWASMSupported,
+  type TokenSymbol,
+  type TransferType,
+  type WalletAdapter as ShadowWireWalletAdapter,
+  SUPPORTED_TOKENS,
+  TOKEN_FEES,
+  TOKEN_DECIMALS,
+  TOKEN_MINTS,
+  TOKEN_MINIMUMS,
+} from '@radr/shadowwire';
 import type {
   FundingStatus,
   WithdrawStatus,
   WithdrawDestination,
 } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
-import type {
-  ShadowWireConfig,
-  ShadowWireToken,
-  BalanceResponse,
-  DepositResponse,
-  WithdrawResponse,
-  TransferResponse,
-  TransferType,
-} from './types';
-import {
-  DEFAULT_API_BASE_URL,
-  SHADOWWIRE_SIGN_MESSAGE,
-  TOKEN_FEES,
-  TOKEN_DECIMALS,
-  TOKEN_MINTS,
-} from './types';
+
+// Re-export types from official SDK
+export type ShadowWireToken = TokenSymbol;
+export { SUPPORTED_TOKENS, TOKEN_FEES, TOKEN_DECIMALS, TOKEN_MINTS, TOKEN_MINIMUMS };
+
+/**
+ * Wallet signer interface for wallet adapter support
+ */
+export interface WalletSigner {
+  publicKey: { toBase58(): string };
+  signMessage(message: Uint8Array): Promise<Uint8Array>;
+  signTransaction?(transaction: VersionedTransaction): Promise<VersionedTransaction>;
+}
+
+/**
+ * Configuration for ShadowWire provider
+ */
+export interface ShadowWireConfig {
+  /**
+   * Wallet signer with signMessage and signTransaction capability
+   */
+  walletSigner: WalletSigner;
+
+  /**
+   * Solana RPC URL for submitting transactions
+   */
+  rpcUrl?: string;
+
+  /**
+   * Token to use for transactions (default: 'SOL')
+   */
+  token?: ShadowWireToken;
+
+  /**
+   * Enable debug logging
+   */
+  enableDebug?: boolean;
+
+  /**
+   * Path to WASM file for client-side proof generation (optional)
+   */
+  wasmPath?: string;
+
+  /**
+   * Enable client-side proof generation (requires WASM)
+   */
+  useClientProofs?: boolean;
+}
 
 /**
  * ShadowWire Provider
- * Implements privacy transactions using ShadowWire's Bulletproof ZK proofs
+ * Wraps the official @radr/shadowwire SDK for privacy transactions
  *
  * Features:
- * - Simple API-based deposits and withdrawals
- * - Internal transfers with hidden amounts (ZK proofs)
- * - External transfers with anonymous sender
+ * - Bulletproof ZK proofs for hidden amounts
+ * - Internal transfers (amount hidden)
+ * - External transfers (sender anonymous, amount visible)
+ * - Client-side proof generation via WASM (optional)
  * - Multi-token support (22 tokens)
  */
 export class ShadowWireProvider {
   readonly name = 'ShadowWire';
 
-  private apiBaseUrl: string;
-  private apiKey?: string;
-  private walletSigner: ShadowWireConfig['walletSigner'];
+  private client: ShadowWireClient;
+  private walletSigner: WalletSigner;
   private connection: Connection;
   private token: ShadowWireToken;
   private debug: boolean;
-  private cachedSignature?: string;
+  private wasmInitialized: boolean = false;
+  private wasmPath?: string;
 
   constructor(config: ShadowWireConfig) {
-    this.apiBaseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
-    this.apiKey = config.apiKey;
+    this.client = new ShadowWireClient();
     this.walletSigner = config.walletSigner;
     this.connection = new Connection(config.rpcUrl || 'https://api.mainnet-beta.solana.com');
     this.token = config.token || 'SOL';
     this.debug = config.enableDebug || false;
+    this.wasmPath = config.wasmPath;
+
+    // Initialize WASM if requested and path provided
+    if (config.wasmPath && config.useClientProofs) {
+      void this.initializeWASM(config.wasmPath);
+    }
+  }
+
+  /**
+   * Initialize WASM for client-side proof generation
+   */
+  async initializeWASM(wasmPath?: string): Promise<boolean> {
+    if (this.wasmInitialized) return true;
+
+    const path = wasmPath || this.wasmPath;
+    if (!path) {
+      this.log('No WASM path provided');
+      return false;
+    }
+
+    if (!isWASMSupported()) {
+      this.log('WASM not supported in this environment');
+      return false;
+    }
+
+    try {
+      await initWASM(path);
+      this.wasmInitialized = true;
+      this.log('WASM initialized for client-side proofs');
+      return true;
+    } catch (error) {
+      this.log('Failed to initialize WASM:', error);
+      return false;
+    }
   }
 
   /**
@@ -70,72 +149,31 @@ export class ShadowWireProvider {
   }
 
   /**
-   * Make an API request to ShadowWire
+   * Create a wallet adapter compatible with the SDK
    */
-  private async apiRequest<T>(
-    endpoint: string,
-    method: 'GET' | 'POST' = 'GET',
-    body?: unknown
-  ): Promise<T> {
-    const url = `${this.apiBaseUrl}${endpoint}`;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+  private createWalletAdapter(): ShadowWireWalletAdapter {
+    return {
+      signMessage: (message: Uint8Array) => this.walletSigner.signMessage(message),
     };
-
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
-    }
-
-    this.log(`API ${method} ${endpoint}`, body ? JSON.stringify(body) : '');
-
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`ShadowWire API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json() as T;
-    this.log('API response:', data);
-    return data;
   }
 
   /**
-   * Generate a signature for authentication
+   * Get decimals for a token (with fallback)
    */
-  private async generateSignature(): Promise<string> {
-    if (this.cachedSignature) {
-      return this.cachedSignature;
-    }
-
-    const message = new TextEncoder().encode(SHADOWWIRE_SIGN_MESSAGE);
-    const signatureBytes = await this.walletSigner.signMessage(message);
-    this.cachedSignature = Buffer.from(signatureBytes).toString('base64');
-    return this.cachedSignature;
+  private getTokenDecimalsValue(token: ShadowWireToken): number {
+    return TOKEN_DECIMALS[token] ?? 6;
   }
 
   /**
    * Get the current private balance (returns bigint in base units)
-   * Matches PrivacyProvider interface
    */
   async getPrivateBalance(): Promise<bigint> {
     const wallet = this.getWalletAddress();
 
     try {
-      // For native SOL, don't pass token_mint parameter
-      // For other tokens, pass the token_mint
-      const endpoint = this.token === 'SOL'
-        ? `/pool/balance/${wallet}`
-        : `/pool/balance/${wallet}?token_mint=${TOKEN_MINTS[this.token]}`;
-
-      const response = await this.apiRequest<BalanceResponse>(endpoint);
-
-      // available is in base units (lamports for SOL)
-      return BigInt(response.available);
+      const balance = await this.client.getBalance(wallet, this.token);
+      // SDK returns available in base units (lamports for SOL)
+      return BigInt(Math.floor(balance.available));
     } catch (error) {
       this.log('Error fetching balance:', error);
       return 0n;
@@ -143,32 +181,26 @@ export class ShadowWireProvider {
   }
 
   /**
-   * Get detailed balance info for a specific token
+   * Get detailed balance info
    */
-  async getPrivateBalanceDetailed(token?: ShadowWireToken): Promise<{
+  async getPrivateBalanceDetailed(): Promise<{
     balance: bigint;
     balanceFormatted: number;
     deposited: number;
     poolAddress: string;
   }> {
     const wallet = this.getWalletAddress();
-    const targetToken = token || this.token;
 
     try {
-      // For native SOL, don't pass token_mint parameter
-      const endpoint = targetToken === 'SOL'
-        ? `/pool/balance/${wallet}`
-        : `/pool/balance/${wallet}?token_mint=${TOKEN_MINTS[targetToken]}`;
-
-      const response = await this.apiRequest<BalanceResponse>(endpoint);
-
-      const decimals = TOKEN_DECIMALS[targetToken];
+      const balance = await this.client.getBalance(wallet, this.token);
+      const decimals = this.getTokenDecimalsValue(this.token);
 
       return {
-        balance: BigInt(response.available),
-        balanceFormatted: response.available / Math.pow(10, decimals),
-        deposited: response.deposited,
-        poolAddress: response.pool_address,
+        // SDK returns available in base units
+        balance: BigInt(Math.floor(balance.available)),
+        balanceFormatted: balance.available / Math.pow(10, decimals),
+        deposited: balance.deposited,
+        poolAddress: balance.pool_address,
       };
     } catch (error) {
       this.log('Error fetching balance:', error);
@@ -183,12 +215,6 @@ export class ShadowWireProvider {
 
   /**
    * Fund the privacy pool (deposit)
-   * Matches PrivacyProvider interface
-   *
-   * Flow:
-   * 1. Request unsigned transaction from API
-   * 2. Sign transaction with wallet
-   * 3. Submit signed transaction
    */
   async fund(params: {
     sourceAccount: Account;
@@ -202,9 +228,10 @@ export class ShadowWireProvider {
       onStatusChange?.({ stage: 'preparing' });
 
       const baseUnits = BigInt(amount);
+      const decimals = this.getTokenDecimalsValue(this.token);
+      const decimalAmount = Number(baseUnits) / Math.pow(10, decimals);
 
-      // Validate amount
-      if (baseUnits <= 0n) {
+      if (decimalAmount <= 0) {
         throw new Error('Amount must be greater than 0');
       }
 
@@ -215,26 +242,26 @@ export class ShadowWireProvider {
         throw new Error('Invalid wallet address');
       }
 
-      // Step 1: Get unsigned transaction from API
-      this.log('Requesting deposit transaction...');
-      const response = await this.apiRequest<DepositResponse>('/pool/deposit', 'POST', {
+      this.log('Requesting deposit...', { wallet, amount: Number(baseUnits), token: this.token });
+
+      // Get unsigned transaction from SDK - amount must be in base units (integer)
+      const response = await this.client.deposit({
         wallet,
         amount: Number(baseUnits),
-        token: this.token,
+        token_mint: this.token === 'SOL' ? undefined : TOKEN_MINTS[this.token],
       });
 
       if (!response.success || !response.unsigned_tx_base64) {
-        throw new Error(response.message || 'Failed to get deposit transaction');
+        throw new Error('Failed to get deposit transaction');
       }
 
       this.log('Got unsigned transaction, signing...');
       onStatusChange?.({ stage: 'depositing' });
 
-      // Step 2: Deserialize and sign the transaction
+      // Deserialize and sign the transaction
       const txBuffer = Buffer.from(response.unsigned_tx_base64, 'base64');
       const transaction = VersionedTransaction.deserialize(txBuffer);
 
-      // Sign with wallet
       if (!this.walletSigner.signTransaction) {
         throw new Error('Wallet does not support transaction signing');
       }
@@ -242,9 +269,8 @@ export class ShadowWireProvider {
       const signedTransaction = await this.walletSigner.signTransaction(transaction);
       this.log('Transaction signed');
 
-      // Step 3: Submit to blockchain
+      // Submit to blockchain
       this.log('Submitting transaction to blockchain...');
-
       const signature = await this.connection.sendTransaction(signedTransaction, {
         skipPreflight: false,
         preflightCommitment: 'confirmed',
@@ -259,7 +285,7 @@ export class ShadowWireProvider {
         throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
       }
 
-      this.log('Transaction confirmed!');
+      this.log('Deposit confirmed!');
       onStatusChange?.({ stage: 'completed', txHash: signature });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -271,12 +297,6 @@ export class ShadowWireProvider {
 
   /**
    * Withdraw from the privacy pool
-   * Matches PrivacyProvider interface
-   *
-   * Flow:
-   * 1. Request unsigned transaction from API
-   * 2. Sign transaction with wallet
-   * 3. Submit signed transaction
    */
   async withdraw(params: {
     destination: WithdrawDestination;
@@ -285,134 +305,53 @@ export class ShadowWireProvider {
   }): Promise<void> {
     const { destination, amount, onStatusChange } = params;
     const wallet = this.getWalletAddress();
-    this.log('Withdraw destination:', destination);
     const recipient = destination.address || wallet;
 
     try {
       onStatusChange?.({ stage: 'preparing' });
 
       const baseUnits = BigInt(amount);
+      const decimals = this.getTokenDecimalsValue(this.token);
+      const decimalAmount = Number(baseUnits) / Math.pow(10, decimals);
 
-      // Validate amount
-      if (baseUnits <= 0n) {
+      if (decimalAmount <= 0) {
         throw new Error('Amount must be greater than 0');
       }
 
-      // Step 1: Get unsigned transaction from API
-      this.log('Requesting withdraw transaction...');
-      this.log('Withdraw params:', { wallet, recipient, amount: Number(baseUnits), token: this.token });
-      const response = await this.apiRequest<WithdrawResponse>('/pool/withdraw', 'POST', {
+      this.log('Requesting withdraw...', { wallet, recipient, amount: Number(baseUnits), token: this.token });
+      onStatusChange?.({ stage: 'processing' });
+
+      // Get unsigned transaction from SDK - amount must be in base units (integer)
+      const response = await this.client.withdraw({
         wallet,
         amount: Number(baseUnits),
-        token: this.token,
-        recipient,
+        token_mint: this.token === 'SOL' ? undefined : TOKEN_MINTS[this.token],
       });
 
       if (!response.success || !response.unsigned_tx_base64) {
-        throw new Error(response.message || 'Failed to get withdraw transaction');
+        throw new Error(response.error || 'Failed to get withdraw transaction');
       }
 
       this.log('Got unsigned transaction, signing...');
-      onStatusChange?.({ stage: 'processing' });
 
-      // Step 2: Deserialize the transaction
+      // Deserialize and sign the transaction
       const txBuffer = Buffer.from(response.unsigned_tx_base64, 'base64');
       const transaction = VersionedTransaction.deserialize(txBuffer);
 
-      // Debug: Log transaction details
-      this.log('Transaction requires', transaction.message.header.numRequiredSignatures, 'signatures');
-      this.log('Current signatures:', transaction.signatures.length);
-      transaction.signatures.forEach((sig, i) => {
-        const isEmpty = sig.every(b => b === 0);
-        this.log(`  Signature ${i}: ${isEmpty ? 'EMPTY' : 'PRESENT'}`);
-      });
-
-      // Sign with wallet
       if (!this.walletSigner.signTransaction) {
         throw new Error('Wallet does not support transaction signing');
       }
 
-      this.log('Requesting wallet signature...');
-      let signedTransaction: VersionedTransaction;
-      try {
-        // The wallet adapter's signTransaction should add the user's signature
-        signedTransaction = await this.walletSigner.signTransaction(transaction);
-        this.log('Wallet signed transaction successfully');
-      } catch (signError) {
-        const errMsg = signError instanceof Error ? signError.message : 'Unknown signing error';
-        this.log('WALLET SIGNING FAILED:', errMsg);
-        throw new Error(`Wallet signing failed: ${errMsg}`);
-      }
+      const signedTransaction = await this.walletSigner.signTransaction(transaction);
+      this.log('Transaction signed');
 
-      // Debug: Log signatures after signing
-      signedTransaction.signatures.forEach((sig, i) => {
-        const isEmpty = sig.every(b => b === 0);
-        this.log(`  After signing - Signature ${i}: ${isEmpty ? 'EMPTY' : 'PRESENT'}`);
-      });
-
-      // Check for empty signatures
-      const emptySignatures = signedTransaction.signatures.filter(sig => sig.every(b => b === 0));
-      if (emptySignatures.length > 0) {
-        this.log('Transaction has', emptySignatures.length, 'empty signatures, attempting manual signature...');
-
-        // Try manual signing: find which slot needs our signature
-        const walletPubkey = this.walletSigner.publicKey.toBase58();
-        const message = signedTransaction.message;
-        const staticKeys = message.staticAccountKeys || [];
-
-        // Find our signer index
-        let ourSignerIndex = -1;
-        const numSigners = message.header.numRequiredSignatures;
-        for (let i = 0; i < numSigners && i < staticKeys.length; i++) {
-          const key = staticKeys[i];
-          if (key && key.toBase58() === walletPubkey) {
-            ourSignerIndex = i;
-            break;
-          }
-        }
-
-        this.log('Our wallet pubkey:', walletPubkey);
-        this.log('Our signer index:', ourSignerIndex);
-
-        const sigAtIndex = signedTransaction.signatures[ourSignerIndex];
-        if (ourSignerIndex >= 0 && sigAtIndex && sigAtIndex.every(b => b === 0)) {
-          this.log('Manually signing at index', ourSignerIndex);
-          // The signature slot is empty for our key, need to sign manually
-          const messageBytes = signedTransaction.message.serialize();
-          const signatureBytes = await this.walletSigner.signMessage(messageBytes);
-
-          // Add the signature at the correct index
-          signedTransaction.signatures[ourSignerIndex] = signatureBytes;
-          this.log('Manual signature added');
-        }
-
-        // Check again
-        const stillEmpty = signedTransaction.signatures.filter(sig => sig.every(b => b === 0));
-        if (stillEmpty.length > 0) {
-          this.log('ERROR: Still have', stillEmpty.length, 'empty signatures after manual signing');
-          throw new Error(`Transaction missing ${stillEmpty.length} required signatures`);
-        }
-      }
-
-      // Step 3: Submit to blockchain
+      // Submit to blockchain
       this.log('Submitting transaction to blockchain...');
-
-      let signature: string;
-      try {
-        // Serialize the transaction
-        const serialized = signedTransaction.serialize();
-        this.log('Serialized transaction, size:', serialized.length, 'bytes');
-
-        // Try with skipPreflight first to see raw errors
-        signature = await this.connection.sendRawTransaction(serialized, {
-          skipPreflight: false,
-          preflightCommitment: 'confirmed',
-        });
-      } catch (submitError) {
-        const errMsg = submitError instanceof Error ? submitError.message : 'Unknown submit error';
-        this.log('TRANSACTION SUBMIT FAILED:', errMsg);
-        throw new Error(`Transaction submission failed: ${errMsg}`);
-      }
+      const serialized = signedTransaction.serialize();
+      const signature = await this.connection.sendRawTransaction(serialized, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      });
 
       this.log('Transaction submitted:', signature);
       onStatusChange?.({ stage: 'confirming', txHash: signature });
@@ -435,16 +374,16 @@ export class ShadowWireProvider {
   }
 
   /**
-   * Transfer funds privately
-   * - internal: Amount hidden with ZK proofs
-   * - external: Amount visible, sender anonymous
+   * Transfer funds privately using the official SDK
+   *
+   * @param type - 'internal' = amount hidden with ZK proofs, 'external' = sender anonymous but amount visible
    */
   async transfer(params: {
     recipient: string;
     amount: string;
     type?: TransferType;
     onStatusChange?: (status: WithdrawStatus) => void;
-  }): Promise<{ txHash: string }> {
+  }): Promise<{ txHash: string; amountHidden: boolean }> {
     const { recipient, amount, type = 'internal', onStatusChange } = params;
     const sender = this.getWalletAddress();
 
@@ -452,9 +391,10 @@ export class ShadowWireProvider {
       onStatusChange?.({ stage: 'preparing' });
 
       const baseUnits = BigInt(amount);
+      const decimals = this.getTokenDecimalsValue(this.token);
+      const decimalAmount = Number(baseUnits) / Math.pow(10, decimals);
 
-      // Validate
-      if (baseUnits <= 0n) {
+      if (decimalAmount <= 0) {
         throw new Error('Amount must be greater than 0');
       }
 
@@ -469,125 +409,162 @@ export class ShadowWireProvider {
         throw new Error('Invalid recipient address');
       }
 
-      // Generate signature for authentication
-      const signature = await this.generateSignature();
-
+      this.log('Initiating transfer...', { sender, recipient, amount: decimalAmount, type, token: this.token });
       onStatusChange?.({ stage: 'processing' });
 
-      // Choose endpoint based on transfer type
-      const endpoint = type === 'internal' ? '/zk/internal-transfer' : '/zk/external-transfer';
+      const walletAdapter = this.createWalletAdapter();
 
-      const response = await this.apiRequest<TransferResponse>(endpoint, 'POST', {
+      // Use the high-level transfer method which handles everything
+      const response = await this.client.transfer({
         sender,
         recipient,
-        amount: this.fromBaseUnits(Number(baseUnits)),
+        amount: decimalAmount,
         token: this.token,
         type,
-        sender_signature: signature,
+        wallet: walletAdapter,
       });
 
       if (!response.success) {
-        throw new Error(response.message || 'Transfer failed');
+        throw new Error('Transfer failed');
       }
 
-      const txHash = response.txHash || 'pending';
+      const txHash = response.tx_signature;
 
-      onStatusChange?.({ stage: 'confirming', txHash });
-
-      await this.waitForConfirmation(txHash);
-
+      this.log('Transfer completed:', { txHash, amountHidden: response.amount_hidden });
       onStatusChange?.({ stage: 'completed', txHash });
 
-      return { txHash };
+      return {
+        txHash,
+        amountHidden: response.amount_hidden,
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.log('Transfer failed:', errorMessage);
       onStatusChange?.({ stage: 'failed', error: errorMessage });
       throw error;
     }
   }
 
   /**
-   * Get fee percentage for the current token (as decimal, e.g., 0.005 = 0.5%)
+   * Transfer with client-side proof generation (requires WASM)
+   */
+  async transferWithClientProofs(params: {
+    recipient: string;
+    amount: string;
+    type?: TransferType;
+    onStatusChange?: (status: WithdrawStatus) => void;
+  }): Promise<{ txHash: string; amountHidden: boolean }> {
+    if (!this.wasmInitialized) {
+      const initialized = await this.initializeWASM();
+      if (!initialized) {
+        throw new Error('WASM not available. Cannot generate client-side proofs.');
+      }
+    }
+
+    const { recipient, amount, type = 'internal', onStatusChange } = params;
+    const sender = this.getWalletAddress();
+
+    try {
+      onStatusChange?.({ stage: 'preparing' });
+
+      const baseUnits = BigInt(amount);
+      const decimals = this.getTokenDecimalsValue(this.token);
+      const decimalAmount = Number(baseUnits) / Math.pow(10, decimals);
+
+      if (decimalAmount <= 0) {
+        throw new Error('Amount must be greater than 0');
+      }
+
+      this.log('Generating client-side proofs...', { amount: decimalAmount });
+
+      // Generate proof locally using the SDK
+      const proofData = await this.client.generateProofLocally(decimalAmount, this.token);
+
+      this.log('Proof generated, initiating transfer...');
+      onStatusChange?.({ stage: 'processing' });
+
+      const walletAdapter = this.createWalletAdapter();
+
+      const response = await this.client.transferWithClientProofs({
+        sender,
+        recipient,
+        amount: decimalAmount,
+        token: this.token,
+        type,
+        wallet: walletAdapter,
+        customProof: proofData,
+      });
+
+      if (!response.success) {
+        throw new Error('Transfer with client proofs failed');
+      }
+
+      const txHash = response.tx_signature;
+
+      this.log('Transfer with client proofs completed:', txHash);
+      onStatusChange?.({ stage: 'completed', txHash });
+
+      return {
+        txHash,
+        amountHidden: response.amount_hidden,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.log('Transfer with client proofs failed:', errorMessage);
+      onStatusChange?.({ stage: 'failed', error: errorMessage });
+      throw error;
+    }
+  }
+
+  /**
+   * Get fee percentage for the current token
    */
   getFeePercentage(): number {
-    return TOKEN_FEES[this.token] || 0.01;
+    return this.client.getFeePercentage(this.token);
+  }
+
+  /**
+   * Get minimum amount for the current token (in decimal format)
+   */
+  getMinimumAmount(): number {
+    return this.client.getMinimumAmount(this.token);
+  }
+
+  /**
+   * Calculate fee for a given amount (in decimal format)
+   */
+  calculateFee(amount: number): { fee: number; netAmount: number } {
+    return this.client.calculateFee(amount, this.token);
   }
 
   /**
    * Get decimals for the current token
    */
   getTokenDecimals(): number {
-    return TOKEN_DECIMALS[this.token] || 6;
+    return this.getTokenDecimalsValue(this.token);
   }
 
   /**
    * Get mint address for the current token
    */
   getTokenMint(): string {
-    return TOKEN_MINTS[this.token];
-  }
-
-  /**
-   * Get minimum amount for the current token (in base units)
-   */
-  getMinimumAmount(): number {
-    const decimals = this.getTokenDecimals();
-    return Math.pow(10, decimals - 3);
-  }
-
-  /**
-   * Calculate fee for a given amount (in base units)
-   */
-  calculateFee(amount: number): { fee: number; netAmount: number } {
-    const feeRate = this.getFeePercentage();
-    const fee = Math.floor(amount * feeRate);
-    const netAmount = amount - fee;
-    return { fee, netAmount };
+    return TOKEN_MINTS[this.token] ?? '';
   }
 
   /**
    * Convert token amount to base units
    */
-  toBaseUnits(amount: number): number {
+  toBaseUnits(amount: number): bigint {
     const decimals = this.getTokenDecimals();
-    return Math.floor(amount * Math.pow(10, decimals));
+    return BigInt(Math.floor(amount * Math.pow(10, decimals)));
   }
 
   /**
    * Convert base units to token amount
    */
-  fromBaseUnits(baseUnits: number): number {
+  fromBaseUnits(baseUnits: bigint): number {
     const decimals = this.getTokenDecimals();
-    return baseUnits / Math.pow(10, decimals);
-  }
-
-  /**
-   * Wait for transaction confirmation
-   */
-  private async waitForConfirmation(txHash: string): Promise<void> {
-    if (txHash === 'pending') {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return;
-    }
-
-    const maxAttempts = 30;
-    const delayMs = 2000;
-
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        const status = await this.apiRequest<{ confirmed: boolean }>(
-          `/tx/status/${txHash}`
-        );
-        if (status.confirmed) {
-          return;
-        }
-      } catch {
-        // Status endpoint might not exist, that's ok
-      }
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-    }
-
-    this.log('Max confirmation attempts reached, assuming success');
+    return Number(baseUnits) / Math.pow(10, decimals);
   }
 
   /**
@@ -605,14 +582,23 @@ export class ShadowWireProvider {
   }
 
   /**
+   * Check if WASM is initialized
+   */
+  isWASMInitialized(): boolean {
+    return this.wasmInitialized;
+  }
+
+  /**
+   * Check if WASM is supported for client-side proofs
+   */
+  static isWASMSupported(): boolean {
+    return isWASMSupported();
+  }
+
+  /**
    * Check if a token is supported
    */
   static isTokenSupported(token: string): token is ShadowWireToken {
-    const supportedTokens = [
-      'SOL', 'RADR', 'USDC', 'ORE', 'BONK', 'JIM', 'GODL', 'HUSTLE',
-      'ZEC', 'CRT', 'BLACKCOIN', 'GIL', 'ANON', 'WLFI', 'USD1', 'AOL',
-      'IQLABS', 'SANA', 'POKI', 'RAIN', 'HOSICO', 'SKR'
-    ];
-    return supportedTokens.includes(token);
+    return SUPPORTED_TOKENS.includes(token as ShadowWireToken);
   }
 }
