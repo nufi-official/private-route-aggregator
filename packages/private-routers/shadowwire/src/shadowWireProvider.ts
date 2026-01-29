@@ -425,7 +425,9 @@ export class ShadowWireProvider {
       });
 
       if (!response.success) {
-        throw new Error('Transfer failed');
+        // API returns error message in response.error when success is false
+        const errorMsg = (response as unknown as { error?: string }).error || 'Transfer failed';
+        throw new Error(errorMsg);
       }
 
       const txHash = response.tx_signature;

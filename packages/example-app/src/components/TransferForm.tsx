@@ -143,6 +143,8 @@ export function TransferForm({
     rentFee: string;
     totalWithdraw: string;
     sufficient: boolean;
+    belowMinimum: boolean;
+    minimumAmount: number;
   } | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
@@ -177,7 +179,7 @@ export function TransferForm({
       // Detect provider type by name (more reliable than 'in' checks)
       const providerName = (provider as { name?: string }).name;
       const isPrivacyCash = providerName === 'privacy-cash';
-      const isShadowWire = providerName === 'shadowwire' || 'transfer' in provider;
+      const isShadowWire = providerName?.toLowerCase() === 'shadowwire' || 'transfer' in provider;
 
       console.log('[TransferForm] Fee preview - provider:', providerName, 'isPrivacyCash:', isPrivacyCash, 'isShadowWire:', isShadowWire);
 
@@ -212,10 +214,13 @@ export function TransferForm({
         // PrivacyCash: percentage + rent fee
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pcProvider = provider as any;
+        // eslint-disable-next-line no-console
         console.log('[TransferForm] Calling getFeeConfig...');
         const config = await pcProvider.getFeeConfig();
+        // eslint-disable-next-line no-console
         console.log('[TransferForm] PrivacyCash fee config:', config);
-        feePercent = config.withdrawFeeRate;
+        // withdrawFeeRate is decimal (e.g., 0.001 for 0.1%), convert to percentage for display
+        feePercent = config.withdrawFeeRate * 100;
         rentFee = config.withdrawRentFee;
         console.log('[TransferForm] Calling calculateWithdrawAmount with', solBaseUnits.toString());
         const result = await pcProvider.calculateWithdrawAmount(solBaseUnits);
@@ -223,13 +228,37 @@ export function TransferForm({
         totalWithdraw = result.withdrawAmount as bigint;
         fee = result.fee as bigint;
       } else if (isShadowWire) {
-        // ShadowWire: percentage-based fee
+        // ShadowWire: use SDK's calculateFee for accurate fee calculation
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const swProvider = provider as any;
-        feePercent = swProvider.getFeePercentage() / 100;
-        const withdrawAmount = parseFloat(solAmountWithBuffer) / (1 - feePercent);
-        totalWithdraw = account.assetToBaseUnits(withdrawAmount.toFixed(9));
-        fee = totalWithdraw - solBaseUnits;
+        // getFeePercentage() returns decimal directly (0.005 for 0.5%, NOT 0.5)
+        const baseFeeRate = swProvider.getFeePercentage();
+        const feeBuffer = 0.001; // Add 0.1% buffer for safety
+        const feeRate = baseFeeRate + feeBuffer;
+        feePercent = feeRate * 100; // For display: 0.006 -> 0.6%
+
+        // Calculate the amount to withdraw to get the desired net amount after fee
+        const desiredNetSol = parseFloat(solAmountWithBuffer);
+        let withdrawAmountSol = desiredNetSol / (1 - feeRate);
+
+        // Verify with calculateFee and adjust if needed
+        let feeBreakdown = swProvider.calculateFee(withdrawAmountSol);
+        while (feeBreakdown.netAmount < desiredNetSol) {
+          withdrawAmountSol += 0.0001;
+          feeBreakdown = swProvider.calculateFee(withdrawAmountSol);
+        }
+
+        // eslint-disable-next-line no-console
+        console.log('[TransferForm] ShadowWire fee breakdown:', {
+          feeRate,
+          feePercentDisplay: feePercent,
+          desiredNetSol,
+          withdrawAmountSol,
+          feeBreakdown,
+        });
+
+        totalWithdraw = account.assetToBaseUnits(withdrawAmountSol.toFixed(9));
+        fee = account.assetToBaseUnits(feeBreakdown.fee.toFixed(9));
       } else {
         // Fallback: no fee
         console.warn('[TransferForm] Unknown provider type, no fee calculation');
@@ -238,14 +267,26 @@ export function TransferForm({
       }
 
       const sufficient = privateBalance >= totalWithdraw;
+      const totalWithdrawSol = Number(totalWithdraw) / 1e9;
+
+      // Check minimum amount for ShadowWire
+      let belowMinimum = false;
+      let minimumAmount = 0;
+      if (isShadowWire) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        minimumAmount = (provider as any).getMinimumAmount();
+        belowMinimum = totalWithdrawSol < minimumAmount;
+      }
 
       setFeePreview({
         solAmount: solAmountWithBuffer,
         fee: (Number(fee) / 1e9).toFixed(6),
-        feePercent: (feePercent * 100).toFixed(2),
+        feePercent: feePercent.toFixed(2), // Already in percentage form (0.5 for 0.5%)
         rentFee: rentFee.toFixed(4),
-        totalWithdraw: (Number(totalWithdraw) / 1e9).toFixed(6),
+        totalWithdraw: totalWithdrawSol.toFixed(6),
         sufficient,
+        belowMinimum,
+        minimumAmount,
       });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
@@ -260,7 +301,7 @@ export function TransferForm({
   // Recalculate fee preview when inputs change
   useEffect(() => {
     const timer = setTimeout(() => {
-      calculateFeePreview();
+      void calculateFeePreview();
     }, 300); // Debounce
     return () => clearTimeout(timer);
   }, [calculateFeePreview]);
@@ -343,7 +384,7 @@ export function TransferForm({
     // Detect provider type by name
     const providerName = (provider as { name?: string }).name;
     const isPrivacyCash = providerName === 'privacy-cash';
-    const isShadowWire = providerName === 'shadowwire' || 'transfer' in provider;
+    const isShadowWire = providerName?.toLowerCase() === 'shadowwire' || 'transfer' in provider;
 
     // Amount that should arrive at NEAR Intents (what we tell the API)
     const solAmountForSwap = (parseFloat(solAmount) * priceBuffer).toFixed(9);
@@ -351,7 +392,7 @@ export function TransferForm({
 
     // Calculate amount to withdraw using provider's fee estimation
     let solBaseUnitsToWithdraw: bigint;
-    let feeInfo: { feeRate?: number; rentFee?: number; totalFee?: bigint } = {};
+    const feeInfo: { feeRate?: number; rentFee?: number; totalFee?: bigint } = {};
 
     if (isPrivacyCash) {
       // PrivacyCash: has both percentage fee AND fixed rent fee
@@ -374,23 +415,47 @@ export function TransferForm({
         rentFee: feeConfig.withdrawRentFee,
       });
     } else if (isShadowWire) {
-      // ShadowWire: percentage-based fee only
-      const calcFee = (provider as { calculateFee: (amount: number) => { fee: number; netAmount: number } }).calculateFee;
-      const getFeePercent = (provider as { getFeePercentage: () => number }).getFeePercentage;
-      const feePercent = getFeePercent();
-      feeInfo.feeRate = feePercent / 100;
+      // ShadowWire: use SDK's calculateFee for accurate fee calculation
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const swProvider = provider as any;
 
-      // To receive X after fee: withdraw X / (1 - feeRate)
-      const withdrawAmount = parseFloat(solAmountForSwap) / (1 - feeInfo.feeRate);
-      solBaseUnitsToWithdraw = account.assetToBaseUnits(withdrawAmount.toFixed(9));
+      // Get the desired net amount (what should arrive at NEAR Intents)
+      const desiredNetSol = parseFloat(solAmountForSwap);
 
-      // Verify
-      const verification = calcFee(withdrawAmount);
-      console.log('[TransferForm] ShadowWire fee verification:', {
-        withdrawAmount,
-        expectedNet: parseFloat(solAmountForSwap),
-        actualNet: verification.netAmount,
-        fee: verification.fee,
+      // getFeePercentage() returns decimal directly (0.005 for 0.5%, NOT 0.5)
+      const baseFeeRate = swProvider.getFeePercentage();
+      const feeBuffer = 0.001; // Add 0.1% buffer for safety
+      const feeRate = baseFeeRate + feeBuffer;
+      let withdrawAmountSol = desiredNetSol / (1 - feeRate);
+
+      // Verify with calculateFee and adjust if needed
+      let feeBreakdown = swProvider.calculateFee(withdrawAmountSol);
+
+      // If netAmount is less than desired, increase withdrawal amount
+      while (feeBreakdown.netAmount < desiredNetSol) {
+        withdrawAmountSol += 0.0001; // Add 0.0001 SOL and recalculate
+        feeBreakdown = swProvider.calculateFee(withdrawAmountSol);
+      }
+
+      solBaseUnitsToWithdraw = account.assetToBaseUnits(withdrawAmountSol.toFixed(9));
+      feeInfo.feeRate = feeRate;
+      feeInfo.totalFee = account.assetToBaseUnits(feeBreakdown.fee.toFixed(9));
+
+      // Check minimum amount
+      const minimumAmount = swProvider.getMinimumAmount();
+      if (withdrawAmountSol < minimumAmount) {
+        throw new Error(`Amount ${withdrawAmountSol.toFixed(4)} SOL is below ShadowWire minimum of ${minimumAmount} SOL`);
+      }
+
+      // eslint-disable-next-line no-console
+      console.log('[TransferForm] ShadowWire fee calculation:', {
+        feeRate,
+        feeRatePercent: feeRate * 100,
+        desiredNet: desiredNetSol,
+        withdrawAmount: withdrawAmountSol,
+        fee: feeBreakdown.fee,
+        netAmount: feeBreakdown.netAmount,
+        minimumAmount,
       });
     } else {
       // Fallback: no fee adjustment
@@ -520,6 +585,14 @@ export function TransferForm({
   };
 
   const handleTransfer = async () => {
+    console.log('[TransferForm] handleTransfer called', {
+      destinationAddress,
+      amount,
+      provider: provider ? (provider as { name?: string }).name : null,
+      needsSwap,
+      asset,
+    });
+
     if (!destinationAddress) {
       setError('Please enter a destination address');
       return;
@@ -784,6 +857,13 @@ export function TransferForm({
                   <Alert severity="warning" sx={{ mt: 1, py: 0 }}>
                     <Typography variant="caption">
                       Insufficient balance! You have {solBalanceFormatted} SOL
+                    </Typography>
+                  </Alert>
+                )}
+                {feePreview.belowMinimum && (
+                  <Alert severity="error" sx={{ mt: 1, py: 0 }}>
+                    <Typography variant="caption">
+                      Below minimum! ShadowWire requires at least {feePreview.minimumAmount} SOL per transfer
                     </Typography>
                   </Alert>
                 )}
