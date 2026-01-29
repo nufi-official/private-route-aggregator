@@ -30,6 +30,7 @@ interface TransferFormProps {
   availableAssets: string[];
   onAssetChange: (asset: string) => void;
   formatUsdValue?: (symbol: string, amount: string) => string | null;
+  convertAmount?: (fromSymbol: string, toSymbol: string, amount: string) => string | null;
 }
 
 export function TransferForm({
@@ -43,6 +44,7 @@ export function TransferForm({
   availableAssets,
   onAssetChange,
   formatUsdValue,
+  convertAmount,
 }: TransferFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
@@ -56,10 +58,13 @@ export function TransferForm({
     return BigInt(whole + paddedDecimal);
   };
 
-  const formatBalance = (amount: bigint): string => {
-    const divisor = Math.pow(10, decimals);
+  const formatBalance = (amount: bigint, assetDecimals: number = decimals): string => {
+    const divisor = Math.pow(10, assetDecimals);
     return (Number(amount) / divisor).toFixed(4);
   };
+
+  // SOL balance formatted (always 9 decimals)
+  const solBalanceFormatted = formatBalance(privateBalance, 9);
 
   const handleTransfer = async () => {
     if (!destinationAddress) {
@@ -167,16 +172,23 @@ export function TransferForm({
           <Typography variant="body2" color="text.secondary">
             Private Balance
           </Typography>
-          <Box display="flex" alignItems="baseline" gap={1}>
-            <Typography variant="h6" fontWeight={600} color="secondary">
-              {privateBalanceLoading ? '...' : `${formatBalance(privateBalance)} ${asset}`}
-            </Typography>
-            {!privateBalanceLoading && formatUsdValue && (
-              <Typography variant="body2" color="text.secondary">
-                {formatUsdValue(asset, formatBalance(privateBalance)) ?? ''}
+          {privateBalanceLoading ? (
+            <Typography variant="h6" fontWeight={600} color="secondary">...</Typography>
+          ) : (
+            <Box display="flex" alignItems="baseline" gap={1}>
+              <Typography variant="h6" fontWeight={600} color="secondary">
+                {asset === 'SOL' || asset.includes(':')
+                  ? `${solBalanceFormatted} SOL`
+                  : `${convertAmount?.('SOL', asset, solBalanceFormatted) ?? '?'} ${asset}`
+                }
               </Typography>
-            )}
-          </Box>
+              {formatUsdValue && (
+                <Typography variant="body2" color="text.secondary">
+                  {formatUsdValue('SOL', solBalanceFormatted) ?? ''}
+                </Typography>
+              )}
+            </Box>
+          )}
         </Box>
 
         <TextField

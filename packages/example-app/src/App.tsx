@@ -97,7 +97,7 @@ function AppContent() {
   const [providerError, setProviderError] = useState<string | null>(null);
 
   // Token prices and tokens from NEAR Intents
-  const { formatUsdValue, tokens: nearIntentsTokens } = useTokenPrices();
+  const { formatUsdValue, convertAmount, tokens: nearIntentsTokens } = useTokenPrices();
 
   // All NEAR Intents tokens: Solana tokens by symbol, cross-chain as "SYMBOL:CHAIN"
   const nearIntentsAssets = [
@@ -122,7 +122,8 @@ function AppContent() {
   // Separate state for Transfer form
   const [withdrawAsset, setWithdrawAsset] = useState<string>('SOL');
   const [withdrawProvider, setWithdrawProvider] = useState<ProviderType | null>(null);
-  const [privateBalance, setPrivateBalance] = useState<bigint>(0n);
+  const [solProvider, setSolProvider] = useState<ProviderType | null>(null); // Always SOL for balance
+  const [privateBalance, setPrivateBalance] = useState<bigint>(0n); // Always SOL balance
   const [privateBalanceLoading, setPrivateBalanceLoading] = useState(false);
 
   // Initialize WASM for ShadowWire on mount
@@ -222,8 +223,10 @@ function AppContent() {
     // Create initial providers for both forms
     const newFundProvider = createProvider(acc, selectedProvider, fundAsset);
     const newWithdrawProvider = createProvider(acc, selectedProvider, withdrawAsset);
+    const newSolProvider = createProvider(acc, selectedProvider, 'SOL'); // Always SOL for balance
     setFundProvider(newFundProvider);
     setWithdrawProvider(newWithdrawProvider);
+    setSolProvider(newSolProvider);
   };
 
   const handleProviderChange = (_: React.MouseEvent<HTMLElement>, newProviderName: ProviderName | null) => {
@@ -236,6 +239,7 @@ function AppContent() {
         setProviderError('ShadowWire requires a browser wallet or Ledger. Please connect using a wallet adapter or Ledger.');
         setFundProvider(null);
         setWithdrawProvider(null);
+        setSolProvider(null);
         return;
       }
 
@@ -251,8 +255,10 @@ function AppContent() {
       // Recreate providers with new provider type
       const newFundProvider = createProvider(account, newProviderName, newFundAsset);
       const newWithdrawProvider = createProvider(account, newProviderName, newWithdrawAsset);
+      const newSolProvider = createProvider(account, newProviderName, 'SOL');
       setFundProvider(newFundProvider);
       setWithdrawProvider(newWithdrawProvider);
+      setSolProvider(newSolProvider);
     }
   };
 
@@ -279,31 +285,9 @@ function AppContent() {
     }
   };
 
-  const handleWithdrawAssetChange = async (newAsset: string) => {
+  const handleWithdrawAssetChange = (newAsset: string) => {
     setWithdrawAsset(newAsset);
-    setPrivateBalance(0n);
-
-    if (account) {
-      // For PrivacyCash, reuse the existing provider and just change the asset
-      // This avoids requiring a new signature
-      if (selectedProvider === 'privacy-cash' && withdrawProvider instanceof PrivacyCashProvider) {
-        withdrawProvider.setAsset(newAsset as PrivacyCashAsset);
-        // Fetch balance with new asset
-        setPrivateBalanceLoading(true);
-        try {
-          const balance = await withdrawProvider.getPrivateBalance();
-          setPrivateBalance(balance);
-        } catch (err) {
-          console.error('Failed to fetch private balance:', err);
-        } finally {
-          setPrivateBalanceLoading(false);
-        }
-      } else {
-        // For ShadowWire, we need to create a new provider
-        const newProvider = createProvider(account, selectedProvider, newAsset);
-        setWithdrawProvider(newProvider);
-      }
-    }
+    // SOL balance stays the same - just update the selected asset for conversion display
   };
 
   const handleLogout = () => {
@@ -311,6 +295,7 @@ function AppContent() {
     setAddress('');
     setFundProvider(null);
     setWithdrawProvider(null);
+    setSolProvider(null);
     setPrivateBalance(0n);
     setWalletBalance(0n);
     setProviderError(null);
@@ -381,20 +366,20 @@ function AppContent() {
     }
   }, [account, fundAsset, nearIntentsTokens]);
 
-  // Fetch private balance for withdraw form
+  // Fetch private SOL balance (always SOL, used for conversions)
   const refreshPrivateBalance = useCallback(async () => {
-    if (!withdrawProvider) return;
+    if (!solProvider) return;
 
     setPrivateBalanceLoading(true);
     try {
-      const balance = await withdrawProvider.getPrivateBalance();
+      const balance = await solProvider.getPrivateBalance();
       setPrivateBalance(balance);
     } catch (err) {
       console.error('Failed to fetch private balance:', err);
     } finally {
       setPrivateBalanceLoading(false);
     }
-  }, [withdrawProvider]);
+  }, [solProvider]);
 
   // Fetch balances when providers change
   useEffect(() => {
@@ -404,10 +389,10 @@ function AppContent() {
   }, [account, fundAsset, refreshWalletBalance]);
 
   useEffect(() => {
-    if (withdrawProvider) {
+    if (solProvider) {
       refreshPrivateBalance();
     }
-  }, [withdrawProvider, refreshPrivateBalance]);
+  }, [solProvider, refreshPrivateBalance]);
 
   const shortenAddress = (addr: string): string => {
     if (addr.length <= 12) return addr;
@@ -541,6 +526,7 @@ function AppContent() {
                 availableAssets={availableAssets}
                 onAssetChange={handleWithdrawAssetChange}
                 formatUsdValue={formatUsdValue}
+                convertAmount={convertAmount}
               />
             </Grid>
           </Grid>

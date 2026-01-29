@@ -137,6 +137,18 @@ export function useTokenPrices() {
     });
   }, [getPrice, prices]);
 
+  // Convert amount from one token to another using USD prices
+  const convertAmount = useCallback((fromSymbol: string, toSymbol: string, amount: string): string | null => {
+    const fromPrice = getPrice(fromSymbol);
+    const toPrice = getPrice(toSymbol);
+    if (fromPrice === null || toPrice === null || !amount || isNaN(parseFloat(amount)) || toPrice === 0) {
+      return null;
+    }
+    const usdValue = parseFloat(amount) * fromPrice;
+    const converted = usdValue / toPrice;
+    return converted.toFixed(6);
+  }, [getPrice]);
+
   return {
     prices,
     tokens,
@@ -145,6 +157,7 @@ export function useTokenPrices() {
     source,
     getPrice,
     formatUsdValue,
+    convertAmount,
     refresh: fetchPrices,
   };
 }
