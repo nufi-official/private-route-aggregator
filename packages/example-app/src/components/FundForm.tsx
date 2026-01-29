@@ -97,7 +97,7 @@ type CrossChainStatus =
   | { stage: 'idle' }
   | { stage: 'getting_quote' }
   | { stage: 'awaiting_deposit'; depositAddress: string; originAsset: SwapApiAsset }
-  | { stage: 'processing'; status: string }
+  | { stage: 'processing'; status: string; depositAddress: string }
   | { stage: 'completed'; txHash?: string }
   | { stage: 'failed'; error: string };
 
@@ -197,13 +197,13 @@ export function FundForm({
       return;
     }
 
-    // Find the destination Solana asset
-    const solanaAsset = nearIntentsTokens.find(
-      (t) => t.symbol === assetSymbol && t.blockchain === 'sol'
+    // Find SOL on Solana as destination (always swap to SOL for funding)
+    const solAsset = nearIntentsTokens.find(
+      (t) => t.symbol === 'SOL' && t.blockchain === 'sol'
     );
 
-    if (!solanaAsset) {
-      setError(`No Solana asset found for ${assetSymbol}`);
+    if (!solAsset) {
+      setError('SOL asset not found');
       return;
     }
 
@@ -215,13 +215,13 @@ export function FundForm({
       const api = OneClickApi({ jwtToken });
       const solanaAddress = await account.getAddress();
 
-      // Get quote
+      // Get quote: swap from origin asset to SOL
       const quoteResponse = await api.getQuote({
         dry: false,
         senderAddress: originAddress, // Origin chain address for refunds
-        recipientAddress: solanaAddress, // Solana address for receiving
+        recipientAddress: solanaAddress, // Solana address for receiving SOL
         originAsset: originAsset.assetId,
-        destinationAsset: solanaAsset.assetId,
+        destinationAsset: solAsset.assetId, // Always swap to SOL
         amount: toBaseUnits(amount).toString(),
         slippageTolerance: 100, // 1% in basis points
       });
@@ -239,6 +239,7 @@ export function FundForm({
 
       // Start polling for status
       const handleStatusChange = (event: SwapStateChangeEvent) => {
+        // eslint-disable-next-line no-console
         console.log('[FundForm] Cross-chain status:', event);
 
         if (event.status === 'QUOTE_RECEIVED' || event.status === 'DEPOSIT_SENT') {
@@ -249,6 +250,10 @@ export function FundForm({
           if (event.status === 'SUCCESS') {
             setCrossChainStatus({ stage: 'completed' });
             setLoading(false);
+            setAmount('');
+            setOriginAddress('');
+            // Switch to SOL asset and refresh balance
+            onAssetChange('SOL');
             onSuccess();
           } else {
             setCrossChainStatus({
@@ -258,7 +263,8 @@ export function FundForm({
             setLoading(false);
           }
         } else {
-          setCrossChainStatus({ stage: 'processing', status: event.status });
+          // Keep deposit address visible during processing
+          setCrossChainStatus({ stage: 'processing', status: event.status, depositAddress });
         }
       };
 
@@ -449,7 +455,8 @@ export function FundForm({
           <>
             <Alert severity="info" sx={{ mb: 2 }}>
               <Typography variant="body2">
-                Deposit {assetSymbol} from {assetChain.toUpperCase()} to Solana via NEAR Intents
+                Swap {assetSymbol} from {assetChain.toUpperCase()} → SOL on Solana via NEAR Intents.
+                The SOL will be deposited to your wallet for funding the privacy pool.
               </Typography>
             </Alert>
             <TextField
@@ -466,10 +473,16 @@ export function FundForm({
         )}
 
         {/* Cross-chain deposit address */}
-        {crossChainStatus.stage === 'awaiting_deposit' && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
+        {(crossChainStatus.stage === 'awaiting_deposit' || crossChainStatus.stage === 'processing') && 'depositAddress' in crossChainStatus && (
+          <Alert severity={crossChainStatus.stage === 'processing' ? 'info' : 'warning'} sx={{ mb: 2 }}>
             <Typography variant="body2" fontWeight={500} mb={1}>
-              Send {amount} {crossChainStatus.originAsset.symbol} on {crossChainStatus.originAsset.blockchain.toUpperCase()} to:
+              {crossChainStatus.stage === 'processing'
+                ? `Processing swap: ${crossChainStatus.status}`
+                : `Send ${amount} ${(crossChainStatus as { originAsset: SwapApiAsset }).originAsset.symbol} on ${(crossChainStatus as { originAsset: SwapApiAsset }).originAsset.blockchain.toUpperCase()} to this address:`
+              }
+            </Typography>
+            <Typography variant="caption" color="text.secondary" mb={1} display="block">
+              You will receive SOL on Solana after the swap completes.
             </Typography>
             <Box
               sx={{
@@ -495,13 +508,16 @@ export function FundForm({
               </Tooltip>
             </Box>
             <Typography variant="caption" color="text.secondary" mt={1} display="block">
-              Waiting for deposit... This page will update automatically.
+              {crossChainStatus.stage === 'processing'
+                ? 'Swap in progress... This page will update automatically.'
+                : 'Waiting for deposit... This page will update automatically.'
+              }
             </Typography>
           </Alert>
         )}
 
-        {/* Cross-chain status */}
-        {crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'awaiting_deposit' && (
+        {/* Cross-chain status (only show for completed/failed, processing is shown with deposit address) */}
+        {(crossChainStatus.stage === 'completed' || crossChainStatus.stage === 'failed' || crossChainStatus.stage === 'getting_quote') && (
           <Alert
             severity={
               crossChainStatus.stage === 'completed' ? 'success' :
