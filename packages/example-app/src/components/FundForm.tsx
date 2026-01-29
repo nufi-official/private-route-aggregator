@@ -118,7 +118,7 @@ interface FundFormProps {
 // Helper to parse asset string - returns { symbol, chain } for cross-chain or { symbol, chain: 'sol' } for Solana
 function parseAsset(asset: string): { symbol: string; chain: string } {
   if (asset.includes(':')) {
-    const [symbol, chain] = asset.split(':');
+    const [symbol = '', chain = 'sol'] = asset.split(':');
     return { symbol, chain };
   }
   return { symbol: asset, chain: 'sol' };
@@ -127,7 +127,7 @@ function parseAsset(asset: string): { symbol: string; chain: string } {
 // Helper to format asset for display
 function formatAssetDisplay(asset: string): string {
   if (asset.includes(':')) {
-    const [symbol, chain] = asset.split(':');
+    const [symbol = '', chain = ''] = asset.split(':');
     return `${symbol} (${chain.toUpperCase()})`;
   }
   return asset;

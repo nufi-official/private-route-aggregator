@@ -3,8 +3,12 @@ import react from '@vitejs/plugin-react';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { createRequire } from 'module';
 import nodePath from 'path';
 import fs from 'fs';
+
+const require = createRequire(import.meta.url);
+const bufferShimPath = require.resolve('vite-plugin-node-polyfills/shims/buffer');
 
 // Plugin to serve WASM files from node_modules with correct MIME type
 function serveWasmPlugin(): Plugin {
@@ -49,7 +53,7 @@ function serveWasmPlugin(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     serveWasmPlugin(),
     wasm(),
@@ -90,6 +94,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Only alias during build — in dev, vite-plugin-node-polyfills handles this.
+      // Use the plugin's own shim (already browser-ready) so it gets bundled.
+      ...(command === 'build' ? { 'vite-plugin-node-polyfills/shims/buffer': bufferShimPath } : {}),
       'bn.js': 'bn.js/lib/bn.js',
       'node-localstorage': nodePath.resolve(__dirname, 'src/shims/node-localstorage.ts'),
       os: nodePath.resolve(__dirname, 'src/shims/os.ts'),
@@ -101,4 +108,4 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.wasm'],
-});
+}));

@@ -327,14 +327,14 @@ function AppContent() {
         const connection = new Connection(rpcUrl, 'confirmed');
 
         // Get mint address from ShadowWire, PrivacyCash, or NEAR Intents tokens
-        let mintAddress = TOKEN_MINTS[fundAsset as ShadowWireToken] || SPL_MINTS[fundAsset as PrivacyCashAsset];
+        let mintAddress: string | undefined = TOKEN_MINTS[fundAsset as ShadowWireToken] || (SPL_MINTS as Record<string, string>)[fundAsset];
 
         // If not found in provider mints, try NEAR Intents tokens
         if (!mintAddress) {
           const nearIntentsToken = nearIntentsTokens.find(
             (t) => t.symbol === fundAsset && t.blockchain === 'sol'
           );
-          mintAddress = nearIntentsToken?.address;
+          mintAddress = nearIntentsToken?.contractAddress;
         }
 
         if (!mintAddress) {
@@ -355,7 +355,7 @@ function AppContent() {
           setWalletBalance(0n);
         } else {
           // Parse the token account data to get balance
-          const accountInfo = tokenAccounts.value[0].account;
+          const accountInfo = tokenAccounts.value[0]!.account;
           // Token account data: first 64 bytes are mint (32) and owner (32), then 8 bytes for amount
           const data = accountInfo.data;
           const amount = data.readBigUInt64LE(64);

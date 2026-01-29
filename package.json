@@ -6,7 +6,13 @@
   "author": "",
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "heroku-postbuild": "pnpm --filter @privacy-router-sdk/example-app... run build",
+    "start": "cd packages/example-app && node server.js",
     "build": "pnpm -r run build",
     "dev": "pnpm -r run dev",
     "test": "pnpm -r run test",
