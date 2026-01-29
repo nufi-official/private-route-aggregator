@@ -21,6 +21,7 @@ import {
   withdrawSPL as privacyCashWithdrawSPL,
   getUtxosSPL,
   getBalanceFromUtxosSPL,
+  getConfig,
 } from 'privacycash/utils';
 import type {
   PrivacyCashConfig,
@@ -540,5 +541,111 @@ export class PrivacyCashProvider implements PrivacyProvider {
    */
   getDerivedAddress(): string | null {
     return this.getAddress();
+  }
+
+  // ============================================
+  // Fee estimation methods
+  // ============================================
+
+  /**
+   * Get fee configuration for withdrawals
+   * Returns both percentage fee rate and fixed rent fee
+   */
+  async getFeeConfig(): Promise<{
+    withdrawFeeRate: number;
+    withdrawRentFee: number;
+    rentFees: Record<string, number>;
+  }> {
+    const [withdrawFeeRate, withdrawRentFee, rentFees] = await Promise.all([
+      getConfig('withdraw_fee_rate'),
+      getConfig('withdraw_rent_fee'),
+      getConfig('rent_fees'),
+    ]);
+
+    return {
+      withdrawFeeRate,
+      withdrawRentFee,
+      rentFees: rentFees as Record<string, number>,
+    };
+  }
+
+  /**
+   * Calculate fee for a withdrawal amount (in base units / lamports)
+   * Fee = amount * withdraw_fee_rate + rent_fee
+   */
+  async calculateFee(amountBaseUnits: bigint): Promise<{
+    fee: bigint;
+    netAmount: bigint;
+    feeRate: number;
+    rentFee: number;
+  }> {
+    const config = await this.getFeeConfig();
+    const amount = Number(amountBaseUnits);
+
+    // Get rent fee for current asset
+    let rentFee = config.withdrawRentFee; // Default for SOL
+    if (this.asset !== 'SOL') {
+      const assetRentFee = config.rentFees[this.asset];
+      if (assetRentFee !== undefined) {
+        rentFee = assetRentFee;
+      }
+    }
+
+    // Fee = percentage fee + fixed rent fee
+    // Match SDK formula exactly: Math.floor(amount * rate + LAMPORTS_PER_SOL * rent)
+    const LAMPORTS_PER_SOL = 1e9;
+    const totalFee = Math.floor(amount * config.withdrawFeeRate + LAMPORTS_PER_SOL * rentFee);
+
+    const netAmount = Math.floor(amount - totalFee);
+
+    return {
+      fee: BigInt(Math.max(0, totalFee)),
+      netAmount: BigInt(Math.max(0, netAmount)),
+      feeRate: config.withdrawFeeRate,
+      rentFee,
+    };
+  }
+
+  /**
+   * Calculate the amount to withdraw to receive a specific net amount after fees
+   */
+  async calculateWithdrawAmount(desiredNetAmount: bigint): Promise<{
+    withdrawAmount: bigint;
+    fee: bigint;
+  }> {
+    const config = await this.getFeeConfig();
+
+    // Get rent fee for current asset
+    let rentFee = config.withdrawRentFee;
+    if (this.asset !== 'SOL') {
+      const assetRentFee = config.rentFees[this.asset];
+      if (assetRentFee !== undefined) {
+        rentFee = assetRentFee;
+      }
+    }
+
+    const LAMPORTS_PER_SOL = 1e9;
+    const rentFeeLamports = rentFee * LAMPORTS_PER_SOL;
+    const netAmountNum = Number(desiredNetAmount);
+
+    // SDK fee formula: fee = Math.floor(amount * feeRate + LAMPORTS_PER_SOL * rentFee)
+    // We want: net = amount - fee
+    // So: net = amount - Math.floor(amount * feeRate + rentFeeLamports)
+    // Approximating (ignoring floor for calculation): net ≈ amount * (1 - feeRate) - rentFeeLamports
+    // Solving for amount: amount ≈ (net + rentFeeLamports) / (1 - feeRate)
+    // Use ceil to ensure we always have enough
+    const withdrawAmount = Math.ceil((netAmountNum + rentFeeLamports) / (1 - config.withdrawFeeRate));
+
+    // Verify by calculating the actual fee with this withdraw amount
+    const actualFee = Math.floor(withdrawAmount * config.withdrawFeeRate + rentFeeLamports);
+    const actualNet = withdrawAmount - actualFee;
+
+    // If we're still short due to rounding, add 1 lamport
+    const finalWithdrawAmount = actualNet >= netAmountNum ? withdrawAmount : withdrawAmount + 1;
+
+    return {
+      withdrawAmount: BigInt(finalWithdrawAmount),
+      fee: BigInt(finalWithdrawAmount - netAmountNum),
+    };
   }
 }

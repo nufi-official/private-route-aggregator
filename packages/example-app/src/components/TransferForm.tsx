@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Paper,
   Typography,
@@ -135,6 +135,18 @@ export function TransferForm({
   const [error, setError] = useState<string | null>(null);
   const [swapStatus, setSwapStatus] = useState<SwapTransferStatus>({ stage: 'idle' });
 
+  // Fee preview state
+  const [feePreview, setFeePreview] = useState<{
+    solAmount: string;
+    fee: string;
+    feePercent: string;
+    rentFee: string;
+    totalWithdraw: string;
+    sufficient: boolean;
+  } | null>(null);
+  const [feeLoading, setFeeLoading] = useState(false);
+  const [feeError, setFeeError] = useState<string | null>(null);
+
   // Check if we need to swap (any non-SOL asset needs swap via NEAR Intents)
   const needsSwap = asset !== 'SOL';
 
@@ -150,6 +162,108 @@ export function TransferForm({
 
   // SOL balance formatted (always 9 decimals)
   const solBalanceFormatted = formatBalance(privateBalance, 9);
+
+  // Calculate fee preview when amount changes
+  const calculateFeePreview = useCallback(async () => {
+    if (!amount || !provider || parseFloat(amount) <= 0) {
+      setFeePreview(null);
+      setFeeError(null);
+      return;
+    }
+
+    setFeeLoading(true);
+    setFeeError(null);
+    try {
+      // Detect provider type by name (more reliable than 'in' checks)
+      const providerName = (provider as { name?: string }).name;
+      const isPrivacyCash = providerName === 'privacy-cash';
+      const isShadowWire = providerName === 'shadowwire' || 'transfer' in provider;
+
+      console.log('[TransferForm] Fee preview - provider:', providerName, 'isPrivacyCash:', isPrivacyCash, 'isShadowWire:', isShadowWire);
+
+      // Convert target amount to SOL
+      let solAmount: string;
+      if (needsSwap) {
+        const converted = convertAmount?.(assetSymbol, 'SOL', amount);
+        if (!converted) {
+          console.log('[TransferForm] Fee preview - no conversion available for', assetSymbol);
+          setFeePreview(null);
+          setFeeLoading(false);
+          return;
+        }
+        solAmount = converted;
+      } else {
+        solAmount = amount;
+      }
+
+      // Add price buffer (2%)
+      const priceBuffer = 1.02;
+      const solAmountWithBuffer = (parseFloat(solAmount) * priceBuffer).toFixed(9);
+      const solBaseUnits = account.assetToBaseUnits(solAmountWithBuffer);
+
+      console.log('[TransferForm] Fee preview - solAmount:', solAmount, 'withBuffer:', solAmountWithBuffer, 'baseUnits:', solBaseUnits.toString());
+
+      let fee: bigint;
+      let totalWithdraw: bigint;
+      let feePercent = 0;
+      let rentFee = 0;
+
+      if (isPrivacyCash) {
+        // PrivacyCash: percentage + rent fee
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pcProvider = provider as any;
+        console.log('[TransferForm] Calling getFeeConfig...');
+        const config = await pcProvider.getFeeConfig();
+        console.log('[TransferForm] PrivacyCash fee config:', config);
+        feePercent = config.withdrawFeeRate;
+        rentFee = config.withdrawRentFee;
+        console.log('[TransferForm] Calling calculateWithdrawAmount with', solBaseUnits.toString());
+        const result = await pcProvider.calculateWithdrawAmount(solBaseUnits);
+        console.log('[TransferForm] PrivacyCash calculateWithdrawAmount result:', result);
+        totalWithdraw = result.withdrawAmount as bigint;
+        fee = result.fee as bigint;
+      } else if (isShadowWire) {
+        // ShadowWire: percentage-based fee
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const swProvider = provider as any;
+        feePercent = swProvider.getFeePercentage() / 100;
+        const withdrawAmount = parseFloat(solAmountWithBuffer) / (1 - feePercent);
+        totalWithdraw = account.assetToBaseUnits(withdrawAmount.toFixed(9));
+        fee = totalWithdraw - solBaseUnits;
+      } else {
+        // Fallback: no fee
+        console.warn('[TransferForm] Unknown provider type, no fee calculation');
+        totalWithdraw = solBaseUnits;
+        fee = 0n;
+      }
+
+      const sufficient = privateBalance >= totalWithdraw;
+
+      setFeePreview({
+        solAmount: solAmountWithBuffer,
+        fee: (Number(fee) / 1e9).toFixed(6),
+        feePercent: (feePercent * 100).toFixed(2),
+        rentFee: rentFee.toFixed(4),
+        totalWithdraw: (Number(totalWithdraw) / 1e9).toFixed(6),
+        sufficient,
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[TransferForm] Fee preview error:', errorMsg, err);
+      setFeePreview(null);
+      setFeeError(errorMsg);
+    } finally {
+      setFeeLoading(false);
+    }
+  }, [amount, provider, needsSwap, assetSymbol, convertAmount, account, privateBalance]);
+
+  // Recalculate fee preview when inputs change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      calculateFeePreview();
+    }, 300); // Debounce
+    return () => clearTimeout(timer);
+  }, [calculateFeePreview]);
 
   // Direct SOL transfer (no swap needed)
   const handleDirectTransfer = async (solAmount: string) => {
@@ -225,32 +339,78 @@ export function TransferForm({
     // Flow: Pool → (minus fee) → Deposit Address → NEAR Intents Swap → Destination
     //
     const priceBuffer = 1.02; // 2% buffer for price fluctuation during swap
-    const isShadowWire = 'transfer' in provider;
-    const poolFeeRate = isShadowWire ? 0.005 : 0; // ShadowWire: 0.5% fee, PrivacyCash: no fee
 
-    // Amount that will arrive at NEAR Intents (what we tell the API)
+    // Detect provider type by name
+    const providerName = (provider as { name?: string }).name;
+    const isPrivacyCash = providerName === 'privacy-cash';
+    const isShadowWire = providerName === 'shadowwire' || 'transfer' in provider;
+
+    // Amount that should arrive at NEAR Intents (what we tell the API)
     const solAmountForSwap = (parseFloat(solAmount) * priceBuffer).toFixed(9);
-
-    // Amount to withdraw from pool (compensate for pool fee)
-    // To receive X after fee: withdraw X / (1 - feeRate)
-    const solAmountToWithdraw = poolFeeRate > 0
-      ? (parseFloat(solAmountForSwap) / (1 - poolFeeRate)).toFixed(9)
-      : solAmountForSwap;
-
     const solBaseUnitsForQuote = account.assetToBaseUnits(solAmountForSwap);
-    const solBaseUnitsToWithdraw = account.assetToBaseUnits(solAmountToWithdraw);
+
+    // Calculate amount to withdraw using provider's fee estimation
+    let solBaseUnitsToWithdraw: bigint;
+    let feeInfo: { feeRate?: number; rentFee?: number; totalFee?: bigint } = {};
+
+    if (isPrivacyCash) {
+      // PrivacyCash: has both percentage fee AND fixed rent fee
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const privacyCashProvider = provider as any;
+
+      const feeConfig = await privacyCashProvider.getFeeConfig();
+      feeInfo.feeRate = feeConfig.withdrawFeeRate;
+      feeInfo.rentFee = feeConfig.withdrawRentFee;
+
+      const { withdrawAmount, fee } = await privacyCashProvider.calculateWithdrawAmount(solBaseUnitsForQuote);
+      solBaseUnitsToWithdraw = withdrawAmount as bigint;
+      feeInfo.totalFee = fee as bigint;
+
+      console.log('[TransferForm] PrivacyCash fee calculation:', {
+        desiredNet: solBaseUnitsForQuote.toString(),
+        withdrawAmount: withdrawAmount.toString(),
+        fee: fee.toString(),
+        feeRate: feeConfig.withdrawFeeRate,
+        rentFee: feeConfig.withdrawRentFee,
+      });
+    } else if (isShadowWire) {
+      // ShadowWire: percentage-based fee only
+      const calcFee = (provider as { calculateFee: (amount: number) => { fee: number; netAmount: number } }).calculateFee;
+      const getFeePercent = (provider as { getFeePercentage: () => number }).getFeePercentage;
+      const feePercent = getFeePercent();
+      feeInfo.feeRate = feePercent / 100;
+
+      // To receive X after fee: withdraw X / (1 - feeRate)
+      const withdrawAmount = parseFloat(solAmountForSwap) / (1 - feeInfo.feeRate);
+      solBaseUnitsToWithdraw = account.assetToBaseUnits(withdrawAmount.toFixed(9));
+
+      // Verify
+      const verification = calcFee(withdrawAmount);
+      console.log('[TransferForm] ShadowWire fee verification:', {
+        withdrawAmount,
+        expectedNet: parseFloat(solAmountForSwap),
+        actualNet: verification.netAmount,
+        fee: verification.fee,
+      });
+    } else {
+      // Fallback: no fee adjustment
+      console.warn('[TransferForm] Unknown provider type, no fee adjustment');
+      solBaseUnitsToWithdraw = solBaseUnitsForQuote;
+    }
+
+    const solAmountToWithdraw = (Number(solBaseUnitsToWithdraw) / 1e9).toFixed(9);
 
     console.log('[TransferForm] SOL conversion:', {
       targetAmount: amount,
       targetAsset: assetSymbol,
       solAmount,
       priceBuffer,
-      poolFeeRate,
       isShadowWire,
       solAmountForSwap,
       solAmountToWithdraw,
       solBaseUnitsForQuote: solBaseUnitsForQuote.toString(),
       solBaseUnitsToWithdraw: solBaseUnitsToWithdraw.toString(),
+      feeInfo,
     });
 
     setSwapStatus({ stage: 'getting_quote' });
@@ -290,6 +450,27 @@ export function TransferForm({
     }
 
     setSwapStatus({ stage: 'transferring', depositAddress });
+
+    // Check private balance before transfer
+    const currentPrivateBalance = await provider.getPrivateBalance();
+    const hasSufficientBalance = currentPrivateBalance >= solBaseUnitsToWithdraw;
+
+    console.log('[TransferForm] Pre-transfer state:', {
+      depositAddress,
+      privateBalance: currentPrivateBalance.toString(),
+      privateBalanceSOL: Number(currentPrivateBalance) / 1e9,
+      amountToWithdraw: solBaseUnitsToWithdraw.toString(),
+      amountToWithdrawSOL: Number(solBaseUnitsToWithdraw) / 1e9,
+      expectedNetAmount: solBaseUnitsForQuote.toString(),
+      expectedNetAmountSOL: Number(solBaseUnitsForQuote) / 1e9,
+      sufficientBalance: hasSufficientBalance,
+    });
+
+    // Warn if insufficient balance - PrivacyCash will do a partial withdrawal!
+    if (!hasSufficientBalance) {
+      const shortfall = Number(solBaseUnitsToWithdraw - currentPrivateBalance) / 1e9;
+      console.warn(`[TransferForm] WARNING: Insufficient balance! Need ${Number(solBaseUnitsToWithdraw) / 1e9} SOL but only have ${Number(currentPrivateBalance) / 1e9} SOL. Short by ${shortfall} SOL. This will result in a partial withdrawal.`);
+    }
 
     // Transfer SOL from privacy pool to the deposit address
     // We withdraw solBaseUnitsToWithdraw (includes pool fee compensation)
@@ -543,6 +724,73 @@ export function TransferForm({
           }}
           helperText={amount && formatUsdValue ? formatUsdValue(assetSymbol, amount) : undefined}
         />
+
+        {/* Fee preview */}
+        {(feePreview || feeLoading || feeError) && amount && parseFloat(amount) > 0 && (
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
+              bgcolor: feeError ? 'error.dark' : feePreview?.sufficient === false ? 'error.dark' : 'action.hover',
+              borderRadius: 1,
+              opacity: feeLoading ? 0.7 : 1,
+            }}
+          >
+            {feeLoading ? (
+              <Box display="flex" alignItems="center" gap={1}>
+                <CircularProgress size={16} />
+                <Typography variant="body2" color="text.secondary">
+                  Calculating fees...
+                </Typography>
+              </Box>
+            ) : feeError ? (
+              <Typography variant="body2" color="error.light">
+                Fee calculation error: {feeError}
+              </Typography>
+            ) : feePreview ? (
+              <Box>
+                {needsSwap && (
+                  <Box display="flex" justifyContent="space-between" mb={0.5}>
+                    <Typography variant="body2" color="text.secondary">
+                      {amount} {assetSymbol} ≈
+                    </Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {feePreview.solAmount} SOL
+                    </Typography>
+                  </Box>
+                )}
+                <Box display="flex" justifyContent="space-between" mb={0.5}>
+                  <Typography variant="body2" color="text.secondary">
+                    Pool fee ({feePreview.feePercent}%{parseFloat(feePreview.rentFee) > 0 ? ` + ${feePreview.rentFee} SOL rent` : ''}):
+                  </Typography>
+                  <Typography variant="body2" color="warning.main" fontWeight={500}>
+                    ~{feePreview.fee} SOL
+                  </Typography>
+                </Box>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  pt={0.5}
+                  sx={{ borderTop: 1, borderColor: 'divider' }}
+                >
+                  <Typography variant="body2" fontWeight={600}>
+                    Total from pool:
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {feePreview.totalWithdraw} SOL
+                  </Typography>
+                </Box>
+                {!feePreview.sufficient && (
+                  <Alert severity="warning" sx={{ mt: 1, py: 0 }}>
+                    <Typography variant="caption">
+                      Insufficient balance! You have {solBalanceFormatted} SOL
+                    </Typography>
+                  </Alert>
+                )}
+              </Box>
+            ) : null}
+          </Box>
+        )}
 
         {/* Info about swap when non-SOL asset selected */}
         {needsSwap && swapStatus.stage === 'idle' && (

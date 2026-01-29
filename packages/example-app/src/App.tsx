@@ -252,8 +252,9 @@ function AppContent() {
 
       setFundAsset(newFundAsset);
       setWithdrawAsset(newWithdrawAsset);
+      // Only reset private balance (different pools per provider)
+      // Wallet balance is independent of provider - don't reset it
       setPrivateBalance(0n);
-      setWalletBalance(0n);
 
       // Recreate providers with new provider type
       const newFundProvider = createProvider(account, newProviderName, newFundAsset);
