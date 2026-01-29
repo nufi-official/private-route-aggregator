@@ -18,7 +18,7 @@ import { FundForm } from './components/FundForm';
 import { TransferForm } from './components/TransferForm';
 import { useTokenPrices } from './hooks/useTokenPrices';
 import { PrivacyCashProvider, SPL_MINTS } from '@privacy-router-sdk/privacy-cash';
-import { ShadowWireProvider, SUPPORTED_TOKENS, TOKEN_MINTS, initWASM } from '@privacy-router-sdk/shadowwire';
+import { ShadowWireProvider, TOKEN_MINTS, initWASM } from '@privacy-router-sdk/shadowwire';
 import type { ShadowWireToken } from '@privacy-router-sdk/shadowwire';
 import { Connection, PublicKey } from '@solana/web3.js';
 import type { PrivacyCashAsset } from '@privacy-router-sdk/privacy-cash';
@@ -29,10 +29,6 @@ import type { LedgerAccount } from '@privacy-router-sdk/solana-ledger';
 type AccountType = SolanaAccount | WalletAdapterAccount | LedgerAccount;
 type ProviderType = PrivacyCashProvider | ShadowWireProvider;
 type ProviderName = 'privacy-cash' | 'shadowwire';
-
-// Assets supported by each provider
-const PRIVACY_CASH_ASSETS: PrivacyCashAsset[] = ['SOL', 'USDC', 'USDT'];
-const SHADOWWIRE_ASSETS: ShadowWireToken[] = [...SUPPORTED_TOKENS];
 
 // Type guard to check if account has getSecretKey (is SolanaAccount with mnemonic)
 function isMnemonicAccount(account: AccountType): account is SolanaAccount {
@@ -103,18 +99,19 @@ function AppContent() {
   // Token prices and tokens from NEAR Intents
   const { formatUsdValue, tokens: nearIntentsTokens } = useTokenPrices();
 
-  // Get unique Solana assets from NEAR Intents
-  const nearIntentsSolanaAssets = [...new Set(
-    nearIntentsTokens
-      .filter((t) => t.blockchain === 'sol')
-      .map((t) => t.symbol)
-  )];
-
-  // Get non-Solana NEAR Intents assets (for cross-chain deposits)
-  // Format: "SYMBOL:CHAIN" (e.g., "USDC:eth")
-  const nearIntentsCrossChainAssets = nearIntentsTokens
-    .filter((t) => t.blockchain !== 'sol')
-    .map((t) => `${t.symbol}:${t.blockchain}`);
+  // All NEAR Intents tokens: Solana tokens by symbol, cross-chain as "SYMBOL:CHAIN"
+  const nearIntentsAssets = [
+    // Solana tokens (just symbol)
+    ...new Set(
+      nearIntentsTokens
+        .filter((t) => t.blockchain === 'sol')
+        .map((t) => t.symbol)
+    ),
+    // Cross-chain tokens (SYMBOL:CHAIN format)
+    ...nearIntentsTokens
+      .filter((t) => t.blockchain !== 'sol')
+      .map((t) => `${t.symbol}:${t.blockchain}`),
+  ];
 
   // Separate state for Fund form
   const [fundAsset, setFundAsset] = useState<string>('SOL');
@@ -135,17 +132,8 @@ function AppContent() {
     });
   }, []);
 
-  // Get available assets: provider assets + NEAR Intents Solana assets
-  const providerAssets = selectedProvider === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
-  const solanaOnlyAssets = [
-    ...providerAssets,
-    ...nearIntentsSolanaAssets.filter((a) => !providerAssets.includes(a as never)),
-  ];
-  // Fund form also gets cross-chain assets for deposits from other chains
-  const fundAvailableAssets = [
-    ...solanaOnlyAssets,
-    ...nearIntentsCrossChainAssets,
-  ];
+  // Available assets for both forms - just NEAR Intents tokens
+  const availableAssets = nearIntentsAssets;
 
   // Get decimals for an asset (handles both "SYMBOL" and "SYMBOL:CHAIN" formats)
   const getDecimals = (asset: string) => {
@@ -251,16 +239,9 @@ function AppContent() {
         return;
       }
 
-      // Reset to SOL if current assets not supported by new provider or NEAR Intents
-      const newProviderAssets = newProviderName === 'shadowwire' ? SHADOWWIRE_ASSETS : PRIVACY_CASH_ASSETS;
-      const newSolanaAssets = [
-        ...newProviderAssets,
-        ...nearIntentsSolanaAssets.filter((a) => !newProviderAssets.includes(a as never)),
-      ];
-      const newFundAssets = [...newSolanaAssets, ...nearIntentsCrossChainAssets];
-
-      const newFundAsset = newFundAssets.includes(fundAsset) ? fundAsset : 'SOL';
-      const newWithdrawAsset = newSolanaAssets.includes(withdrawAsset) ? withdrawAsset : 'SOL';
+      // Reset to SOL if current asset not in NEAR Intents
+      const newFundAsset = nearIntentsAssets.includes(fundAsset) ? fundAsset : 'SOL';
+      const newWithdrawAsset = nearIntentsAssets.includes(withdrawAsset) ? withdrawAsset : 'SOL';
 
       setFundAsset(newFundAsset);
       setWithdrawAsset(newWithdrawAsset);
@@ -540,7 +521,7 @@ function AppContent() {
                 onSuccess={refreshPrivateBalance}
                 asset={fundAsset}
                 decimals={getDecimals(fundAsset)}
-                availableAssets={fundAvailableAssets}
+                availableAssets={availableAssets}
                 onAssetChange={handleFundAssetChange}
                 walletBalance={walletBalance}
                 walletBalanceLoading={walletBalanceLoading}
@@ -557,7 +538,7 @@ function AppContent() {
                 onSuccess={refreshWalletBalance}
                 asset={withdrawAsset}
                 decimals={getDecimals(withdrawAsset)}
-                availableAssets={fundAvailableAssets}
+                availableAssets={availableAssets}
                 onAssetChange={handleWithdrawAssetChange}
                 formatUsdValue={formatUsdValue}
               />
