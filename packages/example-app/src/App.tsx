@@ -505,7 +505,13 @@ function AppContent() {
         )}
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        py: 4
+      }}>
         {/* Title */}
         <Box textAlign="center" mb={4}>
           <Typography
