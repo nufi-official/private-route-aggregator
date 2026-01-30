@@ -69,6 +69,17 @@ const darkTheme = createTheme({
           textTransform: 'none',
           borderRadius: 8,
         },
+        contained: {
+          background: '#000000',
+          color: '#ffffff',
+          '&:hover': {
+            background: '#1a1a1a',
+          },
+          '&:disabled': {
+            background: '#333333',
+            color: '#666666',
+          },
+        },
       },
     },
     MuiTextField: {
@@ -84,6 +95,7 @@ const darkTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 16,
+          background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
         },
       },
     },
