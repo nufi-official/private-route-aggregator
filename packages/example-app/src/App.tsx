@@ -110,6 +110,7 @@ const darkTheme = createTheme({
         root: {
           borderRadius: 24,
           background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+          boxShadow: '0 0 30px rgba(20, 241, 149, 0.4), 0 0 60px rgba(153, 69, 255, 0.3)',
         },
       },
     },
