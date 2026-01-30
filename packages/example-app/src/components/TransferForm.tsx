@@ -7,10 +7,9 @@ import {
   Box,
   Alert,
   CircularProgress,
-  Select,
-  MenuItem,
-  ListSubheader,
 } from '@mui/material';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { TokenSelector } from './TokenSelector';
 import type { WithdrawStatus } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
 import type { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
@@ -22,61 +21,6 @@ import {
 } from '@privacy-router-sdk/near-intents';
 
 type ProviderType = PrivacyCashProvider | ShadowWireProvider;
-
-// Chain display names
-const CHAIN_NAMES: Record<string, string> = {
-  sol: 'Solana',
-  eth: 'Ethereum',
-  base: 'Base',
-  arb: 'Arbitrum',
-  btc: 'Bitcoin',
-  near: 'NEAR',
-  ton: 'TON',
-  doge: 'Dogecoin',
-  xrp: 'XRP',
-  zec: 'Zcash',
-  gnosis: 'Gnosis',
-  bera: 'Berachain',
-  bsc: 'BNB Chain',
-  pol: 'Polygon',
-  tron: 'TRON',
-  sui: 'Sui',
-  op: 'Optimism',
-  avax: 'Avalanche',
-  cardano: 'Cardano',
-  ltc: 'Litecoin',
-  xlayer: 'X Layer',
-  monad: 'Monad',
-  bch: 'Bitcoin Cash',
-  starknet: 'Starknet',
-};
-
-// Group assets by chain
-function groupAssetsByChain(assets: string[]): Map<string, string[]> {
-  const groups = new Map<string, string[]>();
-
-  for (const asset of assets) {
-    const chain = asset.includes(':') ? asset.split(':')[1] ?? 'sol' : 'sol';
-    if (!groups.has(chain)) {
-      groups.set(chain, []);
-    }
-    groups.get(chain)!.push(asset);
-  }
-
-  // Sort: Solana first, then alphabetically by chain name
-  const sortedGroups = new Map<string, string[]>();
-  if (groups.has('sol')) {
-    sortedGroups.set('sol', groups.get('sol')!);
-  }
-  const otherChains = [...groups.keys()].filter(c => c !== 'sol').sort((a, b) =>
-    (CHAIN_NAMES[a] ?? a).localeCompare(CHAIN_NAMES[b] ?? b)
-  );
-  for (const chain of otherChains) {
-    sortedGroups.set(chain, groups.get(chain)!);
-  }
-
-  return sortedGroups;
-}
 
 // Get display name for an asset
 function getAssetDisplayName(asset: string): string {
@@ -132,6 +76,7 @@ export function TransferForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [swapStatus, setSwapStatus] = useState<SwapTransferStatus>({ stage: 'idle' });
+  const [tokenSelectorOpen, setTokenSelectorOpen] = useState(false);
 
   // Fee preview state
   const [feePreview, setFeePreview] = useState<{
@@ -741,58 +686,35 @@ export function TransferForm({
                 {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
               </Typography>
             </Box>
-            <Select
-              value={asset}
-              onChange={(e) => onAssetChange(e.target.value)}
-              disabled={loading}
-              MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
+            <Box
+              onClick={() => !loading && setTokenSelectorOpen(true)}
               sx={{
-                minWidth: 100,
-                bgcolor: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                cursor: loading ? 'default' : 'pointer',
                 alignSelf: 'center',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  border: 'none',
-                },
-                '& .MuiSelect-select': {
-                  py: 1,
-                  px: 2,
-                  fontSize: '18px',
-                  fontWeight: 600,
+                opacity: loading ? 0.5 : 1,
+                '&:hover': {
+                  opacity: loading ? 0.5 : 0.8,
                 },
               }}
             >
-              {(() => {
-                const grouped = groupAssetsByChain(availableAssets);
-                const items: React.ReactNode[] = [];
-
-                grouped.forEach((assets, chain) => {
-                  items.push(
-                    <ListSubheader
-                      key={`header-${chain}`}
-                      sx={{
-                        bgcolor: 'background.paper',
-                        fontWeight: 600,
-                        color: 'primary.main',
-                        lineHeight: '32px',
-                      }}
-                    >
-                      {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
-                    </ListSubheader>
-                  );
-                  assets.forEach((a) => {
-                    items.push(
-                      <MenuItem key={a} value={a} sx={{ pl: 3 }}>
-                        {getAssetDisplayName(a)}
-                      </MenuItem>
-                    );
-                  });
-                });
-
-                return items;
-              })()}
-            </Select>
+              <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
+                {getAssetDisplayName(asset)}
+              </Typography>
+              <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
+            </Box>
           </Box>
         </Box>
+
+        <TokenSelector
+          open={tokenSelectorOpen}
+          onClose={() => setTokenSelectorOpen(false)}
+          onSelect={(newAsset) => onAssetChange(newAsset)}
+          availableAssets={availableAssets}
+          currentAsset={asset}
+        />
 
         <TextField
           fullWidth
