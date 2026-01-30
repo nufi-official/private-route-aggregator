@@ -748,8 +748,7 @@ export function TransferForm({
               MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
               sx={{
                 minWidth: 100,
-                bgcolor: '#1a1a1a',
-                borderRadius: '16px',
+                bgcolor: 'transparent',
                 alignSelf: 'center',
                 '& .MuiOutlinedInput-notchedOutline': {
                   border: 'none',
@@ -757,6 +756,8 @@ export function TransferForm({
                 '& .MuiSelect-select': {
                   py: 1,
                   px: 2,
+                  fontSize: '18px',
+                  fontWeight: 600,
                 },
               }}
             >
