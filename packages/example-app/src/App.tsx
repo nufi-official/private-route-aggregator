@@ -6,8 +6,6 @@ import {
   Box,
   Grid2 as Grid,
   Alert,
-  ToggleButton,
-  ToggleButtonGroup,
   Chip,
   Button,
   Dialog,
@@ -115,28 +113,6 @@ const darkTheme = createTheme({
           backgroundImage: 'none',
           border: '1px solid rgba(255,255,255,0.1)',
           boxShadow: '-15px -15px 30px rgba(20, 241, 149, 0.15), 15px 15px 30px rgba(153, 69, 255, 0.15), 0 0 20px rgba(20, 241, 149, 0.1), 0 0 40px rgba(153, 69, 255, 0.08)',
-        },
-      },
-    },
-    MuiToggleButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 24,
-        },
-      },
-    },
-    MuiToggleButtonGroup: {
-      styleOverrides: {
-        root: {
-          borderRadius: 24,
-        },
-        grouped: {
-          '&:first-of-type': {
-            borderRadius: '24px 0 0 24px',
-          },
-          '&:last-of-type': {
-            borderRadius: '0 24px 24px 0',
-          },
         },
       },
     },
@@ -584,26 +560,105 @@ function AppContent() {
 
       {/* Provider Selector */}
       {account && (
-        <Box display="flex" justifyContent="center" alignItems="center" mb={3} gap={2}>
-          <ToggleButtonGroup
-            value={selectedProvider}
-            exclusive
-            onChange={handleProviderChange}
-            size="small"
+        <Box display="flex" justifyContent="center" alignItems="center" mb={3}>
+          <Box
+            sx={{
+              display: 'flex',
+              bgcolor: '#0a0a0a',
+              borderRadius: '16px',
+              p: 0.5,
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
           >
-            <ToggleButton value="shadowwire" sx={{ px: 3 }}>
+            <Box
+              onClick={() => handleProviderChange(null, 'shadowwire')}
+              sx={{
+                px: 3,
+                py: 1,
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                background: selectedProvider === 'shadowwire'
+                  ? 'linear-gradient(135deg, rgba(20, 241, 149, 0.2) 0%, rgba(153, 69, 255, 0.2) 100%)'
+                  : 'transparent',
+                border: selectedProvider === 'shadowwire'
+                  ? '1px solid rgba(20, 241, 149, 0.3)'
+                  : '1px solid transparent',
+                '&:hover': {
+                  bgcolor: selectedProvider === 'shadowwire' ? undefined : 'rgba(255,255,255,0.05)',
+                },
+              }}
+            >
               <Box display="flex" alignItems="center" gap={1}>
-                ShadowWire
-                <Chip label="22 tokens" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
+                  }}
+                >
+                  ShadowWire
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    bgcolor: 'rgba(20, 241, 149, 0.2)',
+                    color: '#14F195',
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: '8px',
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  22 tokens
+                </Typography>
               </Box>
-            </ToggleButton>
-            <ToggleButton value="privacy-cash" sx={{ px: 3 }}>
+            </Box>
+            <Box
+              onClick={() => handleProviderChange(null, 'privacy-cash')}
+              sx={{
+                px: 3,
+                py: 1,
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                background: selectedProvider === 'privacy-cash'
+                  ? 'linear-gradient(135deg, rgba(20, 241, 149, 0.2) 0%, rgba(153, 69, 255, 0.2) 100%)'
+                  : 'transparent',
+                border: selectedProvider === 'privacy-cash'
+                  ? '1px solid rgba(153, 69, 255, 0.3)'
+                  : '1px solid transparent',
+                '&:hover': {
+                  bgcolor: selectedProvider === 'privacy-cash' ? undefined : 'rgba(255,255,255,0.05)',
+                },
+              }}
+            >
               <Box display="flex" alignItems="center" gap={1}>
-                PrivacyCash
-                <Chip label="Trustless" size="small" color="secondary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    color: selectedProvider === 'privacy-cash' ? '#9945FF' : 'text.secondary',
+                  }}
+                >
+                  PrivacyCash
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    bgcolor: 'rgba(153, 69, 255, 0.2)',
+                    color: '#9945FF',
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: '8px',
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  Trustless
+                </Typography>
               </Box>
-            </ToggleButton>
-          </ToggleButtonGroup>
+            </Box>
+          </Box>
         </Box>
       )}
 
