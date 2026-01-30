@@ -141,7 +141,8 @@ export function TokenSelector({
           bgcolor: '#111111',
           backgroundImage: 'none',
           borderRadius: '24px',
-          maxHeight: '80vh',
+          height: '70vh',
+          maxHeight: 600,
         },
       }}
     >
@@ -161,7 +162,7 @@ export function TokenSelector({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ px: 2, pb: 2 }}>
+      <DialogContent sx={{ px: 2, pb: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Search field */}
         <TextField
           fullWidth
@@ -205,7 +206,26 @@ export function TokenSelector({
         )}
 
         {/* Token list */}
-        <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            minHeight: 0,
+            '&::-webkit-scrollbar': {
+              width: 6,
+            },
+            '&::-webkit-scrollbar-track': {
+              bgcolor: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              bgcolor: 'rgba(255,255,255,0.2)',
+              borderRadius: 3,
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.3)',
+              },
+            },
+          }}
+        >
           {Array.from(groupedAssets.entries()).map(([chain, assets]) => (
             <Box key={chain} sx={{ mb: 2 }}>
               <Typography
