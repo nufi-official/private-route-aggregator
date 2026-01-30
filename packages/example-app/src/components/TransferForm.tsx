@@ -23,6 +23,23 @@ import {
 
 type ProviderType = PrivacyCashProvider | ShadowWireProvider;
 
+// Chain display names
+const CHAIN_NAMES: Record<string, string> = {
+  sol: 'Solana',
+  eth: 'Ethereum',
+  base: 'Base',
+  arb: 'Arbitrum',
+  btc: 'Bitcoin',
+  near: 'NEAR',
+  ton: 'TON',
+  doge: 'Dogecoin',
+  xrp: 'XRP',
+  bsc: 'BNB Chain',
+  pol: 'Polygon',
+  op: 'Optimism',
+  avax: 'Avalanche',
+};
+
 // Get display name for an asset
 function getAssetDisplayName(asset: string): string {
   if (asset.includes(':')) {
@@ -713,23 +730,42 @@ export function TransferForm({
             {getAssetIcon(asset) && (
               <Box
                 sx={{
-                  width: 28,
-                  height: 28,
+                  width: 36,
+                  height: 36,
                   borderRadius: '50%',
                   overflow: 'hidden',
                   bgcolor: 'transparent',
+                  flexShrink: 0,
                 }}
               >
                 <img
                   src={getAssetIcon(asset)!}
                   alt={getAssetDisplayName(asset)}
-                  style={{ width: 28, height: 28, objectFit: 'cover' }}
+                  style={{ width: 36, height: 36, objectFit: 'cover' }}
                 />
               </Box>
             )}
-            <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
-              {getAssetDisplayName(asset)}
-            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+              <Typography sx={{ fontSize: '18px', fontWeight: 600, lineHeight: 1 }}>
+                {getAssetDisplayName(asset)}
+              </Typography>
+              {assetChain !== 'sol' && (
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                    borderRadius: '4px',
+                    px: 0.5,
+                    width: 'fit-content',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '10px', color: 'text.secondary', lineHeight: 1.4 }}>
+                    {CHAIN_NAMES[assetChain] ?? assetChain.toUpperCase()}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
             <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
           </Box>
         </Box>
