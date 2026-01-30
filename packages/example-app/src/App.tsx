@@ -112,7 +112,7 @@ const darkTheme = createTheme({
           background: '#111111',
           backgroundImage: 'none',
           border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 0 20px rgba(255,255,255,0.05), 0 0 40px rgba(255,255,255,0.02)',
+          boxShadow: '-15px -15px 30px rgba(20, 241, 149, 0.15), 15px 15px 30px rgba(153, 69, 255, 0.15), 0 0 20px rgba(20, 241, 149, 0.1), 0 0 40px rgba(153, 69, 255, 0.08)',
         },
       },
     },
