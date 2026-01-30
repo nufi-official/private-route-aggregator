@@ -671,17 +671,9 @@ export function TransferForm({
             position: 'relative',
           }}
         >
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="caption" color="text.secondary">
-              Amount
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Balance: {privateBalanceLoading ? '...' : `${solBalanceFormatted} SOL`}
-              {!privateBalanceLoading && formatUsdValue && (
-                <> ({formatUsdValue('SOL', solBalanceFormatted) ?? '$0'})</>
-              )}
-            </Typography>
-          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
+            Amount
+          </Typography>
           <Box>
             <input
               type="text"
@@ -706,9 +698,25 @@ export function TransferForm({
                 fontFamily: 'inherit',
               }}
             />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
+              </Typography>
+              <Typography
+                variant="caption"
+                onClick={() => !loading && setAmount(solBalanceFormatted)}
+                sx={{
+                  color: 'text.secondary',
+                  cursor: loading ? 'default' : 'pointer',
+                  mr: 1,
+                  '&:hover': {
+                    color: loading ? 'text.secondary' : 'primary.main',
+                  },
+                }}
+              >
+                MAX: {privateBalanceLoading ? '...' : `${solBalanceFormatted} SOL`}
+              </Typography>
+            </Box>
           </Box>
           <Box
             onClick={() => !loading && setTokenSelectorOpen(true)}

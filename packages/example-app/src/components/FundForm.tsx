@@ -72,6 +72,8 @@ interface FundFormProps {
   formatUsdValue?: (symbol: string, amount: string) => string | null;
   nearIntentsTokens?: SwapApiAsset[];
   onConnectClick?: () => void;
+  walletBalance?: bigint;
+  walletBalanceLoading?: boolean;
 }
 
 // Helper to parse asset string - returns { symbol, chain } for cross-chain or { symbol, chain: 'sol' } for Solana
@@ -103,6 +105,8 @@ export function FundForm({
   formatUsdValue,
   nearIntentsTokens = [],
   onConnectClick,
+  walletBalance = 0n,
+  walletBalanceLoading = false,
 }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
@@ -389,9 +393,25 @@ export function FundForm({
                 fontFamily: 'inherit',
               }}
             />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
+              </Typography>
+              <Typography
+                variant="caption"
+                onClick={() => !loading && setAmount(formatBalance(walletBalance))}
+                sx={{
+                  color: 'text.secondary',
+                  cursor: loading ? 'default' : 'pointer',
+                  mr: 1,
+                  '&:hover': {
+                    color: loading ? 'text.secondary' : 'primary.main',
+                  },
+                }}
+              >
+                MAX: {walletBalanceLoading ? '...' : `${formatBalance(walletBalance)} ${assetSymbol}`}
+              </Typography>
+            </Box>
           </Box>
           <Box
             onClick={() => !loading && setTokenSelectorOpen(true)}
