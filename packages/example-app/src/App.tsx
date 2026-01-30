@@ -592,102 +592,42 @@ function AppContent() {
       )}
 
       {/* Forms */}
-      <Box sx={{ position: 'relative' }}>
-        {!account && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              bgcolor: 'rgba(0,0,0,0.6)',
-              zIndex: 10,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '24px',
-              backdropFilter: 'blur(4px)',
-              gap: 2,
-            }}
-          >
-            <Typography variant="h6" color="text.secondary">
-              Connect wallet to continue
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={() => setShowLoginDialog(true)}
-              sx={{
-                background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
-                color: '#000',
-                fontWeight: 600,
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
-                },
-              }}
-            >
-              Connect Wallet
-            </Button>
-          </Box>
-        )}
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            {account ? (
-              <FundForm
-                account={account}
-                provider={fundProvider}
-                onSuccess={refreshPrivateBalance}
-                asset={fundAsset}
-                decimals={getDecimals(fundAsset)}
-                availableAssets={availableAssets}
-                onAssetChange={handleFundAssetChange}
-                walletBalance={walletBalance}
-                walletBalanceLoading={walletBalanceLoading}
-                formatUsdValue={formatUsdValue}
-                nearIntentsTokens={nearIntentsTokens}
-              />
-            ) : (
-              <Paper elevation={2} sx={{ p: 4, minHeight: 350 }}>
-                <Typography variant="h5" fontWeight={600} mb={2}>
-                  Fund Privacy Pool
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Deposit assets into the privacy pool
-                </Typography>
-              </Paper>
-            )}
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            {account ? (
-              <TransferForm
-                account={account}
-                provider={withdrawProvider}
-                privateBalance={privateBalance}
-                privateBalanceLoading={privateBalanceLoading}
-                onSuccess={refreshWalletBalance}
-                asset={withdrawAsset}
-                decimals={getDecimals(withdrawAsset)}
-                availableAssets={availableAssets}
-                onAssetChange={handleWithdrawAssetChange}
-                formatUsdValue={formatUsdValue}
-                convertAmount={convertAmount}
-                nearIntentsTokens={nearIntentsTokens}
-                pricesLoading={pricesLoading}
-              />
-            ) : (
-              <Paper elevation={2} sx={{ p: 4, minHeight: 350 }}>
-                <Typography variant="h5" fontWeight={600} mb={2}>
-                  Transfer
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Withdraw assets from the privacy pool
-                </Typography>
-              </Paper>
-            )}
-          </Grid>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <FundForm
+            account={account}
+            provider={fundProvider}
+            onSuccess={refreshPrivateBalance}
+            asset={fundAsset}
+            decimals={getDecimals(fundAsset)}
+            availableAssets={availableAssets}
+            onAssetChange={handleFundAssetChange}
+            walletBalance={walletBalance}
+            walletBalanceLoading={walletBalanceLoading}
+            formatUsdValue={formatUsdValue}
+            nearIntentsTokens={nearIntentsTokens}
+            onConnectClick={() => setShowLoginDialog(true)}
+          />
         </Grid>
-      </Box>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <TransferForm
+            account={account}
+            provider={withdrawProvider}
+            privateBalance={privateBalance}
+            privateBalanceLoading={privateBalanceLoading}
+            onSuccess={refreshWalletBalance}
+            asset={withdrawAsset}
+            decimals={getDecimals(withdrawAsset)}
+            availableAssets={availableAssets}
+            onAssetChange={handleWithdrawAssetChange}
+            formatUsdValue={formatUsdValue}
+            convertAmount={convertAmount}
+            nearIntentsTokens={nearIntentsTokens}
+            pricesLoading={pricesLoading}
+            onConnectClick={() => setShowLoginDialog(true)}
+          />
+        </Grid>
+      </Grid>
     </Container>
   );
 }

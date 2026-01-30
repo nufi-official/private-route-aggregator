@@ -44,7 +44,7 @@ type CrossChainStatus =
   | { stage: 'failed'; error: string };
 
 interface FundFormProps {
-  account: Account;
+  account: Account | null;
   provider: ProviderType | null;
   onSuccess: () => void;
   asset: string;
@@ -55,6 +55,7 @@ interface FundFormProps {
   walletBalanceLoading?: boolean;
   formatUsdValue?: (symbol: string, amount: string) => string | null;
   nearIntentsTokens?: SwapApiAsset[];
+  onConnectClick?: () => void;
 }
 
 // Helper to parse asset string - returns { symbol, chain } for cross-chain or { symbol, chain: 'sol' } for Solana
@@ -87,6 +88,7 @@ export function FundForm({
   walletBalanceLoading,
   formatUsdValue,
   nearIntentsTokens = [],
+  onConnectClick,
 }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
@@ -531,8 +533,14 @@ export function FundForm({
           fullWidth
           variant="contained"
           size="large"
-          onClick={() => void handleFund()}
-          disabled={loading || !amount || (!provider && !needsSwapToSol) || (isCrossChainAsset && !originAddress)}
+          onClick={() => {
+            if (!account && onConnectClick) {
+              onConnectClick();
+            } else {
+              void handleFund();
+            }
+          }}
+          disabled={account ? (loading || !amount || (!provider && !needsSwapToSol) || (isCrossChainAsset && !originAddress)) : false}
           sx={{
             py: 1.5,
             background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
@@ -541,7 +549,9 @@ export function FundForm({
             },
           }}
         >
-          {loading ? (
+          {!account ? (
+            'Connect Wallet'
+          ) : loading ? (
             <CircularProgress size={24} color="inherit" />
           ) : needsSwapToSol ? (
             isCrossChainAsset
