@@ -67,7 +67,7 @@ const darkTheme = createTheme({
       styleOverrides: {
         root: {
           textTransform: 'none',
-          borderRadius: 24,
+          borderRadius: 32,
         },
         contained: {
           background: '#000000',
@@ -86,7 +86,7 @@ const darkTheme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            borderRadius: 24,
+            borderRadius: 32,
           },
         },
       },
@@ -94,21 +94,21 @@ const darkTheme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 24,
+          borderRadius: 32,
         },
       },
     },
     MuiSelect: {
       styleOverrides: {
         root: {
-          borderRadius: 24,
+          borderRadius: 32,
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: 24,
+          borderRadius: 32,
           background: '#111111',
           backgroundImage: 'none',
           border: '1px solid rgba(255,255,255,0.1)',
@@ -538,7 +538,7 @@ function AppContent() {
           sx: {
             bgcolor: '#111111',
             backgroundImage: 'none',
-            borderRadius: '24px',
+            borderRadius: '32px',
             border: '1px solid rgba(255,255,255,0.1)',
             m: 2,
             mt: 8,

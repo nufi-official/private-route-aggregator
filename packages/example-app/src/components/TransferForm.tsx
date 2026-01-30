@@ -647,7 +647,7 @@ export function TransferForm({
             mb: 2,
             p: 3,
             bgcolor: '#000000',
-            borderRadius: '24px',
+            borderRadius: '32px',
             border: '1px solid rgba(255,255,255,0.1)',
             minHeight: 120,
             display: 'flex',
