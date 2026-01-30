@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
+import { getAssetIcon } from '../utils/tokenIcons';
 
 // Chain display names
 const CHAIN_NAMES: Record<string, string> = {
@@ -257,22 +258,35 @@ export function TokenSelector({
                       },
                     }}
                   >
-                    {/* Token icon placeholder */}
+                    {/* Token icon */}
                     <Box
                       sx={{
                         width: 40,
                         height: 40,
                         borderRadius: '50%',
-                        bgcolor: '#2a2a2a',
+                        bgcolor: 'transparent',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontWeight: 700,
                         fontSize: '14px',
                         color: 'primary.main',
+                        overflow: 'hidden',
                       }}
                     >
-                      {symbol.slice(0, 2)}
+                      {getAssetIcon(asset) ? (
+                        <img
+                          src={getAssetIcon(asset)!}
+                          alt={symbol}
+                          style={{ width: 40, height: 40, objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerText = symbol.slice(0, 2);
+                          }}
+                        />
+                      ) : (
+                        symbol.slice(0, 2)
+                      )}
                     </Box>
                     <Box flex={1}>
                       <Typography fontWeight={600}>{symbol}</Typography>

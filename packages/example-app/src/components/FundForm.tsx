@@ -13,6 +13,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { TokenSelector } from './TokenSelector';
+import { getAssetIcon } from '../utils/tokenIcons';
 import type { FundingStatus } from '@privacy-router-sdk/private-routers-core';
 import type { Account } from '@privacy-router-sdk/signers-core';
 import type { PrivacyCashProvider } from '@privacy-router-sdk/privacy-cash';
@@ -384,7 +385,7 @@ export function FundForm({
               transform: 'translateY(-50%)',
               display: 'flex',
               alignItems: 'center',
-              gap: 0.5,
+              gap: 1,
               cursor: loading ? 'default' : 'pointer',
               opacity: loading ? 0.5 : 1,
               '&:hover': {
@@ -392,6 +393,23 @@ export function FundForm({
               },
             }}
           >
+            {getAssetIcon(asset) && (
+              <Box
+                sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  bgcolor: 'transparent',
+                }}
+              >
+                <img
+                  src={getAssetIcon(asset)!}
+                  alt={getAssetDisplayName(asset)}
+                  style={{ width: 28, height: 28, objectFit: 'cover' }}
+                />
+              </Box>
+            )}
             <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
               {getAssetDisplayName(asset)}
             </Typography>
