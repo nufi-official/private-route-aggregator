@@ -290,23 +290,21 @@ export function TokenSelector({
                     </Box>
                     <Box flex={1}>
                       <Typography fontWeight={600}>{symbol}</Typography>
-                      {chain !== 'sol' && (
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            bgcolor: 'rgba(255,255,255,0.1)',
-                            borderRadius: '6px',
-                            px: 0.75,
-                            py: 0.25,
-                            mt: 0.5,
-                          }}
-                        >
-                          <Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary' }}>
-                            {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
-                          </Typography>
-                        </Box>
-                      )}
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          bgcolor: 'rgba(255,255,255,0.1)',
+                          borderRadius: '6px',
+                          px: 0.75,
+                          py: 0.25,
+                          mt: 0.5,
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ fontSize: '10px', color: 'text.secondary' }}>
+                          {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
+                        </Typography>
+                      </Box>
                     </Box>
                     {isSelected && (
                       <Box
