@@ -749,22 +749,20 @@ export function TransferForm({
               <Typography sx={{ fontSize: '18px', fontWeight: 600, lineHeight: 1 }}>
                 {getAssetDisplayName(asset)}
               </Typography>
-              {assetChain !== 'sol' && (
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                    borderRadius: '4px',
-                    px: 0.5,
-                    width: 'fit-content',
-                  }}
-                >
-                  <Typography sx={{ fontSize: '10px', color: 'text.secondary', lineHeight: 1.4 }}>
-                    {CHAIN_NAMES[assetChain] ?? assetChain.toUpperCase()}
-                  </Typography>
-                </Box>
-              )}
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  borderRadius: '4px',
+                  px: 0.5,
+                  width: 'fit-content',
+                }}
+              >
+                <Typography sx={{ fontSize: '10px', color: 'text.secondary', lineHeight: 1.4 }}>
+                  {CHAIN_NAMES[assetChain] ?? assetChain.toUpperCase()}
+                </Typography>
+              </Box>
             </Box>
             <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
           </Box>
