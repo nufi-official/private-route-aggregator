@@ -706,11 +706,11 @@ export function TransferForm({
                 variant="caption"
                 onClick={() => !loading && setAmount(solBalanceFormatted)}
                 sx={{
-                  color: 'text.secondary',
+                  color: 'rgba(255,255,255,0.3)',
                   cursor: loading ? 'default' : 'pointer',
                   mr: 1,
                   '&:hover': {
-                    color: loading ? 'text.secondary' : 'primary.main',
+                    color: loading ? 'rgba(255,255,255,0.3)' : 'primary.main',
                   },
                 }}
               >
