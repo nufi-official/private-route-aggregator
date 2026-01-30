@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { WalletProvider } from './providers/WalletProvider';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
 import { TransferForm } from './components/TransferForm';
@@ -150,6 +151,7 @@ function AppContent() {
   const [address, setAddress] = useState<string>('');
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>('shadowwire');
   const [providerError, setProviderError] = useState<string | null>(null);
+  const { disconnect } = useWallet();
 
   // Token prices and tokens from NEAR Intents
   const { formatUsdValue, convertAmount, tokens: nearIntentsTokens, loading: pricesLoading } = useTokenPrices();
@@ -350,6 +352,7 @@ function AppContent() {
   };
 
   const handleLogout = () => {
+    disconnect();
     setAccount(null);
     setAddress('');
     setFundProvider(null);
@@ -538,27 +541,36 @@ function AppContent() {
           </Typography>
         </Box>
 
-      {/* Login Dialog */}
+      {/* Login Dialog - positioned on right */}
       <Dialog
         open={showLoginDialog}
         onClose={() => setShowLoginDialog(false)}
         maxWidth="sm"
-        fullWidth
+        sx={{
+          '& .MuiDialog-container': {
+            justifyContent: 'flex-end',
+            alignItems: 'flex-start',
+          },
+        }}
         PaperProps={{
           sx: {
             bgcolor: '#111111',
             backgroundImage: 'none',
             borderRadius: '24px',
             border: '1px solid rgba(255,255,255,0.1)',
+            m: 2,
+            mt: 8,
+            height: '80vh',
+            maxHeight: '800px',
           },
         }}
       >
-        <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+        <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
           <IconButton onClick={() => setShowLoginDialog(false)} size="small" sx={{ color: 'text.secondary' }}>
             <CloseIcon />
           </IconButton>
         </Box>
-        <DialogContent sx={{ p: 0 }}>
+        <DialogContent sx={{ p: 0, height: '100%', overflow: 'hidden' }}>
           <LoginForm
             onLogin={(acc) => {
               handleLogin(acc);
