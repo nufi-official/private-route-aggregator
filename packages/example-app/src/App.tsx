@@ -487,7 +487,16 @@ function AppContent() {
             Connect
           </Button>
         ) : (
-          <Box display="flex" alignItems="center" gap={1}>
+          <Box display="flex" alignItems="center" gap={2}>
+            {/* Wallet Balance */}
+            <Box display="flex" alignItems="baseline" gap={0.5}>
+              <Typography sx={{ color: '#14F195', fontWeight: 600 }}>
+                {(Number(walletBalance) / 1e9).toFixed(4)} SOL
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatUsdValue('SOL', Number(walletBalance) / 1e9)}
+              </Typography>
+            </Box>
             <Chip
               label={shortenAddress(address)}
               size="small"
@@ -615,8 +624,6 @@ function AppContent() {
             decimals={getDecimals(fundAsset)}
             availableAssets={availableAssets}
             onAssetChange={handleFundAssetChange}
-            walletBalance={walletBalance}
-            walletBalanceLoading={walletBalanceLoading}
             formatUsdValue={formatUsdValue}
             nearIntentsTokens={nearIntentsTokens}
             onConnectClick={() => setShowLoginDialog(true)}
