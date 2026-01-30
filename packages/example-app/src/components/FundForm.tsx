@@ -485,7 +485,24 @@ export function FundForm({
                 onChange={(e) => setOriginAddress(e.target.value)}
                 placeholder={assetChain === 'eth' || assetChain === 'base' || assetChain === 'arb' ? '0x...' : 'Enter your address'}
                 disabled={loading}
-                sx={{ mb: 2 }}
+                sx={{
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#000000',
+                    '& fieldset': {
+                      borderColor: 'rgba(255,255,255,0.1)',
+                      borderWidth: '1px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(255,255,255,0.1)',
+                      borderWidth: '1px',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'rgba(255,255,255,0.1)',
+                      borderWidth: '1px',
+                    },
+                  },
+                }}
                 helperText="Required in case the deposit needs to be refunded"
               />
             )}
