@@ -382,6 +382,7 @@ export function FundForm({
                 cursor: loading ? 'default' : 'pointer',
                 alignSelf: 'center',
                 opacity: loading ? 0.5 : 1,
+                height: 40,
                 '&:hover': {
                   opacity: loading ? 0.5 : 0.8,
                 },
