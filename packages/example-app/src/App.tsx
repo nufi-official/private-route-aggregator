@@ -461,28 +461,16 @@ function AppContent() {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Top header bar */}
+    <>
+      {/* Fixed top right connect/wallet */}
       <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={4}
+        sx={{
+          position: 'fixed',
+          top: 16,
+          right: 16,
+          zIndex: 1000,
+        }}
       >
-        <Typography
-          variant="h5"
-          component="h1"
-          fontWeight={700}
-          sx={{
-            background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          Privacy Router
-        </Typography>
-
         {!account ? (
           <Button
             variant="contained"
@@ -499,12 +487,12 @@ function AppContent() {
             Connect
           </Button>
         ) : (
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box display="flex" alignItems="center" gap={1}>
             <Chip
               label={shortenAddress(address)}
               size="small"
               onClick={() => navigator.clipboard.writeText(address)}
-              sx={{ fontFamily: 'monospace', cursor: 'pointer' }}
+              sx={{ fontFamily: 'monospace', cursor: 'pointer', bgcolor: '#111' }}
               title="Click to copy"
             />
             <Button
@@ -515,20 +503,40 @@ function AppContent() {
                 refreshPrivateBalance();
               }}
               disabled={walletBalanceLoading || privateBalanceLoading}
+              sx={{ minWidth: 'auto', px: 1 }}
             >
-              {walletBalanceLoading || privateBalanceLoading ? '...' : 'Refresh'}
+              {walletBalanceLoading || privateBalanceLoading ? '...' : '↻'}
             </Button>
             <Button
               variant="outlined"
               size="small"
               color="error"
               onClick={handleLogout}
+              sx={{ minWidth: 'auto', px: 1 }}
             >
-              Disconnect
+              ✕
             </Button>
           </Box>
         )}
       </Box>
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Title */}
+        <Box textAlign="center" mb={4}>
+          <Typography
+            variant="h4"
+            component="h1"
+            fontWeight={700}
+            sx={{
+              background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Privacy Router
+          </Typography>
+        </Box>
 
       {/* Login Dialog */}
       <Dialog
@@ -629,6 +637,7 @@ function AppContent() {
         </Grid>
       </Grid>
     </Container>
+    </>
   );
 }
 
