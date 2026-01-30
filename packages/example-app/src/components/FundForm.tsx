@@ -51,8 +51,6 @@ interface FundFormProps {
   decimals: number;
   availableAssets: string[];
   onAssetChange: (asset: string) => void;
-  walletBalance: bigint;
-  walletBalanceLoading?: boolean;
   formatUsdValue?: (symbol: string, amount: string) => string | null;
   nearIntentsTokens?: SwapApiAsset[];
   onConnectClick?: () => void;
@@ -84,8 +82,6 @@ export function FundForm({
   decimals,
   availableAssets,
   onAssetChange,
-  walletBalance,
-  walletBalanceLoading,
   formatUsdValue,
   nearIntentsTokens = [],
   onConnectClick,
@@ -410,25 +406,6 @@ export function FundForm({
           availableAssets={availableAssets}
           currentAsset={asset}
         />
-
-        {/* Show wallet balance only for SOL (direct funding) */}
-        {!needsSwapToSol && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: '24px' }}>
-            <Typography variant="body2" color="text.secondary">
-              Wallet Balance
-            </Typography>
-            <Box display="flex" alignItems="baseline" gap={1}>
-              <Typography variant="h6" fontWeight={600} color="primary">
-                {walletBalanceLoading ? '...' : `${formatBalance(walletBalance)} ${asset}`}
-              </Typography>
-              {!walletBalanceLoading && formatUsdValue && (
-                <Typography variant="body2" color="text.secondary">
-                  {formatUsdValue(asset, formatBalance(walletBalance)) ?? ''}
-                </Typography>
-              )}
-            </Box>
-          </Box>
-        )}
 
         {/* Swap info for non-SOL assets */}
         {needsSwapToSol && crossChainStatus.stage === 'idle' && (
