@@ -1,18 +1,17 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
-  Paper,
   Typography,
   TextField,
   Button,
   Box,
   Alert,
   CircularProgress,
-  Tabs,
-  Tab,
-  Chip,
+  IconButton,
 } from '@mui/material';
+import UsbIcon from '@mui/icons-material/Usb';
+import KeyIcon from '@mui/icons-material/Key';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { createSolanaAccount, SolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
 import {
   createWalletAdapterAccount,
@@ -29,18 +28,53 @@ interface LoginFormProps {
   onLogin: (account: AccountType) => void;
 }
 
+type ViewType = 'main' | 'ledger' | 'mnemonic';
+
 export function LoginForm({ onLogin }: LoginFormProps) {
-  const [tab, setTab] = useState(0);
+  const [view, setView] = useState<ViewType>('main');
   const [mnemonic, setMnemonic] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAllWallets, setShowAllWallets] = useState(false);
 
   // Ledger state
   const [ledgerAccount, setLedgerAccount] = useState<LedgerAccount | null>(null);
   const [ledgerStatus, setLedgerStatus] = useState<LedgerConnectionStatus>('disconnected');
   const [ledgerAddress, setLedgerAddress] = useState<string | null>(null);
 
-  const wallet = useWallet();
+  const { wallets, select, wallet, connected, publicKey, connecting } = useWallet();
+
+  // Filter wallets by ready state (Installed = 'Installed', Loadable = 'Loadable')
+  const installedWallets = wallets.filter(
+    (w) => w.readyState === 'Installed' || w.readyState === 'Loadable'
+  );
+  const otherWallets = wallets.filter(
+    (w) => w.readyState !== 'Installed' && w.readyState !== 'Loadable'
+  );
+
+  // Auto-login when wallet connects
+  useEffect(() => {
+    if (connected && publicKey && wallet) {
+      try {
+        const account = createWalletAdapterAccount({
+          connected,
+          publicKey,
+          signTransaction: wallet.adapter.signTransaction?.bind(wallet.adapter),
+          signAllTransactions: wallet.adapter.signAllTransactions?.bind(wallet.adapter),
+          signMessage: wallet.adapter.signMessage?.bind(wallet.adapter),
+        }, {
+          network: 'mainnet',
+        });
+        onLogin(account);
+      } catch (err) {
+        console.error('Failed to create account:', err);
+      }
+    }
+  }, [connected, publicKey, wallet, onLogin]);
+
+  const handleSelectWallet = useCallback((walletName: string) => {
+    select(walletName as any);
+  }, [select]);
 
   const handleMnemonicLogin = async () => {
     if (!mnemonic.trim()) {
@@ -64,35 +98,13 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         network: 'mainnet',
       });
 
-      // Verify we can get the address
       await account.getAddress();
-
       onLogin(account);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create account';
       setError(errorMessage);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleWalletLogin = () => {
-    if (!wallet.connected || !wallet.publicKey) {
-      setError('Please connect your wallet first');
-      return;
-    }
-
-    setError(null);
-
-    try {
-      const account = createWalletAdapterAccount(wallet, {
-        network: 'mainnet',
-      });
-
-      onLogin(account);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create account';
-      setError(errorMessage);
     }
   };
 
@@ -125,15 +137,6 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     }
   };
 
-  const handleLedgerDisconnect = async () => {
-    if (ledgerAccount) {
-      await ledgerAccount.disconnect();
-    }
-    setLedgerAccount(null);
-    setLedgerAddress(null);
-    setLedgerStatus('disconnected');
-  };
-
   const handleLedgerLogin = () => {
     if (!ledgerAccount || ledgerStatus !== 'connected') {
       setError('Please connect your Ledger first');
@@ -144,133 +147,254 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     onLogin(ledgerAccount);
   };
 
-  const getLedgerStatusColor = () => {
-    switch (ledgerStatus) {
-      case 'connected':
-        return 'success';
-      case 'connecting':
-        return 'warning';
-      case 'error':
-        return 'error';
-      default:
-        return 'default';
-    }
+  const goBack = () => {
+    setView('main');
+    setError(null);
   };
 
-  const getLedgerStatusText = () => {
-    switch (ledgerStatus) {
-      case 'connected':
-        return 'Connected';
-      case 'connecting':
-        return 'Connecting...';
-      case 'error':
-        return 'Error';
-      default:
-        return 'Disconnected';
-    }
-  };
+  // Wallet option component
+  const WalletOption = ({
+    icon,
+    name,
+    detected,
+    onClick,
+    isConnecting,
+  }: {
+    icon: React.ReactNode;
+    name: string;
+    detected?: boolean;
+    onClick: () => void;
+    isConnecting?: boolean;
+  }) => (
+    <Box
+      onClick={onClick}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        p: 1.5,
+        borderRadius: '12px',
+        cursor: 'pointer',
+        transition: 'background 0.2s',
+        '&:hover': {
+          bgcolor: 'rgba(255, 255, 255, 0.05)',
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          borderRadius: '8px',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: '#2a2a2a',
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography fontWeight={500} flex={1}>
+        {name}
+      </Typography>
+      {isConnecting ? (
+        <CircularProgress size={16} />
+      ) : detected ? (
+        <Typography variant="caption" color="text.secondary">
+          Detected
+        </Typography>
+      ) : null}
+    </Box>
+  );
 
   return (
-    <Paper elevation={3} sx={{ p: 4 }}>
-      <Typography variant="h5" fontWeight={600} mb={1}>
-        Connect Wallet
-      </Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
-        Choose how to connect your Solana wallet
-      </Typography>
+    <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Main wallet selection view */}
+      {view === 'main' && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Typography variant="h6" fontWeight={600} mb={0.5} textAlign="center">
+            Connect a wallet
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3} textAlign="center">
+            to continue
+          </Typography>
 
-      <Tabs
-        value={tab}
-        onChange={(_, newValue) => {
-          setTab(newValue);
-          setError(null);
-        }}
-        sx={{ mb: 3 }}
-      >
-        <Tab label="Browser Wallet" />
-        <Tab label="Ledger" />
-        <Tab label="Mnemonic" />
-      </Tabs>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.5,
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': {
+                width: 6,
+              },
+              '&::-webkit-scrollbar-track': {
+                bgcolor: 'transparent',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                bgcolor: 'rgba(255,255,255,0.2)',
+                borderRadius: 3,
+              },
+            }}
+          >
+            {/* Installed/Detected Wallets */}
+            {installedWallets.map((w) => (
+              <WalletOption
+                key={w.adapter.name}
+                icon={
+                  <img
+                    src={w.adapter.icon}
+                    alt={w.adapter.name}
+                    style={{ width: 36, height: 36 }}
+                  />
+                }
+                name={w.adapter.name}
+                detected
+                onClick={() => handleSelectWallet(w.adapter.name)}
+                isConnecting={connecting && wallet?.adapter.name === w.adapter.name}
+              />
+            ))}
 
-      {/* Browser Wallet Tab */}
-      {tab === 0 && (
-        <Box>
-          <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
-            <WalletMultiButton />
+            {/* Ledger & Recovery options */}
+            <WalletOption
+              icon={<UsbIcon sx={{ color: 'primary.main' }} />}
+              name="Ledger"
+              onClick={() => setView('ledger')}
+            />
 
-            {wallet.connected && (
+            <WalletOption
+              icon={<KeyIcon sx={{ color: 'primary.main' }} />}
+              name="Recovery Phrase"
+              onClick={() => setView('mnemonic')}
+            />
+
+            {/* More options toggle */}
+            {otherWallets.length > 0 && (
               <>
-                <Typography variant="body2" color="success.main">
-                  Wallet connected: {wallet.publicKey?.toBase58().slice(0, 8)}...
-                </Typography>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  onClick={handleWalletLogin}
+                <Box
+                  onClick={() => setShowAllWallets(!showAllWallets)}
                   sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 0.5,
                     py: 1.5,
-                    background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+                    cursor: 'pointer',
+                    color: 'text.secondary',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
+                      color: 'text.primary',
                     },
                   }}
                 >
-                  Continue with Connected Wallet
-                </Button>
+                  <Typography variant="body2">
+                    {showAllWallets ? 'Less options' : 'More options'}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      transform: showAllWallets ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s',
+                    }}
+                  >
+                    ▼
+                  </Typography>
+                </Box>
+
+                {showAllWallets && otherWallets.map((w) => (
+                  <WalletOption
+                    key={w.adapter.name}
+                    icon={
+                      <img
+                        src={w.adapter.icon}
+                        alt={w.adapter.name}
+                        style={{ width: 36, height: 36 }}
+                      />
+                    }
+                    name={w.adapter.name}
+                    onClick={() => handleSelectWallet(w.adapter.name)}
+                    isConnecting={connecting && wallet?.adapter.name === w.adapter.name}
+                  />
+                ))}
               </>
             )}
           </Box>
         </Box>
       )}
 
-      {/* Ledger Tab */}
-      {tab === 1 && (
-        <Box>
+      {/* Ledger view */}
+      {view === 'ledger' && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box display="flex" alignItems="center" gap={1} mb={3}>
+            <IconButton onClick={goBack} size="small">
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h6" fontWeight={600}>
+              Connect Ledger
+            </Typography>
+          </Box>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
           <Alert severity="info" sx={{ mb: 3 }}>
             Connect your Ledger device and open the Solana app before connecting.
           </Alert>
 
-          <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
-            <Box display="flex" alignItems="center" gap={2}>
-              <Typography variant="body2" color="text.secondary">
-                Status:
-              </Typography>
-              <Chip
-                label={getLedgerStatusText()}
-                color={getLedgerStatusColor()}
-                size="small"
-              />
-            </Box>
-
+          <Box display="flex" flexDirection="column" gap={2}>
             {ledgerStatus === 'disconnected' && (
               <Button
                 fullWidth
-                variant="outlined"
+                variant="contained"
                 size="large"
                 onClick={handleLedgerConnect}
                 disabled={loading}
-                sx={{ py: 1.5 }}
+                sx={{
+                  py: 1.5,
+                  background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
+                  },
+                }}
               >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  'Connect Ledger'
-                )}
+                {loading ? <CircularProgress size={24} color="inherit" /> : 'Connect Ledger'}
               </Button>
+            )}
+
+            {ledgerStatus === 'connecting' && (
+              <Box display="flex" alignItems="center" justifyContent="center" gap={2} py={2}>
+                <CircularProgress size={24} />
+                <Typography>Connecting to Ledger...</Typography>
+              </Box>
             )}
 
             {ledgerStatus === 'connected' && ledgerAddress && (
               <>
-                <Typography variant="body2" color="success.main">
-                  Address: {ledgerAddress.slice(0, 8)}...{ledgerAddress.slice(-4)}
-                </Typography>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: '12px',
+                    bgcolor: 'rgba(20, 241, 149, 0.1)',
+                    border: '1px solid rgba(20, 241, 149, 0.3)',
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" mb={0.5}>
+                    Connected Address
+                  </Typography>
+                  <Typography fontWeight={500} fontFamily="monospace">
+                    {ledgerAddress.slice(0, 12)}...{ledgerAddress.slice(-8)}
+                  </Typography>
+                </Box>
 
                 <Button
                   fullWidth
@@ -287,26 +411,23 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                 >
                   Continue with Ledger
                 </Button>
-
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={handleLedgerDisconnect}
-                  color="inherit"
-                >
-                  Disconnect
-                </Button>
               </>
             )}
 
             {ledgerStatus === 'error' && (
               <Button
                 fullWidth
-                variant="outlined"
+                variant="contained"
                 size="large"
                 onClick={handleLedgerConnect}
                 disabled={loading}
-                sx={{ py: 1.5 }}
+                sx={{
+                  py: 1.5,
+                  background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
+                  },
+                }}
               >
                 Retry Connection
               </Button>
@@ -315,25 +436,40 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         </Box>
       )}
 
-      {/* Mnemonic Tab */}
-      {tab === 2 && (
-        <Box component="form" noValidate autoComplete="off">
+      {/* Mnemonic view */}
+      {view === 'mnemonic' && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box display="flex" alignItems="center" gap={1} mb={3}>
+            <IconButton onClick={goBack} size="small">
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h6" fontWeight={600}>
+              Recovery Phrase
+            </Typography>
+          </Box>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            Never enter your real mnemonic on untrusted sites. This is for testing only.
+          </Alert>
+
           <TextField
             fullWidth
             multiline
             rows={3}
-            label="Mnemonic Phrase"
+            label="Enter your 12, 15, or 24 word phrase"
             value={mnemonic}
             onChange={(e) => setMnemonic(e.target.value)}
-            placeholder="Enter your 12, 15, or 24 word mnemonic..."
+            placeholder="word1 word2 word3..."
             disabled={loading}
             sx={{ mb: 3 }}
             type="password"
           />
-
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            Never enter your real mnemonic on untrusted sites. This is a demo app.
-          </Alert>
 
           <Button
             fullWidth
@@ -349,10 +485,10 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               },
             }}
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Connect with Mnemonic'}
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Connect'}
           </Button>
         </Box>
       )}
-    </Paper>
+    </Box>
   );
 }
