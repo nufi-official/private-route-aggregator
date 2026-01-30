@@ -650,8 +650,7 @@ export function TransferForm({
             borderRadius: '32px',
             border: '1px solid rgba(255,255,255,0.1)',
             minHeight: 120,
-            display: 'flex',
-            flexDirection: 'column',
+            position: 'relative',
           }}
         >
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
@@ -665,55 +664,55 @@ export function TransferForm({
               )}
             </Typography>
           </Box>
-          <Box display="flex" alignItems="center" justifyContent="space-between" flex={1}>
-            <Box flex={1} display="flex" flexDirection="column" justifyContent="center">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                    setAmount(val);
-                  }
-                }}
-                placeholder="0"
-                disabled={loading}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: '36px',
-                  fontWeight: 600,
-                  color: '#ffffff',
-                  width: '100%',
-                  fontFamily: 'inherit',
-                }}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
-              </Typography>
-            </Box>
-            <Box
-              onClick={() => !loading && setTokenSelectorOpen(true)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                cursor: loading ? 'default' : 'pointer',
-                alignSelf: 'center',
-                opacity: loading ? 0.5 : 1,
-                height: 40,
-                '&:hover': {
-                  opacity: loading ? 0.5 : 0.8,
-                },
+          <Box>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                  setAmount(val);
+                }
               }}
-            >
-              <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
-                {getAssetDisplayName(asset)}
-              </Typography>
-              <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
-            </Box>
+              placeholder="0"
+              disabled={loading}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontSize: '36px',
+                fontWeight: 600,
+                color: '#ffffff',
+                width: '100%',
+                fontFamily: 'inherit',
+              }}
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
+            </Typography>
+          </Box>
+          <Box
+            onClick={() => !loading && setTokenSelectorOpen(true)}
+            sx={{
+              position: 'absolute',
+              right: 24,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              cursor: loading ? 'default' : 'pointer',
+              opacity: loading ? 0.5 : 1,
+              '&:hover': {
+                opacity: loading ? 0.5 : 0.8,
+              },
+            }}
+          >
+            <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
+              {getAssetDisplayName(asset)}
+            </Typography>
+            <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
           </Box>
         </Box>
 
