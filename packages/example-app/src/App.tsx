@@ -519,7 +519,7 @@ function AppContent() {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Privacy Router
+            Any chain. Zero trace.
           </Typography>
         </Box>
 
