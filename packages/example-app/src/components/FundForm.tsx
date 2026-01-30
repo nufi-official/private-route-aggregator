@@ -670,7 +670,7 @@ export function FundForm({
             }}
           >
             {/* Step 1: Getting quote */}
-            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 40, position: 'relative' }}>
+            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 48, position: 'relative' }}>
               <Box sx={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {crossChainStatus.stage === 'getting_quote' ? (
                   <CircularProgress size={18} sx={{ color: '#14F195' }} />
@@ -684,11 +684,11 @@ export function FundForm({
                 Getting quote
               </Typography>
               {/* Connector line */}
-              <Box sx={{ position: 'absolute', left: 8, top: 29, width: 2, height: 20, bgcolor: crossChainStatus.stage === 'getting_quote' ? 'rgba(255,255,255,0.3)' : '#14F195' }} />
+              <Box sx={{ position: 'absolute', left: 8, top: 33, width: 2, height: 30, bgcolor: crossChainStatus.stage === 'getting_quote' ? 'rgba(255,255,255,0.3)' : '#14F195' }} />
             </Box>
 
             {/* Step 2: Awaiting deposit */}
-            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 40, position: 'relative' }}>
+            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 48, position: 'relative' }}>
               <Box sx={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {crossChainStatus.stage === 'getting_quote' ? (
                   <Box sx={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)' }} />
@@ -707,11 +707,11 @@ export function FundForm({
                 Deposit {assetSymbol}
               </Typography>
               {/* Connector line */}
-              <Box sx={{ position: 'absolute', left: 8, top: 29, width: 2, height: 20, bgcolor: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? 'rgba(255,255,255,0.3)' : '#14F195' }} />
+              <Box sx={{ position: 'absolute', left: 8, top: 33, width: 2, height: 30, bgcolor: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? 'rgba(255,255,255,0.3)' : '#14F195' }} />
             </Box>
 
             {/* Step 3: Processing */}
-            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 40, position: 'relative' }}>
+            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 48, position: 'relative' }}>
               <Box sx={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {(crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? (
                   <Box sx={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)' }} />
@@ -730,11 +730,11 @@ export function FundForm({
                 {crossChainStatus.stage === 'processing' ? `Processing: ${crossChainStatus.status}` : 'Processing swap'}
               </Typography>
               {/* Connector line */}
-              <Box sx={{ position: 'absolute', left: 8, top: 29, width: 2, height: 20, bgcolor: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit' || crossChainStatus.stage === 'processing') ? 'rgba(255,255,255,0.3)' : '#14F195' }} />
+              <Box sx={{ position: 'absolute', left: 8, top: 33, width: 2, height: 30, bgcolor: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit' || crossChainStatus.stage === 'processing') ? 'rgba(255,255,255,0.3)' : '#14F195' }} />
             </Box>
 
             {/* Step 4: Success */}
-            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 40, position: 'relative' }}>
+            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 48, position: 'relative' }}>
               <Box sx={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {crossChainStatus.stage === 'completed' ? (
                   <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -751,11 +751,11 @@ export function FundForm({
                 Swap complete
               </Typography>
               {/* Connector line */}
-              <Box sx={{ position: 'absolute', left: 8, top: 29, width: 2, height: 20, bgcolor: crossChainStatus.stage === 'completed' ? '#14F195' : 'rgba(255,255,255,0.3)' }} />
+              <Box sx={{ position: 'absolute', left: 8, top: 33, width: 2, height: 30, bgcolor: crossChainStatus.stage === 'completed' ? '#14F195' : 'rgba(255,255,255,0.3)' }} />
             </Box>
 
             {/* Step 5: Fund to Privacy Pool */}
-            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 40 }}>
+            <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 48 }}>
               <Box sx={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {crossChainStatus.stage === 'completed' ? (
                   loading ? (
@@ -772,11 +772,11 @@ export function FundForm({
               <Button
                 fullWidth
                 variant="contained"
-                size="small"
+                size="large"
                 onClick={() => void handleFund()}
                 disabled={crossChainStatus.stage !== 'completed' || loading}
                 sx={{
-                  py: 0.75,
+                  py: 1.5,
                   borderRadius: '32px',
                   background: '#14F195',
                   color: '#000',
@@ -790,7 +790,7 @@ export function FundForm({
                   },
                 }}
               >
-                {loading ? <CircularProgress size={20} sx={{ color: '#000' }} /> : 'Fund to Privacy Pool'}
+                {loading ? <CircularProgress size={24} sx={{ color: '#000' }} /> : 'Fund to Privacy Pool'}
               </Button>
             </Box>
           </Box>
