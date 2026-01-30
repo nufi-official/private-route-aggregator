@@ -67,7 +67,7 @@ const darkTheme = createTheme({
       styleOverrides: {
         root: {
           textTransform: 'none',
-          borderRadius: 8,
+          borderRadius: 24,
         },
         contained: {
           background: '#000000',
@@ -86,16 +86,52 @@ const darkTheme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
+            borderRadius: 24,
           },
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: 24,
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          borderRadius: 24,
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: 16,
+          borderRadius: 24,
           background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+        },
+      },
+    },
+    MuiToggleButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 24,
+        },
+      },
+    },
+    MuiToggleButtonGroup: {
+      styleOverrides: {
+        root: {
+          borderRadius: 24,
+        },
+        grouped: {
+          '&:first-of-type': {
+            borderRadius: '24px 0 0 24px',
+          },
+          '&:last-of-type': {
+            borderRadius: '0 24px 24px 0',
+          },
         },
       },
     },
