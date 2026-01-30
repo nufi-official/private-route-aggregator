@@ -11,7 +11,11 @@ import {
   Chip,
   Button,
   Paper,
+  Dialog,
+  DialogContent,
+  IconButton,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { WalletProvider } from './providers/WalletProvider';
 import { LoginForm } from './components/LoginForm';
 import { FundForm } from './components/FundForm';
@@ -454,11 +458,19 @@ function AppContent() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box textAlign="center" mb={6}>
+      {/* Top header bar */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={4}
+      >
         <Typography
-          variant="h3"
+          variant="h5"
           component="h1"
           fontWeight={700}
           sx={{
@@ -466,107 +478,162 @@ function AppContent() {
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            mb: 1,
           }}
         >
           Privacy Router
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Fund and withdraw through privacy pools
-        </Typography>
+
+        {!account ? (
+          <Button
+            variant="contained"
+            onClick={() => setShowLoginDialog(true)}
+            sx={{
+              background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+              color: '#000',
+              fontWeight: 600,
+              '&:hover': {
+                background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
+              },
+            }}
+          >
+            Connect
+          </Button>
+        ) : (
+          <Box display="flex" alignItems="center" gap={2}>
+            <Chip
+              label={shortenAddress(address)}
+              size="small"
+              onClick={() => navigator.clipboard.writeText(address)}
+              sx={{ fontFamily: 'monospace', cursor: 'pointer' }}
+              title="Click to copy"
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                refreshWalletBalance();
+                refreshPrivateBalance();
+              }}
+              disabled={walletBalanceLoading || privateBalanceLoading}
+            >
+              {walletBalanceLoading || privateBalanceLoading ? '...' : 'Refresh'}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              color="error"
+              onClick={handleLogout}
+            >
+              Disconnect
+            </Button>
+          </Box>
+        )}
       </Box>
 
-      {!account ? (
-        <Box maxWidth="sm" mx="auto">
-          <LoginForm onLogin={handleLogin} />
+      {/* Login Dialog */}
+      <Dialog
+        open={showLoginDialog}
+        onClose={() => setShowLoginDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: '#111111',
+            backgroundImage: 'none',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.1)',
+          },
+        }}
+      >
+        <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+          <IconButton onClick={() => setShowLoginDialog(false)} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon />
+          </IconButton>
         </Box>
-      ) : (
-        <>
-          {/* Header with address and logout */}
-          <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Typography variant="body2" color="text.secondary">
-                  Connected:
-                </Typography>
-                <Chip
-                  label={shortenAddress(address)}
-                  size="small"
-                  onClick={() => navigator.clipboard.writeText(address)}
-                  sx={{ fontFamily: 'monospace', cursor: 'pointer' }}
-                  title="Click to copy"
-                />
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => {
-                    refreshWalletBalance();
-                    refreshPrivateBalance();
-                  }}
-                  disabled={walletBalanceLoading || privateBalanceLoading}
-                  sx={{ minWidth: 'auto', px: 1.5 }}
-                >
-                  {walletBalanceLoading || privateBalanceLoading ? '...' : 'Refresh'}
-                </Button>
+        <DialogContent sx={{ p: 0 }}>
+          <LoginForm
+            onLogin={(acc) => {
+              handleLogin(acc);
+              setShowLoginDialog(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Provider Selector */}
+      {account && (
+        <Box display="flex" justifyContent="center" alignItems="center" mb={3} gap={2}>
+          <ToggleButtonGroup
+            value={selectedProvider}
+            exclusive
+            onChange={handleProviderChange}
+            size="small"
+          >
+            <ToggleButton value="shadowwire" sx={{ px: 3 }}>
+              <Box display="flex" alignItems="center" gap={1}>
+                ShadowWire
+                <Chip label="22 tokens" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />
               </Box>
-              <Button
-                variant="outlined"
-                size="small"
-                color="error"
-                onClick={handleLogout}
-              >
-                Logout
-              </Button>
-            </Box>
-          </Paper>
+            </ToggleButton>
+            <ToggleButton value="privacy-cash" sx={{ px: 3 }}>
+              <Box display="flex" alignItems="center" gap={1}>
+                PrivacyCash
+                <Chip label="Trustless" size="small" color="secondary" sx={{ height: 20, fontSize: '0.7rem' }} />
+              </Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
 
-          {/* Provider Selector */}
-          <Box display="flex" justifyContent="center" alignItems="center" mb={2} gap={2}>
-            <Typography variant="body2" color="text.secondary">
-              Privacy Provider:
+      {providerError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {providerError}
+        </Alert>
+      )}
+
+      {/* Forms */}
+      <Box sx={{ position: 'relative' }}>
+        {!account && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              bgcolor: 'rgba(0,0,0,0.6)',
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '24px',
+              backdropFilter: 'blur(4px)',
+              gap: 2,
+            }}
+          >
+            <Typography variant="h6" color="text.secondary">
+              Connect wallet to continue
             </Typography>
-            <ToggleButtonGroup
-              value={selectedProvider}
-              exclusive
-              onChange={handleProviderChange}
-              size="small"
+            <Button
+              variant="contained"
+              onClick={() => setShowLoginDialog(true)}
+              sx={{
+                background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+                color: '#000',
+                fontWeight: 600,
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
+                },
+              }}
             >
-              <ToggleButton value="shadowwire" sx={{ px: 3 }}>
-                <Box display="flex" alignItems="center" gap={1}>
-                  ShadowWire
-                  <Chip label="22 tokens" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />
-                </Box>
-              </ToggleButton>
-              <ToggleButton value="privacy-cash" sx={{ px: 3 }}>
-                <Box display="flex" alignItems="center" gap={1}>
-                  PrivacyCash
-                  <Chip label="Trustless" size="small" color="secondary" sx={{ height: 20, fontSize: '0.7rem' }} />
-                </Box>
-              </ToggleButton>
-            </ToggleButtonGroup>
+              Connect Wallet
+            </Button>
           </Box>
-
-          {/* Provider Info */}
-          <Box textAlign="center" mb={3}>
-            {selectedProvider === 'shadowwire' ? (
-              <Typography variant="caption" color="text.secondary">
-                API-based privacy pool (custodial) - 0.5% fee
-              </Typography>
-            ) : (
-              <Typography variant="caption" color="text.secondary">
-                On-chain ZK proofs (non-custodial) - Trustless privacy
-              </Typography>
-            )}
-          </Box>
-
-          {providerError && (
-            <Alert severity="error" sx={{ mb: 4 }}>
-              {providerError}
-            </Alert>
-          )}
-
-          <Grid container spacing={4} justifyContent="center" mt={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
+        )}
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            {account ? (
               <FundForm
                 account={account}
                 provider={fundProvider}
@@ -580,8 +647,19 @@ function AppContent() {
                 formatUsdValue={formatUsdValue}
                 nearIntentsTokens={nearIntentsTokens}
               />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            ) : (
+              <Paper elevation={2} sx={{ p: 4, minHeight: 350 }}>
+                <Typography variant="h5" fontWeight={600} mb={2}>
+                  Fund Privacy Pool
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Deposit assets into the privacy pool
+                </Typography>
+              </Paper>
+            )}
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            {account ? (
               <TransferForm
                 account={account}
                 provider={withdrawProvider}
@@ -597,10 +675,19 @@ function AppContent() {
                 nearIntentsTokens={nearIntentsTokens}
                 pricesLoading={pricesLoading}
               />
-            </Grid>
+            ) : (
+              <Paper elevation={2} sx={{ p: 4, minHeight: 350 }}>
+                <Typography variant="h5" fontWeight={600} mb={2}>
+                  Transfer
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Withdraw assets from the privacy pool
+                </Typography>
+              </Paper>
+            )}
           </Grid>
-        </>
-      )}
+        </Grid>
+      </Box>
     </Container>
   );
 }
