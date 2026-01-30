@@ -40,7 +40,7 @@ type SwapTransferStatus =
   | { stage: 'failed'; error: string };
 
 interface TransferFormProps {
-  account: Account;
+  account: Account | null;
   provider: ProviderType | null;
   privateBalance: bigint;
   privateBalanceLoading?: boolean;
@@ -53,6 +53,7 @@ interface TransferFormProps {
   convertAmount?: (fromSymbol: string, toSymbol: string, amount: string) => string | null;
   nearIntentsTokens?: SwapApiAsset[];
   pricesLoading?: boolean;
+  onConnectClick?: () => void;
 }
 
 export function TransferForm({
@@ -69,6 +70,7 @@ export function TransferForm({
   convertAmount,
   nearIntentsTokens = [],
   pricesLoading: _pricesLoading = false,
+  onConnectClick,
 }: TransferFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
@@ -834,8 +836,14 @@ export function TransferForm({
           fullWidth
           variant="contained"
           size="large"
-          onClick={() => void handleTransfer()}
-          disabled={loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed')}
+          onClick={() => {
+            if (!account && onConnectClick) {
+              onConnectClick();
+            } else {
+              void handleTransfer();
+            }
+          }}
+          disabled={account ? (loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed')) : false}
           sx={{
             py: 1.5,
             background: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',
@@ -844,7 +852,9 @@ export function TransferForm({
             },
           }}
         >
-          {loading ? (
+          {!account ? (
+            'Connect Wallet'
+          ) : loading ? (
             <CircularProgress size={24} color="inherit" />
           ) : needsSwap ? (
             `Transfer SOL → ${assetSymbol}${assetChain !== 'sol' ? ` (${assetChain.toUpperCase()})` : ''}`
