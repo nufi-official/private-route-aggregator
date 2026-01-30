@@ -7,8 +7,6 @@ import {
   Box,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
   Select,
   MenuItem,
   ListSubheader,
@@ -126,7 +124,7 @@ export function TransferForm({
   formatUsdValue,
   convertAmount,
   nearIntentsTokens = [],
-  pricesLoading = false,
+  pricesLoading: _pricesLoading = false,
 }: TransferFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
@@ -696,79 +694,99 @@ export function TransferForm({
       </Typography>
 
       <Box component="form" noValidate autoComplete="off">
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>Asset</InputLabel>
-          <Select
-            value={asset}
-            label="Asset"
-            onChange={(e) => onAssetChange(e.target.value)}
-            disabled={loading}
-            MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
-          >
-            {(() => {
-              const grouped = groupAssetsByChain(availableAssets);
-              const items: React.ReactNode[] = [];
-
-              grouped.forEach((assets, chain) => {
-                items.push(
-                  <ListSubheader
-                    key={`header-${chain}`}
-                    sx={{
-                      bgcolor: 'background.paper',
-                      fontWeight: 600,
-                      color: 'primary.main',
-                      lineHeight: '32px',
-                    }}
-                  >
-                    {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
-                  </ListSubheader>
-                );
-                assets.forEach((a) => {
-                  items.push(
-                    <MenuItem key={a} value={a} sx={{ pl: 3 }}>
-                      {getAssetDisplayName(a)}
-                    </MenuItem>
-                  );
-                });
-              });
-
-              return items;
-            })()}
-          </Select>
-        </FormControl>
-
-        <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: '24px' }}>
-          <Typography variant="body2" color="text.secondary">
-            Private Balance
-          </Typography>
-          {privateBalanceLoading ? (
-            <Typography variant="h6" fontWeight={600} color="secondary">...</Typography>
-          ) : (
-            <Box display="flex" alignItems="baseline" gap={1}>
-              <Typography variant="h6" fontWeight={600} color="secondary">
-                {(() => {
-                  if (asset === 'SOL') {
-                    return `${solBalanceFormatted} SOL`;
-                  }
-                  // For non-SOL assets, convert the balance
-                  const converted = convertAmount?.('SOL', assetSymbol, solBalanceFormatted);
-                  if (converted) {
-                    return `~${converted} ${assetSymbol}`;
-                  }
-                  // Show loading or selected asset when conversion not available
-                  if (pricesLoading) {
-                    return `... ${assetSymbol}`;
-                  }
-                  return `~? ${assetSymbol}`;
-                })()}
-              </Typography>
-              {formatUsdValue && !pricesLoading && (
-                <Typography variant="body2" color="text.secondary">
-                  {formatUsdValue('SOL', solBalanceFormatted) ?? ''}
-                </Typography>
+        {/* Combined Amount + Asset Selector */}
+        <Box
+          sx={{
+            mb: 2,
+            p: 2,
+            bgcolor: '#000000',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+            <Typography variant="caption" color="text.secondary">
+              Amount
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Balance: {privateBalanceLoading ? '...' : `${solBalanceFormatted} SOL`}
+              {!privateBalanceLoading && formatUsdValue && (
+                <> ({formatUsdValue('SOL', solBalanceFormatted) ?? '$0'})</>
               )}
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box flex={1}>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                disabled={loading}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  width: '100%',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
+              </Typography>
             </Box>
-          )}
+            <Select
+              value={asset}
+              onChange={(e) => onAssetChange(e.target.value)}
+              disabled={loading}
+              MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
+              sx={{
+                minWidth: 100,
+                bgcolor: '#1a1a1a',
+                borderRadius: '16px',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  border: 'none',
+                },
+                '& .MuiSelect-select': {
+                  py: 1,
+                  px: 2,
+                },
+              }}
+            >
+              {(() => {
+                const grouped = groupAssetsByChain(availableAssets);
+                const items: React.ReactNode[] = [];
+
+                grouped.forEach((assets, chain) => {
+                  items.push(
+                    <ListSubheader
+                      key={`header-${chain}`}
+                      sx={{
+                        bgcolor: 'background.paper',
+                        fontWeight: 600,
+                        color: 'primary.main',
+                        lineHeight: '32px',
+                      }}
+                    >
+                      {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
+                    </ListSubheader>
+                  );
+                  assets.forEach((a) => {
+                    items.push(
+                      <MenuItem key={a} value={a} sx={{ pl: 3 }}>
+                        {getAssetDisplayName(a)}
+                      </MenuItem>
+                    );
+                  });
+                });
+
+                return items;
+              })()}
+            </Select>
+          </Box>
         </Box>
 
         <TextField
@@ -779,23 +797,6 @@ export function TransferForm({
           placeholder={assetChain === 'sol' ? 'Enter Solana address' : `Enter ${assetChain.toUpperCase()} address`}
           disabled={loading}
           sx={{ mb: 2 }}
-        />
-
-        <TextField
-          fullWidth
-          label={`Amount (${asset})`}
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="0.0"
-          disabled={loading}
-          sx={{ mb: 2 }}
-          slotProps={{
-            input: {
-              inputProps: { min: 0, step: 0.001 },
-            },
-          }}
-          helperText={amount && formatUsdValue ? formatUsdValue(assetSymbol, amount) : undefined}
         />
 
         {/* Fee preview */}

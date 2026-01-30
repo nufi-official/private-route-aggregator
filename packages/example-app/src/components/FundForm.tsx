@@ -7,8 +7,6 @@ import {
   Box,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
   Select,
   MenuItem,
   ListSubheader,
@@ -391,51 +389,97 @@ export function FundForm({
       </Typography>
 
       <Box component="form" noValidate autoComplete="off">
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>Asset</InputLabel>
-          <Select
-            value={asset}
-            label="Asset"
-            onChange={(e) => {
-              onAssetChange(e.target.value);
-              setCrossChainStatus({ stage: 'idle' });
-              setStatus(null);
-              setError(null);
-            }}
-            disabled={loading}
-            MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
-          >
-            {(() => {
-              const grouped = groupAssetsByChain(availableAssets);
-              const items: React.ReactNode[] = [];
+        {/* Combined Amount + Asset Selector */}
+        <Box
+          sx={{
+            mb: 2,
+            p: 2,
+            bgcolor: '#000000',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+            Amount
+          </Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box flex={1}>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                disabled={loading}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  width: '100%',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
+              </Typography>
+            </Box>
+            <Select
+              value={asset}
+              onChange={(e) => {
+                onAssetChange(e.target.value);
+                setCrossChainStatus({ stage: 'idle' });
+                setStatus(null);
+                setError(null);
+              }}
+              disabled={loading}
+              MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
+              sx={{
+                minWidth: 100,
+                bgcolor: '#1a1a1a',
+                borderRadius: '16px',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  border: 'none',
+                },
+                '& .MuiSelect-select': {
+                  py: 1,
+                  px: 2,
+                },
+              }}
+            >
+              {(() => {
+                const grouped = groupAssetsByChain(availableAssets);
+                const items: React.ReactNode[] = [];
 
-              grouped.forEach((assets, chain) => {
-                items.push(
-                  <ListSubheader
-                    key={`header-${chain}`}
-                    sx={{
-                      bgcolor: 'background.paper',
-                      fontWeight: 600,
-                      color: 'primary.main',
-                      lineHeight: '32px',
-                    }}
-                  >
-                    {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
-                  </ListSubheader>
-                );
-                assets.forEach((a) => {
+                grouped.forEach((assets, chain) => {
                   items.push(
-                    <MenuItem key={a} value={a} sx={{ pl: 3 }}>
-                      {getAssetDisplayName(a)}
-                    </MenuItem>
+                    <ListSubheader
+                      key={`header-${chain}`}
+                      sx={{
+                        bgcolor: 'background.paper',
+                        fontWeight: 600,
+                        color: 'primary.main',
+                        lineHeight: '32px',
+                      }}
+                    >
+                      {CHAIN_NAMES[chain] ?? chain.toUpperCase()}
+                    </ListSubheader>
                   );
+                  assets.forEach((a) => {
+                    items.push(
+                      <MenuItem key={a} value={a} sx={{ pl: 3 }}>
+                        {getAssetDisplayName(a)}
+                      </MenuItem>
+                    );
+                  });
                 });
-              });
 
-              return items;
-            })()}
-          </Select>
-        </FormControl>
+                return items;
+              })()}
+            </Select>
+          </Box>
+        </Box>
 
         {/* Show wallet balance only for SOL (direct funding) */}
         {!needsSwapToSol && (
@@ -542,23 +586,6 @@ export function FundForm({
             {getCrossChainStatusText()}
           </Alert>
         )}
-
-        <TextField
-          fullWidth
-          label={`Amount (${formatAssetDisplay(asset)})`}
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="0.0"
-          disabled={loading}
-          sx={{ mb: 2 }}
-          slotProps={{
-            input: {
-              inputProps: { min: 0, step: 0.001 },
-            },
-          }}
-          helperText={amount && formatUsdValue ? formatUsdValue(assetSymbol, amount) : undefined}
-        />
 
         {error && status?.stage !== 'failed' && crossChainStatus.stage !== 'failed' && (
           <Alert severity="error" sx={{ mb: 2 }}>
