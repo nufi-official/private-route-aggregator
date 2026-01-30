@@ -783,7 +783,24 @@ export function TransferForm({
           onChange={(e) => setDestinationAddress(e.target.value)}
           placeholder={assetChain === 'sol' ? 'Enter Solana address' : `Enter ${assetChain.toUpperCase()} address`}
           disabled={loading}
-          sx={{ mb: 2 }}
+          sx={{
+            mb: 2,
+            '& .MuiOutlinedInput-root': {
+              bgcolor: '#000000',
+              '& fieldset': {
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: '1px',
+              },
+              '&:hover fieldset': {
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: '1px',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: '1px',
+              },
+            },
+          }}
         />
 
         {/* Fee preview */}
