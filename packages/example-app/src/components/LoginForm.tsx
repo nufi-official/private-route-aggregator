@@ -213,13 +213,6 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       {/* Main wallet selection view */}
       {view === 'main' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Typography variant="h6" fontWeight={600} mb={0.5} textAlign="center">
-            Connect a wallet
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={3} textAlign="center">
-            to continue
-          </Typography>
-
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
