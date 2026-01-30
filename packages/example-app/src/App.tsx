@@ -515,7 +515,7 @@ function AppContent() {
         {/* Title */}
         <Box textAlign="center" mb={4}>
           <Typography
-            variant="h4"
+            variant="h3"
             component="h1"
             fontWeight={700}
             sx={{
@@ -523,7 +523,15 @@ function AppContent() {
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
+              mb: 1,
             }}
+          >
+            Fund privately
+          </Typography>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            fontWeight={400}
           >
             Any chain. Zero trace.
           </Typography>
