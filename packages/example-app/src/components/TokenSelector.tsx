@@ -140,7 +140,7 @@ export function TokenSelector({
         sx: {
           bgcolor: '#111111',
           backgroundImage: 'none',
-          borderRadius: '24px',
+          borderRadius: '32px',
           height: '70vh',
           maxHeight: 600,
         },
