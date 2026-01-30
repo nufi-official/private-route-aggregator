@@ -660,15 +660,21 @@ export function FundForm({
 
         {/* Swap progress stepper - shown when swap is in progress or completed */}
         {(crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed') ? (
-          <Box
-            sx={{
-              width: '100%',
-              borderRadius: '32px',
-              background: 'linear-gradient(135deg, rgba(20, 241, 149, 0.05) 0%, rgba(153, 69, 255, 0.05) 100%)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              p: 2,
-            }}
-          >
+          <>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                <strong>Swap & Fund</strong> — 2-step process: First, your {assetSymbol} will be swapped to SOL. Then, the SOL will be deposited to the privacy pool.
+              </Typography>
+            </Alert>
+            <Box
+              sx={{
+                width: '100%',
+                borderRadius: '32px',
+                background: 'linear-gradient(135deg, rgba(20, 241, 149, 0.05) 0%, rgba(153, 69, 255, 0.05) 100%)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                p: 2,
+              }}
+            >
             {/* Step 1: Getting quote */}
             <Box display="flex" alignItems="center" gap={1.5} sx={{ height: 48, position: 'relative' }}>
               <Box sx={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -794,6 +800,7 @@ export function FundForm({
               </Button>
             </Box>
           </Box>
+          </>
         ) : (
           /* Button - shown when idle */
           <Button
