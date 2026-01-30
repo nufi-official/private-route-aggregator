@@ -393,17 +393,20 @@ export function FundForm({
         <Box
           sx={{
             mb: 2,
-            p: 2,
+            p: 3,
             bgcolor: '#000000',
             borderRadius: '24px',
             border: '1px solid rgba(255,255,255,0.1)',
+            minHeight: 120,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
             Amount
           </Typography>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box flex={1}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" flex={1}>
+            <Box flex={1} display="flex" flexDirection="column" justifyContent="center">
               <input
                 type="number"
                 value={amount}
@@ -414,14 +417,14 @@ export function FundForm({
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
-                  fontSize: '32px',
+                  fontSize: '36px',
                   fontWeight: 600,
                   color: '#ffffff',
                   width: '100%',
                   fontFamily: 'inherit',
                 }}
               />
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
               </Typography>
             </Box>
@@ -439,6 +442,7 @@ export function FundForm({
                 minWidth: 100,
                 bgcolor: '#1a1a1a',
                 borderRadius: '16px',
+                alignSelf: 'center',
                 '& .MuiOutlinedInput-notchedOutline': {
                   border: 'none',
                 },
