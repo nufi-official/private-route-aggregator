@@ -439,7 +439,7 @@ export function FundForm({
 
         {/* Show wallet balance only for SOL (direct funding) */}
         {!needsSwapToSol && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: '24px' }}>
             <Typography variant="body2" color="text.secondary">
               Wallet Balance
             </Typography>
