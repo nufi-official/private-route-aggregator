@@ -509,8 +509,9 @@ function AppContent() {
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
-        py: 4
+        justifyContent: 'flex-start',
+        pt: 12,
+        pb: 4
       }}>
         {/* Title */}
         <Box textAlign="center" mb={4}>
