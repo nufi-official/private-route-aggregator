@@ -155,9 +155,11 @@ export function FundForm({
   const [crossChainStatus, setCrossChainStatus] = useState<CrossChainStatus>({ stage: 'idle' });
   const [originAddress, setOriginAddress] = useState('');
 
-  // Check if current asset is cross-chain (non-Solana)
+  // Check if current asset needs swapping to SOL
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);
-  const isCrossChainAsset = assetChain !== 'sol';
+  const isCrossChainAsset = assetChain !== 'sol'; // Non-Solana chain
+  const isSolanaToken = assetChain === 'sol' && asset !== 'SOL'; // Solana SPL token (not SOL)
+  const needsSwapToSol = asset !== 'SOL'; // Any non-SOL asset needs swap
 
   const toBaseUnits = (value: string): bigint => {
     const [whole = '0', decimal = ''] = value.split('.');
@@ -170,13 +172,17 @@ export function FundForm({
     return (Number(amount) / divisor).toFixed(4);
   };
 
-  const handleCrossChainFund = async () => {
+  const handleSwapToSol = async () => {
     if (!amount) {
       setError('Please enter an amount');
       return;
     }
 
-    if (!originAddress) {
+    // For cross-chain assets, require refund address
+    // For Solana tokens, use the user's Solana address
+    const refundAddress = isCrossChainAsset ? originAddress : await account.getAddress();
+
+    if (isCrossChainAsset && !originAddress) {
       setError(`Please enter your ${assetChain.toUpperCase()} address for refunds`);
       return;
     }
@@ -187,7 +193,7 @@ export function FundForm({
       return;
     }
 
-    // Find the origin asset (non-Solana)
+    // Find the origin asset
     const originAsset = nearIntentsTokens.find(
       (t) => t.symbol === assetSymbol && t.blockchain === assetChain
     );
@@ -218,7 +224,7 @@ export function FundForm({
       // Get quote: swap from origin asset to SOL
       const quoteResponse = await api.getQuote({
         dry: false,
-        senderAddress: originAddress, // Origin chain address for refunds
+        senderAddress: refundAddress, // Address for refunds (origin chain or Solana)
         recipientAddress: solanaAddress, // Solana address for receiving SOL
         originAsset: originAsset.assetId,
         destinationAsset: solAsset.assetId, // Always swap to SOL
@@ -288,9 +294,9 @@ export function FundForm({
   };
 
   const handleFund = async () => {
-    // If cross-chain asset, use cross-chain flow
-    if (isCrossChainAsset) {
-      return handleCrossChainFund();
+    // If not SOL, use NEAR Intents to swap to SOL first
+    if (needsSwapToSol) {
+      return handleSwapToSol();
     }
 
     if (!amount) {
@@ -431,8 +437,8 @@ export function FundForm({
           </Select>
         </FormControl>
 
-        {/* Show wallet balance only for Solana assets */}
-        {!isCrossChainAsset && (
+        {/* Show wallet balance only for SOL (direct funding) */}
+        {!needsSwapToSol && (
           <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
             <Typography variant="body2" color="text.secondary">
               Wallet Balance
@@ -450,25 +456,31 @@ export function FundForm({
           </Box>
         )}
 
-        {/* Cross-chain info and origin address input */}
-        {isCrossChainAsset && crossChainStatus.stage === 'idle' && (
+        {/* Swap info for non-SOL assets */}
+        {needsSwapToSol && crossChainStatus.stage === 'idle' && (
           <>
             <Alert severity="info" sx={{ mb: 2 }}>
               <Typography variant="body2">
-                Swap {assetSymbol} from {assetChain.toUpperCase()} → SOL on Solana via NEAR Intents.
-                The SOL will be deposited to your wallet for funding the privacy pool.
+                {isCrossChainAsset
+                  ? `Swap ${assetSymbol} from ${assetChain.toUpperCase()} → SOL on Solana via NEAR Intents.`
+                  : `Swap ${assetSymbol} → SOL on Solana via NEAR Intents.`
+                }
+                {' '}The SOL will be deposited to your wallet for funding the privacy pool.
               </Typography>
             </Alert>
-            <TextField
-              fullWidth
-              label={`Your ${assetChain.toUpperCase()} Address (for refunds)`}
-              value={originAddress}
-              onChange={(e) => setOriginAddress(e.target.value)}
-              placeholder={assetChain === 'eth' ? '0x...' : 'Enter your address'}
-              disabled={loading}
-              sx={{ mb: 2 }}
-              helperText="Required in case the deposit needs to be refunded"
-            />
+            {/* Only show refund address for cross-chain assets */}
+            {isCrossChainAsset && (
+              <TextField
+                fullWidth
+                label={`Your ${assetChain.toUpperCase()} Address (for refunds)`}
+                value={originAddress}
+                onChange={(e) => setOriginAddress(e.target.value)}
+                placeholder={assetChain === 'eth' || assetChain === 'base' || assetChain === 'arb' ? '0x...' : 'Enter your address'}
+                disabled={loading}
+                sx={{ mb: 2 }}
+                helperText="Required in case the deposit needs to be refunded"
+              />
+            )}
           </>
         )}
 
@@ -478,7 +490,9 @@ export function FundForm({
             <Typography variant="body2" fontWeight={500} mb={1}>
               {crossChainStatus.stage === 'processing'
                 ? `Processing swap: ${crossChainStatus.status}`
-                : `Send ${amount} ${(crossChainStatus as { originAsset: SwapApiAsset }).originAsset.symbol} on ${(crossChainStatus as { originAsset: SwapApiAsset }).originAsset.blockchain.toUpperCase()} to this address:`
+                : isCrossChainAsset
+                  ? `Send ${amount} ${(crossChainStatus as { originAsset: SwapApiAsset }).originAsset.symbol} on ${(crossChainStatus as { originAsset: SwapApiAsset }).originAsset.blockchain.toUpperCase()} to this address:`
+                  : `Send ${amount} ${(crossChainStatus as { originAsset: SwapApiAsset }).originAsset.symbol} to this Solana address:`
               }
             </Typography>
             <Typography variant="caption" color="text.secondary" mb={1} display="block">
@@ -552,7 +566,7 @@ export function FundForm({
           </Alert>
         )}
 
-        {status && !isCrossChainAsset && (
+        {status && !needsSwapToSol && (
           <Alert severity={getStatusColor()} sx={{ mb: 2 }}>
             {getStatusText()}
           </Alert>
@@ -563,7 +577,7 @@ export function FundForm({
           variant="contained"
           size="large"
           onClick={() => void handleFund()}
-          disabled={loading || !amount || (!provider && !isCrossChainAsset) || (isCrossChainAsset && !originAddress)}
+          disabled={loading || !amount || (!provider && !needsSwapToSol) || (isCrossChainAsset && !originAddress)}
           sx={{
             py: 1.5,
             background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
@@ -574,8 +588,10 @@ export function FundForm({
         >
           {loading ? (
             <CircularProgress size={24} color="inherit" />
-          ) : isCrossChainAsset ? (
-            `Deposit ${assetSymbol} from ${assetChain.toUpperCase()}`
+          ) : needsSwapToSol ? (
+            isCrossChainAsset
+              ? `Deposit ${assetSymbol} from ${assetChain.toUpperCase()}`
+              : `Swap ${assetSymbol} → SOL`
           ) : (
             `Fund ${asset}`
           )}
