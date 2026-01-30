@@ -697,6 +697,8 @@ function AppContent() {
             formatUsdValue={formatUsdValue}
             nearIntentsTokens={nearIntentsTokens}
             onConnectClick={() => setShowLoginDialog(true)}
+            walletBalance={walletBalance}
+            walletBalanceLoading={walletBalanceLoading}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
