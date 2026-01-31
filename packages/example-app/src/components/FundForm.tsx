@@ -108,6 +108,7 @@ export function FundForm({
   const [error, setError] = useState<string | null>(null);
   const [tokenSelectorOpen, setTokenSelectorOpen] = useState(false);
   const [fundingStage, setFundingStage] = useState<'idle' | 'signing' | 'submitting'>('idle');
+  const [cancelHovered, setCancelHovered] = useState(false);
 
   // Cross-chain deposit state
   const [crossChainStatus, setCrossChainStatus] = useState<CrossChainStatus>({ stage: 'idle' });
@@ -501,6 +502,13 @@ export function FundForm({
     navigator.clipboard.writeText(text);
   };
 
+  const handleCancelSwap = () => {
+    setCrossChainStatus({ stage: 'idle' });
+    setLoading(false);
+    setError(null);
+    setStatus(null);
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
       <Box display="flex" alignItems="center" gap={1} mb={3} mt={0}>
@@ -733,8 +741,48 @@ export function FundForm({
                 opacity: progressVisible ? 1 : 0,
                 overflow: 'hidden',
                 transition: 'max-height 1s ease-out, opacity 0.5s ease-out, padding 1s ease-out, border 0.5s ease-out',
+                position: 'relative',
               }}
             >
+              {/* Cancel button */}
+              <Box
+                onClick={handleCancelSwap}
+                onMouseEnter={() => setCancelHovered(true)}
+                onMouseLeave={() => setCancelHovered(false)}
+                sx={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  bgcolor: 'rgba(255,255,255,0.05)',
+                  transition: 'all 0.3s ease-out',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                  },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '0.75rem',
+                    color: 'rgba(255,255,255,0.5)',
+                    maxWidth: cancelHovered ? 50 : 0,
+                    opacity: cancelHovered ? 1 : 0,
+                    overflow: 'hidden',
+                    transition: 'max-width 0.3s ease-out, opacity 0.3s ease-out',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Cancel
+                </Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1 }}>✕</Typography>
+              </Box>
             {/* Step 1: Deposit address */}
             <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 56, position: 'relative' }}>
               {/* Connector line - behind circle */}
