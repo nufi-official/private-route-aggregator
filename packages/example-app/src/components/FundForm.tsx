@@ -772,7 +772,7 @@ export function FundForm({
                   </Box>
                 )}
               </Box>
-              <Box flex={1} sx={{ py: 1 }}>
+              <Box flex={1} sx={{ pt: 1 }}>
                 <Typography sx={{
                   color: crossChainStatus.stage === 'getting_quote' ? 'rgba(255,255,255,0.3)' : crossChainStatus.stage === 'awaiting_deposit' ? '#fff' : '#14F195',
                   fontWeight: crossChainStatus.stage === 'awaiting_deposit' ? 600 : 400
@@ -790,7 +790,7 @@ export function FundForm({
                   }}
                 >
                   <Box display="flex" alignItems="center">
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff' }}>
+                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff', minHeight: '2.4em' }}>
                       {'depositAddress' in crossChainStatus ? crossChainStatus.depositAddress : '0x0000000000000000000000000000000000000000'}
                     </Typography>
                     {'depositAddress' in crossChainStatus && (
