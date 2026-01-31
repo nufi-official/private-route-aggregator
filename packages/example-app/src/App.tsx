@@ -432,6 +432,10 @@ function AppContent() {
 
     setPrivateBalanceLoading(true);
     try {
+      // Ensure we're fetching SOL balance (PrivacyCash provider may have different asset set)
+      if ('setAsset' in solProvider && typeof solProvider.setAsset === 'function') {
+        solProvider.setAsset('SOL');
+      }
       const balance = await solProvider.getPrivateBalance();
       setPrivateBalance(balance);
     } catch (err) {
