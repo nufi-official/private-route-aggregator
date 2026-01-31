@@ -751,13 +751,11 @@ export function FundForm({
                 onMouseLeave={() => setCancelHovered(false)}
                 sx={{
                   position: 'absolute',
-                  top: 12,
-                  right: 12,
+                  top: 16,
+                  right: 20,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 0.5,
-                  px: 1,
-                  py: 0.5,
+                  height: 24,
                   borderRadius: '12px',
                   cursor: 'pointer',
                   bgcolor: 'rgba(255,255,255,0.05)',
@@ -768,20 +766,35 @@ export function FundForm({
                   },
                 }}
               >
-                <Typography
+                <Box
+                  component="span"
                   sx={{
                     fontSize: '0.75rem',
                     color: 'rgba(255,255,255,0.5)',
-                    maxWidth: cancelHovered ? 50 : 0,
+                    width: cancelHovered ? 'auto' : 0,
+                    pl: cancelHovered ? 1.5 : 0,
                     opacity: cancelHovered ? 1 : 0,
                     overflow: 'hidden',
-                    transition: 'max-width 0.3s ease-out, opacity 0.3s ease-out',
+                    transition: 'all 0.3s ease-out',
                     whiteSpace: 'nowrap',
                   }}
                 >
                   Cancel
-                </Typography>
-                <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1 }}>✕</Typography>
+                </Box>
+                <Box
+                  component="span"
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    color: 'rgba(255,255,255,0.5)',
+                  }}
+                >
+                  ✕
+                </Box>
               </Box>
             {/* Step 1: Deposit address - loading until deposit is known */}
             {(() => {
