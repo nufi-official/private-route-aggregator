@@ -116,6 +116,18 @@ const darkTheme = createTheme({
         },
       },
     },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          boxShadow: 'none',
+          border: 'none',
+          alignItems: 'center',
+        },
+        icon: {
+          alignItems: 'center',
+        },
+      },
+    },
   },
 });
 
