@@ -777,7 +777,7 @@ export function FundForm({
                   color: crossChainStatus.stage === 'getting_quote' ? 'rgba(255,255,255,0.3)' : crossChainStatus.stage === 'awaiting_deposit' ? '#fff' : '#14F195',
                   fontWeight: crossChainStatus.stage === 'awaiting_deposit' ? 600 : 400
                 }}>
-                  Deposit {assetSymbol}
+                  Send {amount} {assetSymbol} to
                 </Typography>
                 {crossChainStatus.stage !== 'getting_quote' && 'depositAddress' in crossChainStatus && (
                   <Box
@@ -788,11 +788,8 @@ export function FundForm({
                       mt: 1,
                     }}
                   >
-                    <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 0.5 }}>
-                      Send {amount} {assetSymbol} to:
-                    </Typography>
                     <Box display="flex" alignItems="center">
-                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all', flex: 1, color: '#fff' }}>
+                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff' }}>
                         {crossChainStatus.depositAddress}
                       </Typography>
                       <Tooltip title="Copy address">
