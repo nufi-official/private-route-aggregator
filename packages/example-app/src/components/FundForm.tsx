@@ -251,13 +251,17 @@ export function FundForm({
       const api = OneClickApi({ jwtToken });
       const solanaAddress = await account?.getAddress();
 
+      if (!refundAddress || !solanaAddress) {
+        throw new Error('Missing address');
+      }
+
       // Get quote: swap from origin asset to SOL
       const quoteResponse = await api.getQuote({
         dry: false,
-        senderAddress: refundAddress, // Address for refunds (origin chain or Solana)
-        recipientAddress: solanaAddress, // Solana address for receiving SOL
-        originAsset: originAsset.assetId,
-        destinationAsset: solAsset.assetId, // Always swap to SOL
+        senderAddress: refundAddress!, // Address for refunds (origin chain or Solana)
+        recipientAddress: solanaAddress!, // Solana address for receiving SOL
+        originAsset: originAsset!.assetId,
+        destinationAsset: solAsset!.assetId, // Always swap to SOL
         amount: toBaseUnits(amount).toString(),
         slippageTolerance: 100, // 1% in basis points
       });
@@ -269,8 +273,8 @@ export function FundForm({
 
       setCrossChainStatus({
         stage: 'awaiting_deposit',
-        depositAddress,
-        originAsset,
+        depositAddress: depositAddress!,
+        originAsset: originAsset!,
       });
 
       // Start polling for status
@@ -287,7 +291,7 @@ export function FundForm({
             // TODO: Get actual amounts from API response
             setCrossChainStatus({
               stage: 'completed',
-              depositAddress,
+              depositAddress: depositAddress!,
               amountIn: amount,
               amountOut: '0', // Would come from API
               originSymbol: assetSymbol,
@@ -302,23 +306,24 @@ export function FundForm({
           }
         } else {
           // Keep deposit address visible during processing
-          setCrossChainStatus({ stage: 'processing', status: event.status, depositAddress });
+          setCrossChainStatus({ stage: 'processing', status: event.status, depositAddress: depositAddress! });
         }
       };
 
       // Poll for status in background
       api.pollStatus({
-        depositAddress,
+        depositAddress: depositAddress!,
         maxAttempts: 120,
         pollingInterval: 5000,
         initialDelay: 1000,
         onStatusChange: handleStatusChange,
-      }).catch((err) => {
-        console.error('[FundForm] Polling error:', err);
+      }).catch((pollErr: unknown) => {
+        console.error('[FundForm] Polling error:', pollErr);
       });
 
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    } catch (e) {
+      const error = e as Error | undefined;
+      const errorMessage = error?.message ?? 'Unknown error';
       setError(errorMessage);
       setCrossChainStatus({ stage: 'failed', error: errorMessage });
       setLoading(false);
@@ -390,6 +395,10 @@ export function FundForm({
     }
     if (!provider) {
       setError('Provider not initialized');
+      return;
+    }
+    if (!account) {
+      setError('Account not connected');
       return;
     }
 

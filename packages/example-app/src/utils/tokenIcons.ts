@@ -175,7 +175,7 @@ const TOKEN_ICONS: Record<string, string> = {
  * @param chain - Optional chain identifier (e.g., "eth", "sol")
  * @returns Icon URL or null if not found
  */
-export function getTokenIcon(symbol: string, chain?: string): string | null {
+export function getTokenIcon(symbol: string, _chain?: string): string | null {
   // Normalize symbol
   const upperSymbol = symbol.toUpperCase();
 

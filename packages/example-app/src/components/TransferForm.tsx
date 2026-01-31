@@ -130,7 +130,7 @@ export function TransferForm({
 
   // Calculate fee preview when amount changes
   const calculateFeePreview = useCallback(async () => {
-    if (!amount || !provider || parseFloat(amount) <= 0) {
+    if (!amount || !provider || !account || parseFloat(amount) <= 0) {
       setFeePreview(null);
       setFeeError(null);
       return;
@@ -274,6 +274,9 @@ export function TransferForm({
     if (!provider) {
       throw new Error('Provider not initialized');
     }
+    if (!account) {
+      throw new Error('Account not connected');
+    }
 
     const baseUnits = account.assetToBaseUnits(solAmount);
 
@@ -303,6 +306,9 @@ export function TransferForm({
 
     if (!provider) {
       throw new Error('Provider not initialized');
+    }
+    if (!account) {
+      throw new Error('Account not connected');
     }
 
     // Debug: log available tokens

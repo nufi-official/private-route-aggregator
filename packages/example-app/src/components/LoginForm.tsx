@@ -32,7 +32,8 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [showAllWallets, setShowAllWallets] = useState(false);
 
-  const { wallets, select, wallet, connected, publicKey, connecting } = useWallet();
+  const walletContext = useWallet();
+  const { wallets, select, wallet, connected, publicKey, connecting } = walletContext;
 
   // Filter wallets by ready state (Installed = 'Installed', Loadable = 'Loadable')
   const installedWallets = wallets.filter(
@@ -46,13 +47,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   useEffect(() => {
     if (connected && publicKey && wallet) {
       try {
-        const account = createWalletAdapterAccount({
-          connected,
-          publicKey,
-          signTransaction: wallet.adapter.signTransaction?.bind(wallet.adapter),
-          signAllTransactions: wallet.adapter.signAllTransactions?.bind(wallet.adapter),
-          signMessage: wallet.adapter.signMessage?.bind(wallet.adapter),
-        }, {
+        const account = createWalletAdapterAccount(walletContext, {
           network: 'mainnet',
         });
         onLogin(account);
@@ -60,7 +55,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         console.error('Failed to create account:', err);
       }
     }
-  }, [connected, publicKey, wallet, onLogin]);
+  }, [connected, publicKey, wallet, walletContext, onLogin]);
 
   const handleSelectWallet = useCallback((walletName: string) => {
     select(walletName as any);
