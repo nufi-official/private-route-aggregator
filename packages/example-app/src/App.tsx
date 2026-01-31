@@ -546,11 +546,11 @@ function AppContent() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-start',
-          pt: 4,
+          pt: 2,
           pb: 2
         }}>
         {/* Title */}
-        <Box textAlign="center" mb={4}>
+        <Box textAlign="center" mb={2}>
           <Typography
             variant="h2"
             component="h1"
@@ -616,7 +616,7 @@ function AppContent() {
         display="flex"
         justifyContent="center"
         alignItems="center"
-        mb={3}
+        mb={2}
         sx={{ visibility: account ? 'visible' : 'hidden' }}
       >
         <Box
