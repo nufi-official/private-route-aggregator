@@ -506,7 +506,7 @@ export function FundForm({
   };
 
   return (
-    <Paper ref={formRef} elevation={3} sx={{ p: 4 }}>
+    <Paper ref={formRef} elevation={3} sx={{ p: 4, scrollMarginBottom: '48px' }}>
       <Box display="flex" alignItems="center" gap={1} mb={3} mt={0}>
         <ArrowDownwardIcon sx={{ color: '#14F195', fontSize: 28 }} />
         <Typography variant="h5" fontWeight={600}>
