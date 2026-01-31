@@ -9,6 +9,8 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
+  Dialog,
+  DialogContent,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -109,6 +111,7 @@ export function FundForm({
   const [tokenSelectorOpen, setTokenSelectorOpen] = useState(false);
   const [fundingStage, setFundingStage] = useState<'idle' | 'signing' | 'submitting'>('idle');
   const [cancelHovered, setCancelHovered] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Cross-chain deposit state
   const [crossChainStatus, setCrossChainStatus] = useState<CrossChainStatus>({ stage: 'idle' });
@@ -507,6 +510,7 @@ export function FundForm({
     setLoading(false);
     setError(null);
     setStatus(null);
+    setShowCancelDialog(false);
   };
 
   return (
@@ -746,7 +750,7 @@ export function FundForm({
             >
               {/* Cancel button */}
               <Box
-                onClick={handleCancelSwap}
+                onClick={() => setShowCancelDialog(true)}
                 onMouseEnter={() => setCancelHovered(true)}
                 onMouseLeave={() => setCancelHovered(false)}
                 sx={{
@@ -987,6 +991,80 @@ export function FundForm({
           </Button>
         )}
       </Box>
+
+      {/* Cancel confirmation dialog */}
+      <Dialog
+        open={showCancelDialog}
+        onClose={() => setShowCancelDialog(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: '#111111',
+            backgroundImage: 'none',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            maxWidth: 360,
+            p: 1,
+          },
+        }}
+      >
+        <DialogContent>
+          <Typography variant="h6" fontWeight={600} mb={2}>
+            Cancel swap?
+          </Typography>
+          <Typography color="text.secondary" mb={2}>
+            If you already sent funds, they will still be swapped to SOL and sent to your wallet.
+          </Typography>
+          {'depositAddress' in crossChainStatus && (
+            <Typography
+              component="a"
+              href={`https://explorer.defuse.org/intents/${crossChainStatus.depositAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'block',
+                mb: 3,
+                fontSize: '0.875rem',
+                color: '#14F195',
+                textDecoration: 'none',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              Track on NEAR Intents Explorer →
+            </Typography>
+          )}
+          <Box display="flex" gap={2}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setShowCancelDialog(false)}
+              sx={{
+                borderColor: 'rgba(255,255,255,0.2)',
+                color: 'text.primary',
+                '&:hover': {
+                  borderColor: 'rgba(255,255,255,0.4)',
+                  bgcolor: 'rgba(255,255,255,0.05)',
+                },
+              }}
+            >
+              Go back
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleCancelSwap}
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.1)',
+                color: 'text.primary',
+                '&:hover': {
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                },
+              }}
+            >
+              Cancel swap
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
     </Paper>
   );
 }
