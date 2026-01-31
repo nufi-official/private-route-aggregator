@@ -4,8 +4,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #000000;
-  height: 100vh;
-  overflow: hidden;
 }
 
 * {
@@ -14,6 +12,4 @@ body {
 
 #root {
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Paper,
   Typography,
@@ -110,30 +110,13 @@ export function FundForm({
   const [crossChainStatus, setCrossChainStatus] = useState<CrossChainStatus>({ stage: 'idle' });
   const [originAddress, setOriginAddress] = useState('');
 
-  // Ref for scrolling form to center when progress appears
-  const formRef = useRef<HTMLDivElement>(null);
-  const hasScrolledRef = useRef(false);
+  // Track progress visibility for animation
   const [progressVisible, setProgressVisible] = useState(false);
 
-  // Animate progress stepper appearance and scroll form to center
+  // Show/hide progress stepper
   useEffect(() => {
     const showProgress = crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed';
-
-    if (showProgress && !hasScrolledRef.current) {
-      hasScrolledRef.current = true;
-      // First make it visible (starts height animation)
-      setProgressVisible(true);
-      // Scroll partway through animation so both happen together
-      setTimeout(() => {
-        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
-    }
-
-    // Reset when going back to idle
-    if (crossChainStatus.stage === 'idle') {
-      hasScrolledRef.current = false;
-      setProgressVisible(false);
-    }
+    setProgressVisible(showProgress);
   }, [crossChainStatus.stage]);
 
   // Check if current asset needs swapping to SOL
@@ -506,7 +489,7 @@ export function FundForm({
   };
 
   return (
-    <Paper ref={formRef} elevation={3} sx={{ p: 4, scrollMarginBottom: '48px' }}>
+    <Paper elevation={3} sx={{ p: 4 }}>
       <Box display="flex" alignItems="center" gap={1} mb={3} mt={0}>
         <ArrowDownwardIcon sx={{ color: '#14F195', fontSize: 28 }} />
         <Typography variant="h5" fontWeight={600}>
