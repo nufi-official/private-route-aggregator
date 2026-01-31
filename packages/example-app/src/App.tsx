@@ -168,20 +168,11 @@ function AppContent() {
   // Cached PrivacyCash provider to avoid re-signing (signature cached per session)
   const [cachedPrivacyCashProvider, setCachedPrivacyCashProvider] = useState<PrivacyCashProvider | null>(null);
 
-  // Title shrink on scroll
-  const [titleScale, setTitleScale] = useState(1);
+  // Title visibility - hide when progress is visible
+  const [progressVisible, setProgressVisible] = useState(false);
 
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      // Shrink when scrolling down, grow when scrolling up
-      setTitleScale((prev) => {
-        const delta = e.deltaY > 0 ? -0.05 : 0.05;
-        return Math.max(0, Math.min(1, prev + delta));
-      });
-    };
-
-    window.addEventListener('wheel', handleWheel, { passive: true });
-    return () => window.removeEventListener('wheel', handleWheel);
+  const handleProgressVisibleChange = useCallback((visible: boolean) => {
+    setProgressVisible(visible);
   }, []);
 
   // Initialize WASM for ShadowWire on mount
@@ -565,24 +556,17 @@ function AppContent() {
           pt: 4,
           pb: 2
         }}>
-        {/* Title - shrinks on scroll */}
+        {/* Title - hides when progress is visible */}
         <Box
           sx={{
-            height: `${titleScale * 120}px`,
-            mb: `${titleScale * 32}px`,
+            height: progressVisible ? 0 : 120,
+            mb: progressVisible ? 0 : 4,
+            opacity: progressVisible ? 0 : 1,
             overflow: 'hidden',
-            transition: 'height 1s ease-out, margin-bottom 1s ease-out',
+            transition: 'height 1s ease-out, margin-bottom 1s ease-out, opacity 1s ease-out',
           }}
         >
-          <Box
-            textAlign="center"
-            sx={{
-              transform: `scale(${titleScale})`,
-              opacity: titleScale,
-              transformOrigin: 'top center',
-              transition: 'transform 1s ease-out, opacity 1s ease-out',
-            }}
-          >
+          <Box textAlign="center">
             <Typography
               variant="h2"
               component="h1"
@@ -774,6 +758,7 @@ function AppContent() {
             onConnectClick={() => setShowLoginDialog(true)}
             walletBalance={walletBalance}
             walletBalanceLoading={walletBalanceLoading}
+            onProgressVisibleChange={handleProgressVisibleChange}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>

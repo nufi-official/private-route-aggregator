@@ -75,6 +75,7 @@ interface FundFormProps {
   onConnectClick?: () => void;
   walletBalance?: bigint;
   walletBalanceLoading?: boolean;
+  onProgressVisibleChange?: (visible: boolean) => void;
 }
 
 // Helper to parse asset string - returns { symbol, chain } for cross-chain or { symbol, chain: 'sol' } for Solana
@@ -99,6 +100,7 @@ export function FundForm({
   onConnectClick,
   walletBalance = 0n,
   walletBalanceLoading = false,
+  onProgressVisibleChange,
 }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
@@ -117,7 +119,8 @@ export function FundForm({
   useEffect(() => {
     const showProgress = crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed';
     setProgressVisible(showProgress);
-  }, [crossChainStatus.stage]);
+    onProgressVisibleChange?.(showProgress);
+  }, [crossChainStatus.stage, onProgressVisibleChange]);
 
   // Check if current asset needs swapping to SOL
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);
