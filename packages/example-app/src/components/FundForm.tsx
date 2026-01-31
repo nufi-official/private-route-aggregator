@@ -78,6 +78,7 @@ interface FundFormProps {
   walletBalance?: bigint;
   walletBalanceLoading?: boolean;
   onProgressVisibleChange?: (visible: boolean) => void;
+  onSwapComplete?: () => void;
 }
 
 // Helper to parse asset string - returns { symbol, chain } for cross-chain or { symbol, chain: 'sol' } for Solana
@@ -103,6 +104,7 @@ export function FundForm({
   walletBalance = 0n,
   walletBalanceLoading = false,
   onProgressVisibleChange,
+  onSwapComplete,
 }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
@@ -218,6 +220,7 @@ export function FundForm({
       originSymbol: assetSymbol,
     });
     setLoading(false);
+    onSwapComplete?.(); // Refresh balances
     // Don't reset - user will click again to fund the SOL they received
   };
 

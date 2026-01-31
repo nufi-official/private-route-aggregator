@@ -765,6 +765,10 @@ function AppContent() {
             walletBalance={walletBalance}
             walletBalanceLoading={walletBalanceLoading}
             onProgressVisibleChange={handleProgressVisibleChange}
+            onSwapComplete={() => {
+              void refreshWalletBalance();
+              void refreshPrivateBalance();
+            }}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
