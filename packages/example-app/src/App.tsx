@@ -296,13 +296,13 @@ function AppContent() {
     }
   };
 
-  const handleFundAssetChange = async (newAsset: string) => {
+  const handleFundAssetChange = (newAsset: string) => {
     setFundAsset(newAsset);
-    setWalletBalance(0n);
 
     // Cross-chain assets (format: SYMBOL:CHAIN) don't need a provider
     // They use NEAR Intents directly
     if (newAsset.includes(':')) {
+      setWalletBalance(0n);
       return;
     }
 
@@ -358,7 +358,7 @@ function AppContent() {
         const connection = new Connection(rpcUrl, 'confirmed');
 
         // Get mint address from ShadowWire, PrivacyCash, or NEAR Intents tokens
-        let mintAddress: string | undefined = TOKEN_MINTS[fundAsset as ShadowWireToken] || (SPL_MINTS as Record<string, string>)[fundAsset];
+        let mintAddress: string | undefined = (TOKEN_MINTS as Record<string, string>)[fundAsset] || (SPL_MINTS as Record<string, string>)[fundAsset];
 
         // If not found in provider mints, try NEAR Intents tokens
         if (!mintAddress) {
@@ -382,11 +382,12 @@ function AppContent() {
           mint: mintPubkey,
         });
 
-        if (tokenAccounts.value.length === 0) {
+        const tokenAccount = tokenAccounts.value[0];
+        if (!tokenAccount) {
           setWalletBalance(0n);
         } else {
           // Parse the token account data to get balance
-          const accountInfo = tokenAccounts.value[0]!.account;
+          const accountInfo = tokenAccount.account;
           // Token account data: first 64 bytes are mint (32) and owner (32), then 8 bytes for amount
           const data = accountInfo.data;
           const amount = data.readBigUInt64LE(64);
