@@ -168,6 +168,22 @@ function AppContent() {
   // Cached PrivacyCash provider to avoid re-signing (signature cached per session)
   const [cachedPrivacyCashProvider, setCachedPrivacyCashProvider] = useState<PrivacyCashProvider | null>(null);
 
+  // Title shrink on scroll
+  const [titleScale, setTitleScale] = useState(1);
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      // Shrink when scrolling down, grow when scrolling up
+      setTitleScale((prev) => {
+        const delta = e.deltaY > 0 ? -0.05 : 0.05;
+        return Math.max(0, Math.min(1, prev + delta));
+      });
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, []);
+
   // Initialize WASM for ShadowWire on mount
   useEffect(() => {
     initWASM('/wasm/settler_wasm_bg.wasm').catch((err) => {
@@ -549,31 +565,48 @@ function AppContent() {
           pt: 4,
           pb: 2
         }}>
-        {/* Title */}
-        <Box textAlign="center" mb={4}>
-          <Typography
-            variant="h2"
-            component="h1"
-            fontWeight={800}
+        {/* Title - shrinks on scroll */}
+        <Box
+          sx={{
+            height: `${titleScale * 120}px`,
+            mb: `${titleScale * 32}px`,
+            overflow: 'hidden',
+            transition: 'height 1s ease-out, margin-bottom 1s ease-out',
+          }}
+        >
+          <Box
+            textAlign="center"
             sx={{
-              background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              mb: 1,
-              letterSpacing: '-0.02em',
-              filter: 'drop-shadow(0 0 20px rgba(20, 241, 149, 0.5)) drop-shadow(0 0 40px rgba(153, 69, 255, 0.3))',
+              transform: `scale(${titleScale})`,
+              opacity: titleScale,
+              transformOrigin: 'top center',
+              transition: 'transform 1s ease-out, opacity 1s ease-out',
             }}
           >
-            Fund privately
-          </Typography>
-          <Typography
-            variant="h6"
-            color="text.secondary"
-            fontWeight={400}
-          >
-            Any chain. Zero trace.
-          </Typography>
+            <Typography
+              variant="h2"
+              component="h1"
+              fontWeight={800}
+              sx={{
+                background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 1,
+                letterSpacing: '-0.02em',
+                filter: 'drop-shadow(0 0 20px rgba(20, 241, 149, 0.5)) drop-shadow(0 0 40px rgba(153, 69, 255, 0.3))',
+              }}
+            >
+              Fund privately
+            </Typography>
+            <Typography
+              variant="h6"
+              color="text.secondary"
+              fontWeight={400}
+            >
+              Any chain. Zero trace.
+            </Typography>
+          </Box>
         </Box>
 
       {/* Login Dialog - positioned on right */}
