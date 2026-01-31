@@ -9,6 +9,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import { TokenSelector } from './TokenSelector';
 import { getAssetIcon } from '../utils/tokenIcons';
 import type { WithdrawStatus } from '@privacy-router-sdk/private-routers-core';
@@ -660,9 +661,12 @@ export function TransferForm({
 
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
-      <Typography variant="h5" fontWeight={600} mb={2}>
-        Withdraw
-      </Typography>
+      <Box display="flex" alignItems="center" gap={1} mb={2}>
+        <ArrowUpwardIcon sx={{ color: '#9945FF', fontSize: 28 }} />
+        <Typography variant="h5" fontWeight={600}>
+          Withdraw
+        </Typography>
+      </Box>
 
       <Box component="form" noValidate autoComplete="off">
         {/* Combined Amount + Asset Selector */}

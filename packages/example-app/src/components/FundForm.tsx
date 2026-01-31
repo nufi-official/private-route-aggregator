@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { TokenSelector } from './TokenSelector';
 import { getAssetIcon } from '../utils/tokenIcons';
 import type { FundingStatus } from '@privacy-router-sdk/private-routers-core';
@@ -480,9 +481,12 @@ export function FundForm({
 
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
-      <Typography variant="h5" fontWeight={600} mb={2}>
-        Deposit
-      </Typography>
+      <Box display="flex" alignItems="center" gap={1} mb={2}>
+        <ArrowDownwardIcon sx={{ color: '#14F195', fontSize: 28 }} />
+        <Typography variant="h5" fontWeight={600}>
+          Deposit
+        </Typography>
+      </Box>
 
       <Box component="form" noValidate autoComplete="off">
         {/* Combined Amount + Asset Selector */}
