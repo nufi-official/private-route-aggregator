@@ -564,15 +564,15 @@ function AppContent() {
         sx={{
           transform: 'scale(0.8)',
           transformOrigin: 'top center',
+          height: 'fit-content',
         }}
       >
         <Container maxWidth="lg" sx={{
-          minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-start',
           pt: 4,
-          pb: 4
+          pb: 2
         }}>
         {/* Title - shrinks on wheel gesture */}
         <Box
