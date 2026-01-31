@@ -703,7 +703,7 @@ export function TransferForm({
                 {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
               </Typography>
               <Typography
-                variant="caption"
+                variant="body2"
                 onClick={() => {
                   if (loading) return;
                   // Convert SOL balance to selected asset if needed
@@ -717,11 +717,11 @@ export function TransferForm({
                   }
                 }}
                 sx={{
-                  color: 'rgba(255,255,255,0.3)',
+                  color: 'rgba(255,255,255,0.5)',
                   cursor: loading ? 'default' : 'pointer',
                   mr: 1,
                   '&:hover': {
-                    color: loading ? 'rgba(255,255,255,0.3)' : 'primary.main',
+                    color: loading ? 'rgba(255,255,255,0.5)' : 'primary.main',
                   },
                 }}
               >
