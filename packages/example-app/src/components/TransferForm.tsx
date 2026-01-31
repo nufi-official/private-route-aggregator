@@ -795,6 +795,7 @@ export function TransferForm({
             mb: 2,
             '& .MuiOutlinedInput-root': {
               bgcolor: '#000000',
+              pl: 2,
               '& fieldset': {
                 borderColor: 'rgba(255,255,255,0.1)',
                 borderWidth: '1px',
@@ -807,6 +808,16 @@ export function TransferForm({
                 borderColor: 'rgba(255,255,255,0.1)',
                 borderWidth: '1px',
               },
+            },
+            '& .MuiInputLabel-root': {
+              color: 'rgba(255,255,255,0.3)',
+              '&:not(.MuiInputLabel-shrink)': {
+                transform: 'translate(24px, 16px) scale(1)',
+              },
+            },
+            '& .MuiOutlinedInput-input::placeholder': {
+              color: 'rgba(255,255,255,0.2)',
+              opacity: 1,
             },
           }}
         />

@@ -510,7 +510,7 @@ function AppContent() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-start',
-        pt: 12,
+        pt: 4,
         pb: 4
       }}>
         {/* Title */}
