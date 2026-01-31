@@ -113,16 +113,26 @@ export function FundForm({
   // Ref for scrolling form to center when progress appears
   const formRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
+  const [progressVisible, setProgressVisible] = useState(false);
 
-  // Scroll form to center once when swap progress first appears
+  // Animate progress stepper appearance and scroll form to center
   useEffect(() => {
-    if (crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed' && !hasScrolledRef.current && formRef.current) {
+    const showProgress = crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed';
+
+    if (showProgress && !hasScrolledRef.current) {
       hasScrolledRef.current = true;
-      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // First make it visible (starts height animation)
+      setProgressVisible(true);
+      // Scroll partway through animation so both happen together
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
     }
-    // Reset scroll flag when going back to idle
+
+    // Reset when going back to idle
     if (crossChainStatus.stage === 'idle') {
       hasScrolledRef.current = false;
+      setProgressVisible(false);
     }
   }, [crossChainStatus.stage]);
 
@@ -712,17 +722,21 @@ export function FundForm({
           </Alert>
         )}
 
-        {/* Swap progress stepper - shown when swap is in progress or completed */}
-        {(crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed') ? (
+        {/* Swap progress stepper - animates in when swap starts */}
+        {(crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed') && (
           <>
             <Box
               sx={{
                 width: '100%',
                 borderRadius: '32px',
                 background: 'linear-gradient(135deg, rgba(20, 241, 149, 0.05) 0%, rgba(153, 69, 255, 0.05) 100%)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                border: progressVisible ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
                 px: 4,
-                py: 3,
+                py: progressVisible ? 3 : 0,
+                maxHeight: progressVisible ? '600px' : '0px',
+                opacity: progressVisible ? 1 : 0,
+                overflow: 'hidden',
+                transition: 'max-height 1s ease-out, opacity 0.5s ease-out, padding 1s ease-out, border 0.5s ease-out',
               }}
             >
             {/* Step 1: Getting quote */}
@@ -897,7 +911,9 @@ export function FundForm({
             </Box>
           </Box>
           </>
-        ) : (
+        )}
+
+        {(crossChainStatus.stage === 'idle' || crossChainStatus.stage === 'failed') && (
           /* Button - shown when idle */
           <Button
             fullWidth
