@@ -526,6 +526,7 @@ function AppContent() {
               WebkitTextFillColor: 'transparent',
               mb: 1,
               letterSpacing: '-0.02em',
+              filter: 'drop-shadow(0 0 20px rgba(20, 241, 149, 0.5)) drop-shadow(0 0 40px rgba(153, 69, 255, 0.3))',
             }}
           >
             Fund privately
