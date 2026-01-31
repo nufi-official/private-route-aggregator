@@ -755,6 +755,7 @@ function AppContent() {
             account={account}
             provider={fundProvider}
             solProvider={solProvider}
+            providerName={selectedProvider}
             onSuccess={() => void refreshPrivateBalance()}
             asset={fundAsset}
             decimals={getDecimals(fundAsset)}

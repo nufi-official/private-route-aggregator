@@ -68,6 +68,7 @@ interface FundFormProps {
   account: Account | null;
   provider: ProviderType | null;
   solProvider: ProviderType | null; // Always SOL for post-swap deposits
+  providerName?: 'shadowwire' | 'privacy-cash';
   onSuccess: () => void;
   asset: string;
   decimals: number;
@@ -95,6 +96,7 @@ export function FundForm({
   account,
   provider,
   solProvider,
+  providerName,
   onSuccess,
   asset,
   decimals,
@@ -136,6 +138,26 @@ export function FundForm({
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);
   const isCrossChainAsset = assetChain !== 'sol'; // Non-Solana chain
   const needsSwapToSol = asset !== 'SOL'; // Any non-SOL asset needs swap
+
+  // ShadowWire minimum: 0.12 SOL equivalent
+  const MIN_SOL_AMOUNT = 0.12;
+  const getAmountInSol = (): number => {
+    if (!amount || parseFloat(amount) === 0) return 0;
+    if (asset === 'SOL') return parseFloat(amount);
+
+    const assetPrice = nearIntentsTokens.find(
+      (t) => t.symbol === assetSymbol && t.blockchain === assetChain
+    )?.price ?? 0;
+    const solPrice = nearIntentsTokens.find(
+      (t) => t.symbol === 'SOL' && t.blockchain === 'sol'
+    )?.price ?? 150;
+
+    if (assetPrice === 0 || solPrice === 0) return 0;
+    return (parseFloat(amount) * assetPrice) / solPrice;
+  };
+
+  const amountInSol = getAmountInSol();
+  const isBelowMinimum = providerName === 'shadowwire' && amount && amountInSol > 0 && amountInSol < MIN_SOL_AMOUNT;
 
   const toBaseUnits = (value: string): bigint => {
     const [whole = '0', decimal = ''] = value.split('.');
@@ -694,6 +716,15 @@ export function FundForm({
           </Alert>
         )}
 
+        {/* Minimum amount warning for ShadowWire */}
+        {isBelowMinimum && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              Minimum deposit is {MIN_SOL_AMOUNT} SOL. Current amount is ~{amountInSol.toFixed(4)} SOL.
+            </Typography>
+          </Alert>
+        )}
+
         {/* Refund address for cross-chain assets - stays visible throughout the process */}
         {isCrossChainAsset && needsSwapToSol && (
           <TextField
@@ -996,7 +1027,7 @@ export function FundForm({
                 void handleFund();
               }
             }}
-            disabled={account ? (loading || (!amount || (!provider && !needsSwapToSol) || (isCrossChainAsset && !originAddress))) : false}
+            disabled={account ? (loading || !amount || (!provider && !needsSwapToSol) || (isCrossChainAsset && !originAddress) || isBelowMinimum) : false}
             sx={{
               py: 1.5,
               borderRadius: '32px',
