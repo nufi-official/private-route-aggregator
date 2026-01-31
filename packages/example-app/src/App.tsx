@@ -433,7 +433,7 @@ function AppContent() {
 
   return (
     <>
-      {/* Fixed top right connect/wallet */}
+      {/* Fixed top right connect/wallet - outside scaled container */}
       <Box
         sx={{
           position: 'fixed',
@@ -458,41 +458,41 @@ function AppContent() {
             Connect
           </Button>
         ) : (
-          <Box display="flex" alignItems="center" gap={2.5}>
+          <Box display="flex" alignItems="center" gap={1.5}>
             {/* Wallet Balance */}
-            <Box display="flex" alignItems="baseline" gap={1}>
-              <Typography sx={{ color: '#14F195', fontWeight: 600, fontSize: '1.25rem' }}>
+            <Box display="flex" alignItems="baseline" gap={0.5}>
+              <Typography sx={{ color: '#14F195', fontWeight: 600, fontSize: '0.9rem' }}>
                 {(Number(walletBalance) / 1e9).toFixed(4)} SOL
               </Typography>
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem' }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
                 {formatUsdValue('SOL', Number(walletBalance) / 1e9)}
               </Typography>
             </Box>
             <Chip
               label={shortenAddress(address)}
-              size="medium"
+              size="small"
               onClick={() => navigator.clipboard.writeText(address)}
-              sx={{ fontFamily: 'monospace', cursor: 'pointer', bgcolor: '#111', fontSize: '0.95rem', height: 36 }}
+              sx={{ fontFamily: 'monospace', cursor: 'pointer', bgcolor: '#111', fontSize: '0.75rem', height: 26 }}
               title="Click to copy"
             />
             <Button
               variant="outlined"
-              size="medium"
+              size="small"
               onClick={() => {
                 void refreshWalletBalance();
                 void refreshPrivateBalance();
               }}
               disabled={walletBalanceLoading || privateBalanceLoading}
-              sx={{ minWidth: 'auto', px: 1.5, fontSize: '1.1rem', height: 36 }}
+              sx={{ minWidth: 'auto', px: 1, fontSize: '0.85rem', height: 26 }}
             >
               {walletBalanceLoading || privateBalanceLoading ? '...' : '↻'}
             </Button>
             <Button
               variant="outlined"
-              size="medium"
+              size="small"
               color="error"
               onClick={handleLogout}
-              sx={{ minWidth: 'auto', px: 1.5, fontSize: '1.1rem', height: 36 }}
+              sx={{ minWidth: 'auto', px: 1, fontSize: '0.85rem', height: 26 }}
             >
               ✕
             </Button>
@@ -500,14 +500,21 @@ function AppContent() {
         )}
       </Box>
 
-      <Container maxWidth="lg" sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-start',
-        pt: 4,
-        pb: 4
-      }}>
+      {/* Scaled main content */}
+      <Box
+        sx={{
+          transform: 'scale(0.8)',
+          transformOrigin: 'top center',
+        }}
+      >
+        <Container maxWidth="lg" sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+          pt: 4,
+          pb: 4
+        }}>
         {/* Title */}
         <Box textAlign="center" mb={4}>
           <Typography
@@ -718,6 +725,7 @@ function AppContent() {
         </Grid>
       </Grid>
     </Container>
+      </Box>
     </>
   );
 }
