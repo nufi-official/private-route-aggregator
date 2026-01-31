@@ -116,6 +116,17 @@ export function TransferForm({
   // Max amount after fees (for MAX button)
   const [maxSolAfterFees, setMaxSolAfterFees] = useState<string | null>(null);
 
+  // Reset form when provider changes
+  useEffect(() => {
+    setAmount('');
+    setDestinationAddress('');
+    setStatus(null);
+    setError(null);
+    setSwapStatus({ stage: 'idle' });
+    setFeePreview(null);
+    setMaxSolAfterFees(null);
+  }, [provider]);
+
   // Check if we need to swap (any non-SOL asset needs swap via NEAR Intents)
   const needsSwap = asset !== 'SOL';
 
@@ -281,6 +292,12 @@ export function TransferForm({
         return;
       }
 
+      // Wait for balance to finish loading before calculating
+      if (privateBalanceLoading) {
+        setMaxSolAfterFees(null);
+        return;
+      }
+
       // Use actual balance (not rounded display value) for precision
       const balanceSol = Number(privateBalance) / 1e9;
       if (balanceSol <= 0) {
@@ -290,26 +307,57 @@ export function TransferForm({
 
       try {
         const providerName = (provider as { name?: string }).name;
-        const isPrivacyCash = providerName === 'privacy-cash';
-        const isShadowWire = providerName?.toLowerCase() === 'shadowwire' || 'transfer' in provider;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const providerAny = provider as any;
+        // Detect by method existence for more reliable detection
+        const hasCalculateWithdrawAmount = typeof providerAny.calculateWithdrawAmount === 'function';
+        const hasGetFeePercentage = typeof providerAny.getFeePercentage === 'function';
+        const isPrivacyCash = hasCalculateWithdrawAmount || providerName === 'privacy-cash';
+        const isShadowWire = !isPrivacyCash && (hasGetFeePercentage || providerName?.toLowerCase() === 'shadowwire');
+
+        console.log('[TransferForm] MAX calc starting - provider:', providerName, 'isPrivacyCash:', isPrivacyCash, 'isShadowWire:', isShadowWire, 'balance:', balanceSol);
 
         // Fee preview adds 2% price buffer, so we need to account for it
-        // Formula: (maxNet * priceBuffer) / (1 - feeRate) <= balance
-        // Therefore: maxNet <= balance * (1 - feeRate) / priceBuffer
         const priceBuffer = 1.02;
         // Add small safety margin to avoid edge cases with rounding
         const safetyMargin = 0.9995;
         let maxNetSol: number;
 
-        if (isPrivacyCash) {
-          // PrivacyCash: percentage fee + rent fee
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const pcProvider = provider as any;
-          const config = await pcProvider.getFeeConfig();
-          const feeRate = config.withdrawFeeRate; // e.g., 0.001 for 0.1%
-          const rentFee = config.withdrawRentFee; // e.g., 0.01 SOL
-          // Account for rent fee first, then percentage fee, then price buffer
-          maxNetSol = ((balanceSol - rentFee) * (1 - feeRate)) / priceBuffer * safetyMargin;
+        if (isPrivacyCash && hasCalculateWithdrawAmount) {
+          // PrivacyCash: use SDK to verify max amount
+          // Calculate minimum fee by checking what fee would be charged for a tiny amount
+          const tinyAmount = account.assetToBaseUnits('0.0001');
+          const minFeeCheck = await providerAny.calculateWithdrawAmount(tinyAmount);
+          const minFeeSol = Number(minFeeCheck.fee as bigint) / 1e9;
+
+          console.log('[TransferForm] MAX calc - PrivacyCash minFee:', minFeeSol, 'balance:', balanceSol);
+
+          // If minimum fee exceeds balance, max is 0
+          if (minFeeSol >= balanceSol) {
+            console.log('[TransferForm] MAX calc - fee exceeds balance, setting max to 0');
+            maxNetSol = 0;
+          } else {
+            // Binary search to find max amount that fits in balance
+            let low = 0;
+            let high = balanceSol;
+            const balanceLamports = privateBalance;
+
+            for (let i = 0; i < 20; i++) { // 20 iterations for precision
+              const mid = (low + high) / 2;
+              const midWithBuffer = mid * priceBuffer;
+              const midLamports = account.assetToBaseUnits(midWithBuffer.toFixed(9));
+              const result = await providerAny.calculateWithdrawAmount(midLamports);
+              const totalWithdraw = result.withdrawAmount as bigint;
+
+              if (totalWithdraw <= balanceLamports) {
+                low = mid;
+              } else {
+                high = mid;
+              }
+            }
+            maxNetSol = low * safetyMargin;
+            console.log('[TransferForm] MAX calc - binary search result:', maxNetSol);
+          }
         } else if (isShadowWire) {
           // ShadowWire: percentage fee
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -323,9 +371,10 @@ export function TransferForm({
           maxNetSol = balanceSol * safetyMargin;
         }
 
-        // Ensure non-negative
+        // Ensure non-negative and truncate (floor) to 4 decimals to avoid rounding up
         maxNetSol = Math.max(0, maxNetSol);
-        setMaxSolAfterFees(maxNetSol.toFixed(4));
+        const truncated = Math.floor(maxNetSol * 10000) / 10000;
+        setMaxSolAfterFees(truncated.toFixed(4));
       } catch (err) {
         console.error('[TransferForm] Error calculating max after fees:', err);
         setMaxSolAfterFees(null);
@@ -333,7 +382,7 @@ export function TransferForm({
     };
 
     void calculateMax();
-  }, [provider, account, privateBalance]);
+  }, [provider, account, privateBalance, privateBalanceLoading]);
 
   // Direct SOL transfer (no swap needed)
   const handleDirectTransfer = async (solAmount: string) => {
@@ -780,35 +829,33 @@ export function TransferForm({
               <Typography
                 variant="body2"
                 onClick={() => {
-                  if (loading) return;
+                  if (loading || !maxSolAfterFees) return;
                   // Use fee-adjusted max amount
-                  const maxSol = maxSolAfterFees ?? solBalanceFormatted;
                   if (asset === 'SOL') {
-                    setAmount(maxSol);
+                    setAmount(maxSolAfterFees);
                   } else if (convertAmount) {
-                    const converted = convertAmount('SOL', assetSymbol, maxSol);
-                    setAmount(converted ?? maxSol);
+                    const converted = convertAmount('SOL', assetSymbol, maxSolAfterFees);
+                    setAmount(converted ?? maxSolAfterFees);
                   } else {
-                    setAmount(maxSol);
+                    setAmount(maxSolAfterFees);
                   }
                 }}
                 sx={{
                   color: 'rgba(255,255,255,0.5)',
-                  cursor: loading ? 'default' : 'pointer',
+                  cursor: (loading || !maxSolAfterFees) ? 'default' : 'pointer',
                   mr: 1,
                   '&:hover': {
-                    color: loading ? 'rgba(255,255,255,0.5)' : 'primary.main',
+                    color: (loading || !maxSolAfterFees) ? 'rgba(255,255,255,0.5)' : 'primary.main',
                   },
                 }}
               >
-                MAX: {privateBalanceLoading ? '...' : (() => {
-                  const maxSol = maxSolAfterFees ?? solBalanceFormatted;
+                MAX: {(privateBalanceLoading || !maxSolAfterFees) ? '...' : (() => {
                   if (asset === 'SOL') {
-                    return `${maxSol} SOL`;
+                    return `${maxSolAfterFees} SOL`;
                   } else if (convertAmount) {
-                    return `${convertAmount('SOL', assetSymbol, maxSol) ?? maxSol} ${assetSymbol}`;
+                    return `${convertAmount('SOL', assetSymbol, maxSolAfterFees) ?? maxSolAfterFees} ${assetSymbol}`;
                   } else {
-                    return `${maxSol} SOL`;
+                    return `${maxSolAfterFees} SOL`;
                   }
                 })()}
               </Typography>
@@ -1032,7 +1079,7 @@ export function TransferForm({
               void handleTransfer();
             }
           }}
-          disabled={account ? (loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed')) : false}
+          disabled={account ? (loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed') || (feePreview && (!feePreview.sufficient || feePreview.belowMinimum))) : false}
           sx={{
             py: 1.5,
             background: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',
