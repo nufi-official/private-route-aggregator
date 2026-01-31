@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Paper,
   Typography,
@@ -109,6 +109,22 @@ export function FundForm({
   // Cross-chain deposit state
   const [crossChainStatus, setCrossChainStatus] = useState<CrossChainStatus>({ stage: 'idle' });
   const [originAddress, setOriginAddress] = useState('');
+
+  // Ref for scrolling form to center when progress appears
+  const formRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
+
+  // Scroll form to center once when swap progress first appears
+  useEffect(() => {
+    if (crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed' && !hasScrolledRef.current && formRef.current) {
+      hasScrolledRef.current = true;
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // Reset scroll flag when going back to idle
+    if (crossChainStatus.stage === 'idle') {
+      hasScrolledRef.current = false;
+    }
+  }, [crossChainStatus.stage]);
 
   // Check if current asset needs swapping to SOL
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);
@@ -480,7 +496,7 @@ export function FundForm({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4 }}>
+    <Paper ref={formRef} elevation={3} sx={{ p: 4 }}>
       <Box display="flex" alignItems="center" gap={1} mb={3} mt={0}>
         <ArrowDownwardIcon sx={{ color: '#14F195', fontSize: 28 }} />
         <Typography variant="h5" fontWeight={600}>

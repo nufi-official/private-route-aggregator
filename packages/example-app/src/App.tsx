@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import {
   Container,
@@ -167,6 +167,31 @@ function AppContent() {
 
   // Cached PrivacyCash provider to avoid re-signing (signature cached per session)
   const [cachedPrivacyCashProvider, setCachedPrivacyCashProvider] = useState<PrivacyCashProvider | null>(null);
+
+  // Wheel-based title shrinking (captures wheel to shrink title, no actual scrolling)
+  const [titleScale, setTitleScale] = useState(1);
+  const titleProgressRef = useRef(0); // 0 = full size, 1 = fully hidden
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      // Only capture wheel events while title is still visible
+      if (titleProgressRef.current < 1 && e.deltaY > 0) {
+        e.preventDefault();
+        // Increase progress based on scroll delta
+        titleProgressRef.current = Math.min(1, titleProgressRef.current + e.deltaY / 300);
+        setTitleScale(Math.max(0, 1 - titleProgressRef.current));
+      }
+      // Allow scrolling back up to reveal title
+      if (titleProgressRef.current > 0 && e.deltaY < 0 && window.scrollY === 0) {
+        e.preventDefault();
+        titleProgressRef.current = Math.max(0, titleProgressRef.current + e.deltaY / 300);
+        setTitleScale(Math.max(0, 1 - titleProgressRef.current));
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // Initialize WASM for ShadowWire on mount
   useEffect(() => {
@@ -549,8 +574,18 @@ function AppContent() {
           pt: 4,
           pb: 4
         }}>
-        {/* Title */}
-        <Box textAlign="center" mb={4}>
+        {/* Title - shrinks on wheel gesture */}
+        <Box
+          textAlign="center"
+          sx={{
+            transform: `scale(${titleScale})`,
+            transformOrigin: 'center center',
+            opacity: titleScale,
+            marginTop: `${-130 * (1 - titleScale)}px`,
+            marginBottom: `${32 * titleScale}px`,
+            pointerEvents: titleScale < 0.1 ? 'none' : 'auto',
+          }}
+        >
           <Typography
             variant="h2"
             component="h1"
