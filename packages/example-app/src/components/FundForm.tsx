@@ -779,27 +779,29 @@ export function FundForm({
                 }}>
                   Send {amount} {assetSymbol} to
                 </Typography>
-                {crossChainStatus.stage !== 'getting_quote' && 'depositAddress' in crossChainStatus && (
-                  <Box
-                    sx={{
-                      bgcolor: 'rgba(0,0,0,0.3)',
-                      p: 1.5,
-                      borderRadius: '12px',
-                      mt: 1,
-                    }}
-                  >
-                    <Box display="flex" alignItems="center">
-                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff' }}>
-                        {crossChainStatus.depositAddress}
-                      </Typography>
+                {/* Always reserve space for deposit address */}
+                <Box
+                  sx={{
+                    bgcolor: 'rgba(0,0,0,0.3)',
+                    p: 1.5,
+                    borderRadius: '12px',
+                    mt: 1,
+                    visibility: crossChainStatus.stage === 'getting_quote' ? 'hidden' : 'visible',
+                  }}
+                >
+                  <Box display="flex" alignItems="center">
+                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff' }}>
+                      {'depositAddress' in crossChainStatus ? crossChainStatus.depositAddress : '0x0000000000000000000000000000000000000000'}
+                    </Typography>
+                    {'depositAddress' in crossChainStatus && (
                       <Tooltip title="Copy address">
                         <IconButton size="small" onClick={() => copyToClipboard(crossChainStatus.depositAddress)} sx={{ ml: 1, color: '#14F195' }}>
                           <ContentCopyIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       </Tooltip>
-                    </Box>
+                    )}
                   </Box>
-                )}
+                </Box>
               </Box>
             </Box>
 
