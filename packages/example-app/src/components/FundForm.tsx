@@ -783,97 +783,114 @@ export function FundForm({
                 </Typography>
                 <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1 }}>✕</Typography>
               </Box>
-            {/* Step 1: Deposit address */}
-            <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 56, position: 'relative' }}>
-              {/* Connector line - behind circle */}
-              <Box sx={{ position: 'absolute', left: 10, top: 30, width: 2, height: 'calc(100% + 8px)', bgcolor: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? 'rgba(255,255,255,0.3)' : '#14F195', zIndex: 0 }} />
-              <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '8px' }}>
-                {(crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? (
-                  <CircularProgress size={18} sx={{ color: '#14F195' }} />
-                ) : (
-                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
-                  </Box>
-                )}
-              </Box>
-              <Box flex={1} sx={{ pt: 1 }}>
-                {crossChainStatus.stage === 'getting_quote' ? (
-                  <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-                    Getting deposit address
-                  </Typography>
-                ) : (
-                  <>
-                    <Typography sx={{
-                      color: crossChainStatus.stage === 'awaiting_deposit' ? '#fff' : '#14F195',
-                      fontWeight: crossChainStatus.stage === 'awaiting_deposit' ? 600 : 400
-                    }}>
-                      Send {amount} {assetSymbol} to
-                    </Typography>
-                    <Box
-                      sx={{
-                        bgcolor: 'rgba(0,0,0,0.3)',
-                        p: 1.5,
-                        borderRadius: '12px',
-                        mt: 1,
-                      }}
-                    >
-                      <Box display="flex" alignItems="center">
-                        <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff', minHeight: '2.4em' }}>
-                          {'depositAddress' in crossChainStatus ? crossChainStatus.depositAddress : ''}
-                        </Typography>
-                        {'depositAddress' in crossChainStatus && (
-                          <Tooltip title="Copy address">
-                            <IconButton size="small" onClick={() => copyToClipboard(crossChainStatus.depositAddress)} sx={{ ml: 1, color: '#14F195' }}>
-                              <ContentCopyIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Tooltip>
-                        )}
+            {/* Step 1: Deposit address - loading until deposit is known */}
+            {(() => {
+              const isDepositKnown = crossChainStatus.stage === 'processing'
+                ? crossChainStatus.status !== 'PENDING_DEPOSIT'
+                : crossChainStatus.stage === 'completed';
+              const step1Loading = !isDepositKnown;
+
+              return (
+                <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 56, position: 'relative' }}>
+                  {/* Connector line - behind circle */}
+                  <Box sx={{ position: 'absolute', left: 10, top: 30, width: 2, height: 'calc(100% + 8px)', bgcolor: step1Loading ? 'rgba(255,255,255,0.3)' : '#14F195', zIndex: 0 }} />
+                  <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '8px' }}>
+                    {step1Loading ? (
+                      <CircularProgress size={18} sx={{ color: '#14F195' }} />
+                    ) : (
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
                       </Box>
-                    </Box>
-                  </>
-                )}
-              </Box>
-            </Box>
+                    )}
+                  </Box>
+                  <Box flex={1} sx={{ pt: 1 }}>
+                    {crossChainStatus.stage === 'getting_quote' ? (
+                      <Typography sx={{ color: '#fff', fontWeight: 600 }}>
+                        Getting deposit address
+                      </Typography>
+                    ) : (
+                      <>
+                        <Typography sx={{
+                          color: step1Loading ? '#fff' : '#14F195',
+                          fontWeight: step1Loading ? 600 : 400
+                        }}>
+                          Send {amount} {assetSymbol} to
+                        </Typography>
+                        <Box
+                          sx={{
+                            bgcolor: 'rgba(0,0,0,0.3)',
+                            p: 1.5,
+                            borderRadius: '12px',
+                            mt: 1,
+                          }}
+                        >
+                          <Box display="flex" alignItems="center">
+                            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff', minHeight: '2.4em' }}>
+                              {'depositAddress' in crossChainStatus ? crossChainStatus.depositAddress : ''}
+                            </Typography>
+                            {'depositAddress' in crossChainStatus && (
+                              <Tooltip title="Copy address">
+                                <IconButton size="small" onClick={() => copyToClipboard(crossChainStatus.depositAddress)} sx={{ ml: 1, color: '#14F195' }}>
+                                  <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </Box>
+                      </>
+                    )}
+                  </Box>
+                </Box>
+              );
+            })()}
 
             {/* Step 2: Swap progress */}
-            <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
-              {/* Connector line - behind circle */}
-              <Box sx={{ position: 'absolute', left: 10, top: 37, width: 2, height: 38, bgcolor: crossChainStatus.stage === 'completed' ? '#14F195' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
-              <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1 }}>
-                {(crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? (
-                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
-                ) : crossChainStatus.stage === 'processing' ? (
-                  <CircularProgress size={18} sx={{ color: '#14F195' }} />
-                ) : (
-                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
+            {(() => {
+              const isDepositKnown = crossChainStatus.stage === 'processing'
+                ? crossChainStatus.status !== 'PENDING_DEPOSIT'
+                : crossChainStatus.stage === 'completed';
+              const step2Active = isDepositKnown && crossChainStatus.stage !== 'completed';
+              const step2Done = crossChainStatus.stage === 'completed';
+
+              return (
+                <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
+                  {/* Connector line - behind circle */}
+                  <Box sx={{ position: 'absolute', left: 10, top: 37, width: 2, height: 38, bgcolor: step2Done ? '#14F195' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
+                  <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1 }}>
+                    {!isDepositKnown ? (
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
+                    ) : step2Active ? (
+                      <CircularProgress size={18} sx={{ color: '#14F195' }} />
+                    ) : (
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
+                      </Box>
+                    )}
                   </Box>
-                )}
-              </Box>
-              <Box flex={1} display="flex" alignItems="center" justifyContent="space-between">
-                <Typography sx={{
-                  color: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? 'rgba(255,255,255,0.3)' : crossChainStatus.stage === 'processing' ? '#fff' : '#14F195',
-                  fontWeight: (crossChainStatus.stage === 'processing' || crossChainStatus.stage === 'completed') ? 600 : 400
-                }}>
-                  {crossChainStatus.stage === 'completed'
-                    ? `Swapped ${crossChainStatus.amountIn} ${crossChainStatus.originSymbol} to ${crossChainStatus.amountOut} SOL`
-                    : crossChainStatus.stage === 'processing'
-                      ? `Processing: ${crossChainStatus.status}`
-                      : 'Processing swap'}
-                </Typography>
-                {(crossChainStatus.stage === 'processing' || crossChainStatus.stage === 'completed') && 'depositAddress' in crossChainStatus && (
-                  <Typography
-                    component="a"
-                    href={`https://explorer.defuse.org/intents/${crossChainStatus.depositAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0, ml: 1 }}
-                  >
-                    View on Explorer →
-                  </Typography>
-                )}
-              </Box>
-            </Box>
+                  <Box flex={1} display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography sx={{
+                      color: !isDepositKnown ? 'rgba(255,255,255,0.3)' : step2Active ? '#fff' : '#14F195',
+                      fontWeight: (step2Active || step2Done) ? 600 : 400
+                    }}>
+                      {step2Done
+                        ? `Swapped ${crossChainStatus.amountIn} ${crossChainStatus.originSymbol} to ${crossChainStatus.amountOut} SOL`
+                        : 'Processing swap'}
+                    </Typography>
+                    {(step2Active || step2Done) && 'depositAddress' in crossChainStatus && (
+                      <Typography
+                        component="a"
+                        href={`https://explorer.defuse.org/intents/${crossChainStatus.depositAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0, ml: 1 }}
+                      >
+                        View on Explorer →
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              );
+            })()}
 
             {/* Step 3: Fund to Privacy Pool button */}
             <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
