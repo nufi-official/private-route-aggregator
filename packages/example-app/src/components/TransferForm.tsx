@@ -113,6 +113,9 @@ export function TransferForm({
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
 
+  // Max amount after fees (for MAX button)
+  const [maxSolAfterFees, setMaxSolAfterFees] = useState<string | null>(null);
+
   // Check if we need to swap (any non-SOL asset needs swap via NEAR Intents)
   const needsSwap = asset !== 'SOL';
 
@@ -269,6 +272,68 @@ export function TransferForm({
     }, 300); // Debounce
     return () => clearTimeout(timer);
   }, [calculateFeePreview]);
+
+  // Calculate max SOL available after accounting for fees
+  useEffect(() => {
+    const calculateMax = async () => {
+      if (!provider || !account) {
+        setMaxSolAfterFees(null);
+        return;
+      }
+
+      // Use actual balance (not rounded display value) for precision
+      const balanceSol = Number(privateBalance) / 1e9;
+      if (balanceSol <= 0) {
+        setMaxSolAfterFees('0');
+        return;
+      }
+
+      try {
+        const providerName = (provider as { name?: string }).name;
+        const isPrivacyCash = providerName === 'privacy-cash';
+        const isShadowWire = providerName?.toLowerCase() === 'shadowwire' || 'transfer' in provider;
+
+        // Fee preview adds 2% price buffer, so we need to account for it
+        // Formula: (maxNet * priceBuffer) / (1 - feeRate) <= balance
+        // Therefore: maxNet <= balance * (1 - feeRate) / priceBuffer
+        const priceBuffer = 1.02;
+        // Add small safety margin to avoid edge cases with rounding
+        const safetyMargin = 0.9995;
+        let maxNetSol: number;
+
+        if (isPrivacyCash) {
+          // PrivacyCash: percentage fee + rent fee
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const pcProvider = provider as any;
+          const config = await pcProvider.getFeeConfig();
+          const feeRate = config.withdrawFeeRate; // e.g., 0.001 for 0.1%
+          const rentFee = config.withdrawRentFee; // e.g., 0.01 SOL
+          // Account for rent fee first, then percentage fee, then price buffer
+          maxNetSol = ((balanceSol - rentFee) * (1 - feeRate)) / priceBuffer * safetyMargin;
+        } else if (isShadowWire) {
+          // ShadowWire: percentage fee
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const swProvider = provider as any;
+          const baseFeeRate = swProvider.getFeePercentage(); // e.g., 0.005 for 0.5%
+          const feeBuffer = 0.001; // 0.1% buffer for safety
+          const feeRate = baseFeeRate + feeBuffer;
+          // maxNet = balance * (1 - feeRate) / priceBuffer * safetyMargin
+          maxNetSol = (balanceSol * (1 - feeRate)) / priceBuffer * safetyMargin;
+        } else {
+          maxNetSol = balanceSol * safetyMargin;
+        }
+
+        // Ensure non-negative
+        maxNetSol = Math.max(0, maxNetSol);
+        setMaxSolAfterFees(maxNetSol.toFixed(4));
+      } catch (err) {
+        console.error('[TransferForm] Error calculating max after fees:', err);
+        setMaxSolAfterFees(null);
+      }
+    };
+
+    void calculateMax();
+  }, [provider, account, privateBalance]);
 
   // Direct SOL transfer (no swap needed)
   const handleDirectTransfer = async (solAmount: string) => {
@@ -716,14 +781,15 @@ export function TransferForm({
                 variant="body2"
                 onClick={() => {
                   if (loading) return;
-                  // Convert SOL balance to selected asset if needed
+                  // Use fee-adjusted max amount
+                  const maxSol = maxSolAfterFees ?? solBalanceFormatted;
                   if (asset === 'SOL') {
-                    setAmount(solBalanceFormatted);
+                    setAmount(maxSol);
                   } else if (convertAmount) {
-                    const converted = convertAmount('SOL', assetSymbol, solBalanceFormatted);
-                    setAmount(converted ?? solBalanceFormatted);
+                    const converted = convertAmount('SOL', assetSymbol, maxSol);
+                    setAmount(converted ?? maxSol);
                   } else {
-                    setAmount(solBalanceFormatted);
+                    setAmount(maxSol);
                   }
                 }}
                 sx={{
@@ -735,13 +801,16 @@ export function TransferForm({
                   },
                 }}
               >
-                MAX: {privateBalanceLoading ? '...' : (
-                  asset === 'SOL'
-                    ? `${solBalanceFormatted} SOL`
-                    : convertAmount
-                      ? `${convertAmount('SOL', assetSymbol, solBalanceFormatted) ?? solBalanceFormatted} ${assetSymbol}`
-                      : `${solBalanceFormatted} SOL`
-                )}
+                MAX: {privateBalanceLoading ? '...' : (() => {
+                  const maxSol = maxSolAfterFees ?? solBalanceFormatted;
+                  if (asset === 'SOL') {
+                    return `${maxSol} SOL`;
+                  } else if (convertAmount) {
+                    return `${convertAmount('SOL', assetSymbol, maxSol) ?? maxSol} ${assetSymbol}`;
+                  } else {
+                    return `${maxSol} SOL`;
+                  }
+                })()}
               </Typography>
             </Box>
           </Box>
