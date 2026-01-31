@@ -623,55 +623,58 @@ export function FundForm({
         />
 
         {/* Swap info for non-SOL assets */}
-        {needsSwapToSol && crossChainStatus.stage === 'idle' && (
-          <>
-            <Alert severity="info" sx={{ mb: 2 }}>
-              <Typography variant="body2">
-                <strong>Swap & Fund</strong> — 2-step process: First, your {assetSymbol} will be swapped to SOL. Then, the SOL will be deposited to the privacy pool.
-              </Typography>
-            </Alert>
-            {/* Only show refund address for cross-chain assets */}
-            {isCrossChainAsset && (
-              <TextField
-                fullWidth
-                label={`Your ${assetChain.toUpperCase()} Address (for refunds)`}
-                value={originAddress}
-                onChange={(e) => setOriginAddress(e.target.value)}
-                placeholder={assetChain === 'eth' || assetChain === 'base' || assetChain === 'arb' ? '0x...' : 'Enter your address'}
-                disabled={loading}
-                sx={{
-                  mb: 2,
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: '#000000',
-                    pl: 2,
-                    '& fieldset': {
-                      borderColor: 'rgba(255,255,255,0.1)',
-                      borderWidth: '1px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255,255,255,0.1)',
-                      borderWidth: '1px',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'rgba(255,255,255,0.1)',
-                      borderWidth: '1px',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'rgba(255,255,255,0.3)',
-                    '&:not(.MuiInputLabel-shrink)': {
-                      transform: 'translate(24px, 16px) scale(1)',
-                    },
-                  },
-                  '& .MuiOutlinedInput-input::placeholder': {
-                    color: 'rgba(255,255,255,0.2)',
-                    opacity: 1,
-                  },
-                }}
-                helperText="Required in case the deposit needs to be refunded"
-              />
-            )}
-          </>
+        {needsSwapToSol && crossChainStatus.stage !== 'failed' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              <strong>Swap & Fund</strong> — 2-step process: You will need to send {assetSymbol} to be swapped to SOL. Then, the SOL will need to be deposited to your private balance.
+            </Typography>
+          </Alert>
+        )}
+
+        {/* Refund address for cross-chain assets - stays visible throughout the process */}
+        {isCrossChainAsset && needsSwapToSol && (
+          <TextField
+            fullWidth
+            label={`Your ${assetChain.toUpperCase()} Address (for refunds)`}
+            value={originAddress}
+            onChange={(e) => setOriginAddress(e.target.value)}
+            placeholder={assetChain === 'eth' || assetChain === 'base' || assetChain === 'arb' ? '0x...' : 'Enter your address'}
+            disabled={loading || crossChainStatus.stage === 'completed'}
+            sx={{
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: '#000000',
+                pl: 2,
+                '& fieldset': {
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  borderWidth: '1px',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  borderWidth: '1px',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  borderWidth: '1px',
+                },
+                '&.Mui-disabled fieldset': {
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  borderWidth: '1px',
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: 'rgba(255,255,255,0.3)',
+                '&:not(.MuiInputLabel-shrink)': {
+                  transform: 'translate(24px, 16px) scale(1)',
+                },
+              },
+              '& .MuiOutlinedInput-input::placeholder': {
+                color: 'rgba(255,255,255,0.2)',
+                opacity: 1,
+              },
+            }}
+            helperText="Required in case the deposit needs to be refunded"
+          />
         )}
 
         {/* Cross-chain status for failed */}
@@ -696,11 +699,6 @@ export function FundForm({
         {/* Swap progress stepper - shown when swap is in progress or completed */}
         {(crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed') ? (
           <>
-            <Alert severity="info" sx={{ mb: 2 }}>
-              <Typography variant="body2">
-                <strong>Swap & Fund</strong> — 2-step process: First, your {assetSymbol} will be swapped to SOL. Then, the SOL will be deposited to the privacy pool.
-              </Typography>
-            </Alert>
             <Box
               sx={{
                 width: '100%',
@@ -912,7 +910,7 @@ export function FundForm({
               <CircularProgress size={24} color="inherit" />
             ) : needsSwapToSol ? (
               isCrossChainAsset
-                ? `Deposit ${assetSymbol} from ${assetChain.toUpperCase()}`
+                ? `Get ${assetSymbol} deposit address`
                 : `Swap ${assetSymbol} → SOL`
             ) : (
               `Fund ${asset}`
