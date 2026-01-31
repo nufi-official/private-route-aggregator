@@ -67,6 +67,7 @@ type CrossChainStatus =
 interface FundFormProps {
   account: Account | null;
   provider: ProviderType | null;
+  solProvider: ProviderType | null; // Always SOL for post-swap deposits
   onSuccess: () => void;
   asset: string;
   decimals: number;
@@ -93,6 +94,7 @@ function parseAsset(asset: string): { symbol: string; chain: string } {
 export function FundForm({
   account,
   provider,
+  solProvider,
   onSuccess,
   asset,
   decimals,
@@ -210,8 +212,15 @@ export function FundForm({
 
     // Stage 6: Completed - keep form as-is, ready for user to click again to fund SOL
     if (swapCancelledRef.current) return;
-    // Mock: calculate a fake SOL output (roughly 1 SOL per $150 worth)
-    const mockSolOutput = (parseFloat(amount) * 0.8).toFixed(4); // Mock conversion rate
+    // Calculate approximate SOL output using token prices
+    const assetPrice = nearIntentsTokens.find(
+      (t) => t.symbol === assetSymbol && t.blockchain === assetChain
+    )?.price ?? 1;
+    const solPrice = nearIntentsTokens.find(
+      (t) => t.symbol === 'SOL' && t.blockchain === 'sol'
+    )?.price ?? 150;
+    const usdValue = parseFloat(amount) * assetPrice;
+    const mockSolOutput = (usdValue / solPrice * 0.99).toFixed(4); // 1% slippage
     setCrossChainStatus({
       stage: 'completed',
       depositAddress: mockDepositAddress,
@@ -360,8 +369,8 @@ export function FundForm({
 
   // Fund SOL to privacy pool (after swap completed)
   const handleFundSolAfterSwap = async () => {
-    if (!provider) {
-      setError('Provider not initialized');
+    if (!solProvider) {
+      setError('SOL provider not initialized');
       return;
     }
     if (!account) {
@@ -391,7 +400,7 @@ export function FundForm({
       // Convert to lamports (1 SOL = 1e9 lamports)
       const amountToFund = BigInt(Math.floor(amountToFundSol * 1e9));
 
-      await provider.fund({
+      await solProvider.fund({
         sourceAccount: account,
         amount: amountToFund.toString(),
         onStatusChange: (newStatus) => {

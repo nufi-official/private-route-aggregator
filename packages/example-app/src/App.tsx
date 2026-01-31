@@ -754,6 +754,7 @@ function AppContent() {
           <FundForm
             account={account}
             provider={fundProvider}
+            solProvider={solProvider}
             onSuccess={() => void refreshPrivateBalance()}
             asset={fundAsset}
             decimals={getDecimals(fundAsset)}
