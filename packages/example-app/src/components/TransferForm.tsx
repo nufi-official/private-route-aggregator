@@ -954,10 +954,10 @@ export function TransferForm({
                 )}
                 <Box display="flex" justifyContent="space-between" mb={0.5}>
                   <Typography variant="body2" color="text.secondary">
-                    Pool fee ({feePreview.feePercent}%{parseFloat(feePreview.rentFee) > 0 ? ` + ${feePreview.rentFee} SOL rent` : ''}):
+                    Pool fee:
                   </Typography>
                   <Typography variant="body2" color="warning.main" fontWeight={500}>
-                    ~{feePreview.fee} SOL
+                    ~{feePreview.fee} SOL {formatUsdValue ? `(${formatUsdValue('SOL', feePreview.fee) ?? ''})` : ''}
                   </Typography>
                 </Box>
                 <Box
