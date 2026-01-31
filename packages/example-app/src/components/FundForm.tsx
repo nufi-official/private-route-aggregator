@@ -134,6 +134,17 @@ export function FundForm({
     onProgressVisibleChange?.(showProgress);
   }, [crossChainStatus.stage, onProgressVisibleChange]);
 
+  // Clear errors when amount or refund address changes
+  useEffect(() => {
+    setError(null);
+    if (status?.stage === 'failed') {
+      setStatus(null);
+    }
+    if (crossChainStatus.stage === 'failed') {
+      setCrossChainStatus({ stage: 'idle' });
+    }
+  }, [amount, originAddress]);
+
   // Check if current asset needs swapping to SOL
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);
   const isCrossChainAsset = assetChain !== 'sol'; // Non-Solana chain
@@ -518,7 +529,7 @@ export function FundForm({
       case 'preparing':
         return 'Preparing transaction...';
       case 'depositing':
-        return 'Depositing to privacy pool...';
+        return 'Depositing to private balance...';
       case 'confirming':
         return 'Confirming transaction...';
       case 'completed':

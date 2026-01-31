@@ -394,16 +394,29 @@ export function TransferForm({
     }
 
     const baseUnits = account.assetToBaseUnits(solAmount);
+    const userAddress = await account.getAddress();
+    const isSelfTransfer = destinationAddress.toLowerCase() === userAddress.toLowerCase();
 
-    // ShadowWire uses transfer(), PrivacyCash uses withdraw()
+    // ShadowWire uses transfer() for others, withdraw() for self
     if ('transfer' in provider) {
-      await provider.transfer({
-        recipient: destinationAddress,
-        amount: baseUnits.toString(),
-        type: 'external',
-        onStatusChange: setStatus,
-      });
+      if (isSelfTransfer && 'withdraw' in provider) {
+        // Withdraw to own wallet
+        await provider.withdraw({
+          destination: { address: destinationAddress },
+          amount: baseUnits.toString(),
+          onStatusChange: setStatus,
+        });
+      } else {
+        // Transfer to external address
+        await provider.transfer({
+          recipient: destinationAddress,
+          amount: baseUnits.toString(),
+          type: 'external',
+          onStatusChange: setStatus,
+        });
+      }
     } else {
+      // PrivacyCash uses withdraw()
       await provider.withdraw({
         destination: { address: destinationAddress },
         amount: baseUnits.toString(),
