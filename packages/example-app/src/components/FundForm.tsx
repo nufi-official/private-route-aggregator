@@ -107,6 +107,7 @@ export function FundForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tokenSelectorOpen, setTokenSelectorOpen] = useState(false);
+  const [fundingStage, setFundingStage] = useState<'idle' | 'signing' | 'submitting'>('idle');
 
   // Cross-chain deposit state
   const [crossChainStatus, setCrossChainStatus] = useState<CrossChainStatus>({ stage: 'idle' });
@@ -358,6 +359,7 @@ export function FundForm({
     setLoading(true);
     setError(null);
     setStatus({ stage: 'preparing' });
+    setFundingStage('signing');
 
     try {
       // Use the wallet's SOL balance - fund all available SOL
@@ -373,19 +375,27 @@ export function FundForm({
       await provider.fund({
         sourceAccount: account,
         amount: amountToFund.toString(),
-        onStatusChange: setStatus,
+        onStatusChange: (newStatus) => {
+          setStatus(newStatus);
+          // Only move to submitting stage when confirming (tx is on-chain, so signature is done)
+          if (newStatus.stage === 'confirming' || newStatus.stage === 'completed') {
+            setFundingStage('submitting');
+          }
+        },
       });
 
       // Reset everything after successful funding
       setAmount('');
       setOriginAddress('');
       setCrossChainStatus({ stage: 'idle' });
+      setFundingStage('idle');
       onAssetChange('SOL');
       onSuccess();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
       setStatus({ stage: 'failed', error: errorMessage });
+      setFundingStage('idle');
     } finally {
       setLoading(false);
     }
@@ -828,7 +838,7 @@ export function FundForm({
               </Box>
               {crossChainStatus.stage === 'completed' && loading ? (
                 <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-                  {status?.stage === 'depositing' || status?.stage === 'confirming'
+                  {fundingStage === 'submitting'
                     ? 'Submitting to private balance...'
                     : 'Waiting for signature...'}
                 </Typography>

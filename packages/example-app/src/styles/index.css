@@ -1,9 +1,12 @@
-body {
+html, body {
   margin: 0;
+  padding: 0;
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #000000;
+  overflow: hidden;
+  height: 100%;
 }
 
 * {
@@ -12,4 +15,6 @@ body {
 
 #root {
   width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
