@@ -481,7 +481,7 @@ export function FundForm({
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
       <Typography variant="h5" fontWeight={600} mb={2}>
-        Fund Privacy Pool
+        Deposit
       </Typography>
 
       <Box component="form" noValidate autoComplete="off">

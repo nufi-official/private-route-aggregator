@@ -661,7 +661,7 @@ export function TransferForm({
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
       <Typography variant="h5" fontWeight={600} mb={2}>
-        Transfer
+        Withdraw
       </Typography>
 
       <Box component="form" noValidate autoComplete="off">
