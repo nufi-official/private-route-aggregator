@@ -245,15 +245,18 @@ function AppContent() {
     setAccount(acc);
     setProviderError(null);
 
+    // Always start with ShadowWire to avoid PrivacyCash signing on login
+    setSelectedProvider('shadowwire');
+
     // Check if provider supports the account type
-    if (selectedProvider === 'shadowwire' && isMnemonicAccount(acc)) {
+    if (isMnemonicAccount(acc)) {
       setProviderError('ShadowWire requires a browser wallet. Please connect using a wallet adapter.');
     }
 
-    // Create initial providers for both forms
-    const newFundProvider = createProvider(acc, selectedProvider, fundAsset);
-    const newWithdrawProvider = createProvider(acc, selectedProvider, withdrawAsset);
-    const newSolProvider = createProvider(acc, selectedProvider, 'SOL'); // Always SOL for balance
+    // Create initial providers using ShadowWire (PrivacyCash requires signing, so user must select it explicitly)
+    const newFundProvider = createProvider(acc, 'shadowwire', fundAsset);
+    const newWithdrawProvider = createProvider(acc, 'shadowwire', withdrawAsset);
+    const newSolProvider = createProvider(acc, 'shadowwire', 'SOL');
     setFundProvider(newFundProvider);
     setWithdrawProvider(newWithdrawProvider);
     setSolProvider(newSolProvider);
@@ -347,6 +350,7 @@ function AppContent() {
     disconnect();
     setAccount(null);
     setAddress('');
+    setSelectedProvider('shadowwire'); // Reset to ShadowWire so next login doesn't trigger PrivacyCash signing
     setFundProvider(null);
     setWithdrawProvider(null);
     setSolProvider(null);
