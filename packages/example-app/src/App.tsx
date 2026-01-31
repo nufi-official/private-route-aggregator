@@ -611,18 +611,23 @@ function AppContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Provider Selector */}
-      {account && (
-        <Box display="flex" justifyContent="center" alignItems="center" mb={3}>
-          <Box
-            sx={{
-              display: 'flex',
-              bgcolor: '#0a0a0a',
-              borderRadius: '16px',
-              p: 0.5,
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          >
+      {/* Provider Selector - always reserve space to keep forms at same position */}
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        mb={3}
+        sx={{ visibility: account ? 'visible' : 'hidden' }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            bgcolor: '#0a0a0a',
+            borderRadius: '16px',
+            p: 0.5,
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
             <Box
               onClick={() => handleProviderChange(null, 'shadowwire')}
               sx={{
@@ -713,7 +718,6 @@ function AppContent() {
             </Box>
           </Box>
         </Box>
-      )}
 
       {providerError && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -759,7 +763,7 @@ function AppContent() {
         </Grid>
       </Grid>
     </Container>
-      </Box>
+    </Box>
     </>
   );
 }
