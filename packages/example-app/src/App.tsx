@@ -516,15 +516,16 @@ function AppContent() {
         {/* Title */}
         <Box textAlign="center" mb={4}>
           <Typography
-            variant="h3"
+            variant="h2"
             component="h1"
-            fontWeight={700}
+            fontWeight={800}
             sx={{
               background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               mb: 1,
+              letterSpacing: '-0.02em',
             }}
           >
             Fund privately
