@@ -155,7 +155,8 @@ function AppContent() {
   // Separate state for Fund form
   const [fundAsset, setFundAsset] = useState<string>('SOL');
   const [fundProvider, setFundProvider] = useState<ProviderType | null>(null);
-  const [walletBalance, setWalletBalance] = useState<bigint>(0n);
+  const [walletBalance, setWalletBalance] = useState<bigint>(0n); // Balance for selected asset
+  const [solWalletBalance, setSolWalletBalance] = useState<bigint>(0n); // Always SOL for top bar
   const [walletBalanceLoading, setWalletBalanceLoading] = useState(false);
 
   // Separate state for Transfer form
@@ -364,6 +365,7 @@ function AppContent() {
     setCachedPrivacyCashProvider(null); // Clear cached provider so next login starts fresh
     setPrivateBalance(0n);
     setWalletBalance(0n);
+    setSolWalletBalance(0n);
     setProviderError(null);
   };
 
@@ -371,17 +373,21 @@ function AppContent() {
   const refreshWalletBalance = useCallback(async () => {
     if (!account) return;
 
-    // Skip balance fetch for cross-chain assets (not on Solana)
-    if (fundAsset.includes(':')) {
-      setWalletBalance(0n);
-      return;
-    }
-
     setWalletBalanceLoading(true);
     try {
+      // Always fetch SOL balance for top bar
+      const solBalance = await account.getBalance();
+      setSolWalletBalance(solBalance);
+
+      // Skip selected asset balance fetch for cross-chain assets (not on Solana)
+      if (fundAsset.includes(':')) {
+        setWalletBalance(0n);
+        setWalletBalanceLoading(false);
+        return;
+      }
+
       if (fundAsset === 'SOL') {
-        const balance = await account.getBalance();
-        setWalletBalance(balance);
+        setWalletBalance(solBalance);
       } else {
         // Fetch SPL token balance
         const walletAddress = await account.getAddress();
@@ -503,10 +509,10 @@ function AppContent() {
             {/* Wallet Balance */}
             <Box display="flex" alignItems="baseline" gap={0.5}>
               <Typography sx={{ color: '#14F195', fontWeight: 600, fontSize: '0.9rem' }}>
-                {(Number(walletBalance) / 1e9).toFixed(4)} SOL
+                {(Number(solWalletBalance) / 1e9).toFixed(4)} SOL
               </Typography>
               <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-                {formatUsdValue('SOL', (Number(walletBalance) / 1e9).toString())}
+                {formatUsdValue('SOL', (Number(solWalletBalance) / 1e9).toString())}
               </Typography>
             </Box>
             <Chip
