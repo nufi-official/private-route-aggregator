@@ -60,7 +60,7 @@ const darkTheme = createTheme({
     },
   },
   typography: {
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "'DM Sans', sans-serif",
   },
   components: {
     MuiButton: {
