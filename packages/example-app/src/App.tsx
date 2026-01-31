@@ -24,9 +24,8 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import type { PrivacyCashAsset } from '@privacy-router-sdk/privacy-cash';
 import type { SolanaAccount } from '@privacy-router-sdk/solana-mnemonic';
 import type { WalletAdapterAccount } from '@privacy-router-sdk/solana-wallet-adapter';
-import type { LedgerAccount } from '@privacy-router-sdk/solana-ledger';
 
-type AccountType = SolanaAccount | WalletAdapterAccount | LedgerAccount;
+type AccountType = SolanaAccount | WalletAdapterAccount;
 type ProviderType = PrivacyCashProvider | ShadowWireProvider;
 type ProviderName = 'privacy-cash' | 'shadowwire';
 
@@ -38,11 +37,6 @@ function isMnemonicAccount(account: AccountType): account is SolanaAccount {
 // Type guard to check if account is a wallet adapter account
 function isWalletAdapterAccount(account: AccountType): account is WalletAdapterAccount {
   return 'getWallet' in account && typeof account.getWallet === 'function';
-}
-
-// Type guard to check if account is a Ledger account
-function isLedgerAccount(account: AccountType): account is LedgerAccount {
-  return 'getDerivationPath' in account && typeof account.getDerivationPath === 'function';
 }
 
 const darkTheme = createTheme({
@@ -216,21 +210,9 @@ function AppContent() {
             rpcUrl: acc.getRpcUrl(),
             walletSigner: acc.getWalletSigner(),
           }, asset as PrivacyCashAsset);
-        } else if (isLedgerAccount(acc)) {
-          return new PrivacyCashProvider({
-            rpcUrl: acc.getRpcUrl(),
-            walletSigner: acc.getWalletSigner(),
-          }, asset as PrivacyCashAsset);
         }
       } else if (providerName === 'shadowwire') {
         if (isWalletAdapterAccount(acc)) {
-          return new ShadowWireProvider({
-            walletSigner: acc.getWalletSigner(),
-            rpcUrl: acc.getRpcUrl(),
-            token: asset as ShadowWireToken,
-            enableDebug: true,
-          });
-        } else if (isLedgerAccount(acc)) {
           return new ShadowWireProvider({
             walletSigner: acc.getWalletSigner(),
             rpcUrl: acc.getRpcUrl(),
@@ -262,7 +244,7 @@ function AppContent() {
 
     // Check if provider supports the account type
     if (selectedProvider === 'shadowwire' && isMnemonicAccount(acc)) {
-      setProviderError('ShadowWire requires a browser wallet or Ledger. Please connect using a wallet adapter or Ledger.');
+      setProviderError('ShadowWire requires a browser wallet. Please connect using a wallet adapter.');
     }
 
     // Create initial providers for both forms
@@ -281,7 +263,7 @@ function AppContent() {
 
       // Check if new provider supports the account type
       if (newProviderName === 'shadowwire' && isMnemonicAccount(account)) {
-        setProviderError('ShadowWire requires a browser wallet or Ledger. Please connect using a wallet adapter or Ledger.');
+        setProviderError('ShadowWire requires a browser wallet. Please connect using a wallet adapter.');
         setFundProvider(null);
         setWithdrawProvider(null);
         setSolProvider(null);

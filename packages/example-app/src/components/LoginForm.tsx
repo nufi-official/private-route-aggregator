@@ -8,7 +8,6 @@ import {
   CircularProgress,
   IconButton,
 } from '@mui/material';
-import UsbIcon from '@mui/icons-material/Usb';
 import KeyIcon from '@mui/icons-material/Key';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -17,18 +16,14 @@ import {
   createWalletAdapterAccount,
   WalletAdapterAccount,
 } from '@privacy-router-sdk/solana-wallet-adapter';
-import {
-  LedgerAccount,
-  type LedgerConnectionStatus,
-} from '@privacy-router-sdk/solana-ledger';
 
-type AccountType = SolanaAccount | WalletAdapterAccount | LedgerAccount;
+type AccountType = SolanaAccount | WalletAdapterAccount;
 
 interface LoginFormProps {
   onLogin: (account: AccountType) => void;
 }
 
-type ViewType = 'main' | 'ledger' | 'mnemonic';
+type ViewType = 'main' | 'mnemonic';
 
 export function LoginForm({ onLogin }: LoginFormProps) {
   const [view, setView] = useState<ViewType>('main');
@@ -36,11 +31,6 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllWallets, setShowAllWallets] = useState(false);
-
-  // Ledger state
-  const [ledgerAccount, setLedgerAccount] = useState<LedgerAccount | null>(null);
-  const [ledgerStatus, setLedgerStatus] = useState<LedgerConnectionStatus>('disconnected');
-  const [ledgerAddress, setLedgerAddress] = useState<string | null>(null);
 
   const { wallets, select, wallet, connected, publicKey, connecting } = useWallet();
 
@@ -106,45 +96,6 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLedgerConnect = async () => {
-    setLoading(true);
-    setError(null);
-    setLedgerStatus('connecting');
-
-    try {
-      const account = new LedgerAccount({
-        network: 'mainnet',
-        accountIndex: 0,
-        rpcUrl: import.meta.env.VITE_SOLANA_RPC_URL,
-      });
-
-      await account.connect();
-
-      const address = await account.getAddress();
-      setLedgerAccount(account);
-      setLedgerAddress(address);
-      setLedgerStatus('connected');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to connect to Ledger';
-      setError(errorMessage);
-      setLedgerStatus('error');
-      setLedgerAccount(null);
-      setLedgerAddress(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLedgerLogin = () => {
-    if (!ledgerAccount || ledgerStatus !== 'connected') {
-      setError('Please connect your Ledger first');
-      return;
-    }
-
-    setError(null);
-    onLogin(ledgerAccount);
   };
 
   const goBack = () => {
@@ -257,13 +208,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               />
             ))}
 
-            {/* Ledger & Recovery options */}
-            <WalletOption
-              icon={<UsbIcon sx={{ color: 'primary.main' }} />}
-              name="Ledger"
-              onClick={() => setView('ledger')}
-            />
-
+            {/* Recovery phrase option */}
             <WalletOption
               icon={<KeyIcon sx={{ color: 'primary.main' }} />}
               name="Recovery Phrase"
@@ -317,113 +262,6 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                   />
                 ))}
               </>
-            )}
-          </Box>
-        </Box>
-      )}
-
-      {/* Ledger view */}
-      {view === 'ledger' && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Box display="flex" alignItems="center" gap={1} mb={3}>
-            <IconButton onClick={goBack} size="small">
-              <ArrowBackIcon />
-            </IconButton>
-            <Typography variant="h6" fontWeight={600}>
-              Connect Ledger
-            </Typography>
-          </Box>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Connect your Ledger device and open the Solana app before connecting.
-          </Alert>
-
-          <Box display="flex" flexDirection="column" gap={2}>
-            {ledgerStatus === 'disconnected' && (
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                onClick={handleLedgerConnect}
-                disabled={loading}
-                sx={{
-                  py: 1.5,
-                  background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
-                  },
-                }}
-              >
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Connect Ledger'}
-              </Button>
-            )}
-
-            {ledgerStatus === 'connecting' && (
-              <Box display="flex" alignItems="center" justifyContent="center" gap={2} py={2}>
-                <CircularProgress size={24} />
-                <Typography>Connecting to Ledger...</Typography>
-              </Box>
-            )}
-
-            {ledgerStatus === 'connected' && ledgerAddress && (
-              <>
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(20, 241, 149, 0.1)',
-                    border: '1px solid rgba(20, 241, 149, 0.3)',
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary" mb={0.5}>
-                    Connected Address
-                  </Typography>
-                  <Typography fontWeight={500} fontFamily="monospace">
-                    {ledgerAddress.slice(0, 12)}...{ledgerAddress.slice(-8)}
-                  </Typography>
-                </Box>
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  onClick={handleLedgerLogin}
-                  sx={{
-                    py: 1.5,
-                    background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
-                    },
-                  }}
-                >
-                  Continue with Ledger
-                </Button>
-              </>
-            )}
-
-            {ledgerStatus === 'error' && (
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                onClick={handleLedgerConnect}
-                disabled={loading}
-                sx={{
-                  py: 1.5,
-                  background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
-                  },
-                }}
-              >
-                Retry Connection
-              </Button>
             )}
           </Box>
         </Box>
