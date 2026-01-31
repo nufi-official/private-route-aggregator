@@ -368,6 +368,10 @@ export function FundForm({
       setError('Account not connected');
       return;
     }
+    if (crossChainStatus.stage !== 'completed') {
+      setError('Swap not completed');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -375,15 +379,17 @@ export function FundForm({
     setFundingStage('signing');
 
     try {
-      // Use the wallet's SOL balance - fund all available SOL
-      // In real implementation, we'd know the exact amount from the swap
-      const solBalance = await account.getBalance();
-      // Leave some SOL for fees (0.01 SOL)
-      const amountToFund = solBalance - BigInt(10_000_000);
+      // Use the amount received from swap, minus fee reserve (0.01 SOL)
+      const swapOutputSol = parseFloat(crossChainStatus.amountOut);
+      const feeReserveSol = 0.01;
+      const amountToFundSol = swapOutputSol - feeReserveSol;
 
-      if (amountToFund <= 0) {
-        throw new Error('Insufficient SOL balance after swap');
+      if (amountToFundSol <= 0) {
+        throw new Error('Insufficient SOL from swap to cover fees');
       }
+
+      // Convert to lamports (1 SOL = 1e9 lamports)
+      const amountToFund = BigInt(Math.floor(amountToFundSol * 1e9));
 
       await provider.fund({
         sourceAccount: account,
@@ -960,7 +966,7 @@ export function FundForm({
                     },
                   }}
                 >
-                  Fund to Private Balance
+                  Deposit to private balance
                 </Button>
               )}
             </Box>
