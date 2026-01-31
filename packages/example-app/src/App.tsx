@@ -130,7 +130,7 @@ function AppContent() {
   const [address, setAddress] = useState<string>('');
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>('shadowwire');
   const [providerError, setProviderError] = useState<string | null>(null);
-  const { disconnect } = useWallet();
+  const wallet = useWallet();
 
   // Token prices and tokens from NEAR Intents
   const { formatUsdValue, convertAmount, tokens: nearIntentsTokens, loading: pricesLoading } = useTokenPrices();
@@ -347,7 +347,7 @@ function AppContent() {
   };
 
   const handleLogout = () => {
-    disconnect();
+    void wallet.disconnect();
     setAccount(null);
     setAddress('');
     setSelectedProvider('shadowwire'); // Reset to ShadowWire so next login doesn't trigger PrivacyCash signing
@@ -378,7 +378,7 @@ function AppContent() {
       } else {
         // Fetch SPL token balance
         const walletAddress = await account.getAddress();
-        const rpcUrl = import.meta.env.VITE_SOLANA_RPC_URL as string || 'https://api.mainnet-beta.solana.com';
+        const rpcUrl: string = import.meta.env.VITE_SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com';
         const connection = new Connection(rpcUrl, 'confirmed');
 
         // Get mint address from ShadowWire, PrivacyCash, or NEAR Intents tokens
@@ -444,13 +444,13 @@ function AppContent() {
   // Fetch balances when providers change
   useEffect(() => {
     if (account) {
-      refreshWalletBalance();
+      void refreshWalletBalance();
     }
   }, [account, fundAsset, refreshWalletBalance]);
 
   useEffect(() => {
     if (solProvider) {
-      refreshPrivateBalance();
+      void refreshPrivateBalance();
     }
   }, [solProvider, refreshPrivateBalance]);
 
@@ -495,13 +495,13 @@ function AppContent() {
                 {(Number(walletBalance) / 1e9).toFixed(4)} SOL
               </Typography>
               <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-                {formatUsdValue('SOL', Number(walletBalance) / 1e9)}
+                {formatUsdValue('SOL', (Number(walletBalance) / 1e9).toString())}
               </Typography>
             </Box>
             <Chip
               label={shortenAddress(address)}
               size="small"
-              onClick={() => navigator.clipboard.writeText(address)}
+              onClick={() => void navigator.clipboard.writeText(address)}
               sx={{ fontFamily: 'monospace', cursor: 'pointer', bgcolor: '#111', fontSize: '0.75rem', height: 26 }}
               title="Click to copy"
             />
@@ -723,7 +723,7 @@ function AppContent() {
           <FundForm
             account={account}
             provider={fundProvider}
-            onSuccess={refreshPrivateBalance}
+            onSuccess={() => void refreshPrivateBalance()}
             asset={fundAsset}
             decimals={getDecimals(fundAsset)}
             availableAssets={availableAssets}
@@ -741,7 +741,7 @@ function AppContent() {
             provider={withdrawProvider}
             privateBalance={privateBalance}
             privateBalanceLoading={privateBalanceLoading}
-            onSuccess={refreshWalletBalance}
+            onSuccess={() => void refreshWalletBalance()}
             asset={withdrawAsset}
             decimals={getDecimals(withdrawAsset)}
             availableAssets={availableAssets}
