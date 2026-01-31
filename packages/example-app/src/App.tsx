@@ -476,41 +476,41 @@ function AppContent() {
             Connect
           </Button>
         ) : (
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box display="flex" alignItems="center" gap={2.5}>
             {/* Wallet Balance */}
-            <Box display="flex" alignItems="baseline" gap={0.5}>
-              <Typography sx={{ color: '#14F195', fontWeight: 600 }}>
+            <Box display="flex" alignItems="baseline" gap={1}>
+              <Typography sx={{ color: '#14F195', fontWeight: 600, fontSize: '1.25rem' }}>
                 {(Number(walletBalance) / 1e9).toFixed(4)} SOL
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem' }}>
                 {formatUsdValue('SOL', Number(walletBalance) / 1e9)}
               </Typography>
             </Box>
             <Chip
               label={shortenAddress(address)}
-              size="small"
+              size="medium"
               onClick={() => navigator.clipboard.writeText(address)}
-              sx={{ fontFamily: 'monospace', cursor: 'pointer', bgcolor: '#111' }}
+              sx={{ fontFamily: 'monospace', cursor: 'pointer', bgcolor: '#111', fontSize: '0.95rem', height: 36 }}
               title="Click to copy"
             />
             <Button
               variant="outlined"
-              size="small"
+              size="medium"
               onClick={() => {
-                refreshWalletBalance();
-                refreshPrivateBalance();
+                void refreshWalletBalance();
+                void refreshPrivateBalance();
               }}
               disabled={walletBalanceLoading || privateBalanceLoading}
-              sx={{ minWidth: 'auto', px: 1 }}
+              sx={{ minWidth: 'auto', px: 1.5, fontSize: '1.1rem', height: 36 }}
             >
               {walletBalanceLoading || privateBalanceLoading ? '...' : '↻'}
             </Button>
             <Button
               variant="outlined"
-              size="small"
+              size="medium"
               color="error"
               onClick={handleLogout}
-              sx={{ minWidth: 'auto', px: 1 }}
+              sx={{ minWidth: 'auto', px: 1.5, fontSize: '1.1rem', height: 36 }}
             >
               ✕
             </Button>
