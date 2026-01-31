@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Paper,
   Typography,
@@ -112,6 +112,7 @@ export function FundForm({
   const [fundingStage, setFundingStage] = useState<'idle' | 'signing' | 'submitting'>('idle');
   const [cancelHovered, setCancelHovered] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const swapCancelledRef = useRef(false);
 
   // Cross-chain deposit state
   const [crossChainStatus, setCrossChainStatus] = useState<CrossChainStatus>({ stage: 'idle' });
@@ -150,6 +151,7 @@ export function FundForm({
       return;
     }
 
+    swapCancelledRef.current = false; // Reset cancelled flag
     setLoading(true);
     setError(null);
 
@@ -180,10 +182,12 @@ export function FundForm({
     ];
 
     // Stage 1: Getting quote (5 seconds)
+    if (swapCancelledRef.current) return;
     setCrossChainStatus({ stage: 'getting_quote' });
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // Stage 2: Awaiting deposit (5 seconds)
+    if (swapCancelledRef.current) return;
     setCrossChainStatus({
       stage: 'awaiting_deposit',
       depositAddress: mockDepositAddress,
@@ -193,6 +197,7 @@ export function FundForm({
 
     // Stage 3-5: Processing through various statuses (5 seconds each)
     for (const mockStatus of mockStatuses) {
+      if (swapCancelledRef.current) return;
       setCrossChainStatus({
         stage: 'processing',
         status: mockStatus,
@@ -202,6 +207,7 @@ export function FundForm({
     }
 
     // Stage 6: Completed - keep form as-is, ready for user to click again to fund SOL
+    if (swapCancelledRef.current) return;
     // Mock: calculate a fake SOL output (roughly 1 SOL per $150 worth)
     const mockSolOutput = (parseFloat(amount) * 0.8).toFixed(4); // Mock conversion rate
     setCrossChainStatus({
@@ -506,11 +512,16 @@ export function FundForm({
   };
 
   const handleCancelSwap = () => {
+    swapCancelledRef.current = true; // Stop any running async swap
     setCrossChainStatus({ stage: 'idle' });
     setLoading(false);
     setError(null);
     setStatus(null);
     setShowCancelDialog(false);
+    setAmount('');
+    setOriginAddress('');
+    onAssetChange('SOL'); // Reset to SOL and trigger balance refresh
+    onSuccess(); // Refresh balances
   };
 
   return (
