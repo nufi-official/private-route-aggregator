@@ -519,20 +519,23 @@ export function FundForm({
               <Typography variant="body2" color="text.secondary">
                 {amount && formatUsdValue ? (formatUsdValue(assetSymbol, amount) ?? '$0') : '$0'}
               </Typography>
-              <Typography
-                variant="caption"
-                onClick={() => !loading && crossChainStatus.stage !== 'completed' && setAmount(formatBalance(walletBalance))}
-                sx={{
-                  color: 'rgba(255,255,255,0.3)',
-                  cursor: loading || crossChainStatus.stage === 'completed' ? 'default' : 'pointer',
-                  mr: 1,
-                  '&:hover': {
-                    color: loading || crossChainStatus.stage === 'completed' ? 'rgba(255,255,255,0.3)' : 'primary.main',
-                  },
-                }}
-              >
-                MAX: {walletBalanceLoading ? '...' : `${formatBalance(walletBalance)} ${assetSymbol}`}
-              </Typography>
+              {/* Only show MAX for native SOL where we know the wallet balance */}
+              {asset === 'SOL' && (
+                <Typography
+                  variant="caption"
+                  onClick={() => !loading && crossChainStatus.stage !== 'completed' && setAmount(formatBalance(walletBalance))}
+                  sx={{
+                    color: 'rgba(255,255,255,0.3)',
+                    cursor: loading || crossChainStatus.stage === 'completed' ? 'default' : 'pointer',
+                    mr: 1,
+                    '&:hover': {
+                      color: loading || crossChainStatus.stage === 'completed' ? 'rgba(255,255,255,0.3)' : 'primary.main',
+                    },
+                  }}
+                >
+                  MAX: {walletBalanceLoading ? '...' : `${formatBalance(walletBalance)} ${assetSymbol}`}
+                </Typography>
+              )}
             </Box>
           </Box>
           <Box
