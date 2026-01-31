@@ -165,6 +165,9 @@ function AppContent() {
   const [privateBalance, setPrivateBalance] = useState<bigint>(0n); // Always SOL balance
   const [privateBalanceLoading, setPrivateBalanceLoading] = useState(false);
 
+  // Cached PrivacyCash provider to avoid re-signing (signature cached per session)
+  const [cachedPrivacyCashProvider, setCachedPrivacyCashProvider] = useState<PrivacyCashProvider | null>(null);
+
   // Initialize WASM for ShadowWire on mount
   useEffect(() => {
     initWASM('/wasm/settler_wasm_bg.wasm').catch((err) => {
@@ -256,7 +259,7 @@ function AppContent() {
     setSolProvider(newSolProvider);
   };
 
-  const handleProviderChange = (_: React.MouseEvent<HTMLElement>, newProviderName: ProviderName | null) => {
+  const handleProviderChange = (_: React.MouseEvent<HTMLElement> | null, newProviderName: ProviderName | null) => {
     if (newProviderName && account) {
       setSelectedProvider(newProviderName);
       setProviderError(null);
@@ -280,13 +283,34 @@ function AppContent() {
       // Wallet balance is independent of provider - don't reset it
       setPrivateBalance(0n);
 
-      // Recreate providers with new provider type
-      const newFundProvider = createProvider(account, newProviderName, newFundAsset);
-      const newWithdrawProvider = createProvider(account, newProviderName, newWithdrawAsset);
-      const newSolProvider = createProvider(account, newProviderName, 'SOL');
-      setFundProvider(newFundProvider);
-      setWithdrawProvider(newWithdrawProvider);
-      setSolProvider(newSolProvider);
+      if (newProviderName === 'privacy-cash') {
+        // For PrivacyCash, reuse cached provider to avoid re-signing
+        let pcProvider = cachedPrivacyCashProvider;
+
+        if (!pcProvider) {
+          // First time - create and cache the provider (this triggers signing once)
+          pcProvider = createProvider(account, 'privacy-cash', 'SOL') as PrivacyCashProvider | null;
+          if (pcProvider) {
+            setCachedPrivacyCashProvider(pcProvider);
+          }
+        }
+
+        if (pcProvider) {
+          // Reuse the same provider instance - use setAsset to change asset
+          pcProvider.setAsset(newFundAsset as PrivacyCashAsset);
+          setFundProvider(pcProvider);
+          setWithdrawProvider(pcProvider);
+          setSolProvider(pcProvider);
+        }
+      } else {
+        // For ShadowWire, create new providers (they don't require signing)
+        const newFundProvider = createProvider(account, newProviderName, newFundAsset);
+        const newWithdrawProvider = createProvider(account, newProviderName, newWithdrawAsset);
+        const newSolProvider = createProvider(account, newProviderName, 'SOL');
+        setFundProvider(newFundProvider);
+        setWithdrawProvider(newWithdrawProvider);
+        setSolProvider(newSolProvider);
+      }
     }
   };
 
@@ -301,10 +325,11 @@ function AppContent() {
     }
 
     if (account) {
-      // For PrivacyCash, reuse the existing provider and just change the asset
+      // For PrivacyCash, reuse the cached provider and just change the asset
       // This avoids requiring a new signature
-      if (selectedProvider === 'privacy-cash' && fundProvider instanceof PrivacyCashProvider) {
-        fundProvider.setAsset(newAsset as PrivacyCashAsset);
+      if (selectedProvider === 'privacy-cash' && cachedPrivacyCashProvider) {
+        cachedPrivacyCashProvider.setAsset(newAsset as PrivacyCashAsset);
+        setFundProvider(cachedPrivacyCashProvider);
       } else {
         // For ShadowWire, we need to create a new provider
         const newProvider = createProvider(account, selectedProvider, newAsset);
@@ -325,6 +350,7 @@ function AppContent() {
     setFundProvider(null);
     setWithdrawProvider(null);
     setSolProvider(null);
+    setCachedPrivacyCashProvider(null); // Clear cached provider so next login starts fresh
     setPrivateBalance(0n);
     setWalletBalance(0n);
     setProviderError(null);
