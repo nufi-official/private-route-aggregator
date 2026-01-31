@@ -722,32 +722,12 @@ export function FundForm({
                 transition: 'max-height 1s ease-out, opacity 0.5s ease-out, padding 1s ease-out, border 0.5s ease-out',
               }}
             >
-            {/* Step 1: Getting quote */}
-            <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
-              {/* Connector line - behind circle */}
-              <Box sx={{ position: 'absolute', left: 10, top: 37, width: 2, height: 38, bgcolor: crossChainStatus.stage === 'getting_quote' ? 'rgba(255,255,255,0.3)' : '#14F195', zIndex: 0 }} />
-              <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1 }}>
-                {crossChainStatus.stage === 'getting_quote' ? (
-                  <CircularProgress size={18} sx={{ color: '#14F195' }} />
-                ) : (
-                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
-                  </Box>
-                )}
-              </Box>
-              <Typography sx={{ color: crossChainStatus.stage === 'getting_quote' ? '#fff' : '#14F195', fontWeight: crossChainStatus.stage === 'getting_quote' ? 600 : 400 }}>
-                Getting quote
-              </Typography>
-            </Box>
-
-            {/* Step 2: Awaiting deposit */}
+            {/* Step 1: Deposit address */}
             <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 56, position: 'relative' }}>
-              {/* Connector line - behind circle, extends into next step */}
-              <Box sx={{ position: 'absolute', left: 10, top: 0, width: 2, height: 'calc(100% + 28px)', bgcolor: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? 'rgba(255,255,255,0.3)' : '#14F195', zIndex: 0 }} />
+              {/* Connector line - behind circle */}
+              <Box sx={{ position: 'absolute', left: 10, top: 30, width: 2, height: 'calc(100% + 8px)', bgcolor: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? 'rgba(255,255,255,0.3)' : '#14F195', zIndex: 0 }} />
               <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '8px' }}>
-                {crossChainStatus.stage === 'getting_quote' ? (
-                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
-                ) : crossChainStatus.stage === 'awaiting_deposit' ? (
+                {(crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? (
                   <CircularProgress size={18} sx={{ color: '#14F195' }} />
                 ) : (
                   <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -756,42 +736,48 @@ export function FundForm({
                 )}
               </Box>
               <Box flex={1} sx={{ pt: 1 }}>
-                <Typography sx={{
-                  color: crossChainStatus.stage === 'getting_quote' ? 'rgba(255,255,255,0.3)' : crossChainStatus.stage === 'awaiting_deposit' ? '#fff' : '#14F195',
-                  fontWeight: crossChainStatus.stage === 'awaiting_deposit' ? 600 : 400
-                }}>
-                  Send {amount} {assetSymbol} to
-                </Typography>
-                {/* Always reserve space for deposit address */}
-                <Box
-                  sx={{
-                    bgcolor: 'rgba(0,0,0,0.3)',
-                    p: 1.5,
-                    borderRadius: '12px',
-                    mt: 1,
-                    visibility: crossChainStatus.stage === 'getting_quote' ? 'hidden' : 'visible',
-                  }}
-                >
-                  <Box display="flex" alignItems="center">
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff', minHeight: '2.4em' }}>
-                      {'depositAddress' in crossChainStatus ? crossChainStatus.depositAddress : '0x0000000000000000000000000000000000000000'}
+                {crossChainStatus.stage === 'getting_quote' ? (
+                  <Typography sx={{ color: '#fff', fontWeight: 600 }}>
+                    Getting deposit address
+                  </Typography>
+                ) : (
+                  <>
+                    <Typography sx={{
+                      color: crossChainStatus.stage === 'awaiting_deposit' ? '#fff' : '#14F195',
+                      fontWeight: crossChainStatus.stage === 'awaiting_deposit' ? 600 : 400
+                    }}>
+                      Send {amount} {assetSymbol} to
                     </Typography>
-                    {'depositAddress' in crossChainStatus && (
-                      <Tooltip title="Copy address">
-                        <IconButton size="small" onClick={() => copyToClipboard(crossChainStatus.depositAddress)} sx={{ ml: 1, color: '#14F195' }}>
-                          <ContentCopyIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </Box>
-                </Box>
+                    <Box
+                      sx={{
+                        bgcolor: 'rgba(0,0,0,0.3)',
+                        p: 1.5,
+                        borderRadius: '12px',
+                        mt: 1,
+                      }}
+                    >
+                      <Box display="flex" alignItems="center">
+                        <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-all', flex: 1, color: '#fff', minHeight: '2.4em' }}>
+                          {'depositAddress' in crossChainStatus ? crossChainStatus.depositAddress : ''}
+                        </Typography>
+                        {'depositAddress' in crossChainStatus && (
+                          <Tooltip title="Copy address">
+                            <IconButton size="small" onClick={() => copyToClipboard(crossChainStatus.depositAddress)} sx={{ ml: 1, color: '#14F195' }}>
+                              <ContentCopyIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </Box>
+                  </>
+                )}
               </Box>
             </Box>
 
-            {/* Step 3: Processing */}
+            {/* Step 2: Swap progress */}
             <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
               {/* Connector line - behind circle */}
-              <Box sx={{ position: 'absolute', left: 10, top: 37, width: 2, height: 38, bgcolor: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit' || crossChainStatus.stage === 'processing') ? 'rgba(255,255,255,0.3)' : '#14F195', zIndex: 0 }} />
+              <Box sx={{ position: 'absolute', left: 10, top: 37, width: 2, height: 38, bgcolor: crossChainStatus.stage === 'completed' ? '#14F195' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
               <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1 }}>
                 {(crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? (
                   <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
@@ -806,9 +792,13 @@ export function FundForm({
               <Box flex={1} display="flex" alignItems="center" justifyContent="space-between">
                 <Typography sx={{
                   color: (crossChainStatus.stage === 'getting_quote' || crossChainStatus.stage === 'awaiting_deposit') ? 'rgba(255,255,255,0.3)' : crossChainStatus.stage === 'processing' ? '#fff' : '#14F195',
-                  fontWeight: crossChainStatus.stage === 'processing' ? 600 : 400
+                  fontWeight: (crossChainStatus.stage === 'processing' || crossChainStatus.stage === 'completed') ? 600 : 400
                 }}>
-                  {crossChainStatus.stage === 'processing' ? `Processing: ${crossChainStatus.status}` : 'Processing swap'}
+                  {crossChainStatus.stage === 'completed'
+                    ? `Swapped ${crossChainStatus.amountIn} ${crossChainStatus.originSymbol} to ${crossChainStatus.amountOut} SOL`
+                    : crossChainStatus.stage === 'processing'
+                      ? `Processing: ${crossChainStatus.status}`
+                      : 'Processing swap'}
                 </Typography>
                 {(crossChainStatus.stage === 'processing' || crossChainStatus.stage === 'completed') && 'depositAddress' in crossChainStatus && (
                   <Typography
@@ -816,7 +806,7 @@ export function FundForm({
                     href={`https://explorer.defuse.org/intents/${crossChainStatus.depositAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                    sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0, ml: 1 }}
                   >
                     View on Explorer →
                   </Typography>
@@ -824,35 +814,7 @@ export function FundForm({
               </Box>
             </Box>
 
-            {/* Step 4: Success */}
-            <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
-              {/* Connector line - behind circle */}
-              <Box sx={{ position: 'absolute', left: 10, top: 37, width: 2, height: 38, bgcolor: crossChainStatus.stage === 'completed' ? '#14F195' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
-              <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1 }}>
-                {crossChainStatus.stage === 'completed' ? (
-                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
-                  </Box>
-                ) : (
-                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
-                )}
-              </Box>
-              <Box flex={1} display="flex" alignItems="center" justifyContent="space-between">
-                <Typography sx={{
-                  color: crossChainStatus.stage === 'completed' ? '#14F195' : 'rgba(255,255,255,0.3)',
-                  fontWeight: crossChainStatus.stage === 'completed' ? 600 : 400
-                }}>
-                  Swap complete
-                </Typography>
-                {crossChainStatus.stage === 'completed' && (
-                  <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-                    {crossChainStatus.amountIn} {crossChainStatus.originSymbol} → {crossChainStatus.amountOut} SOL
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-
-            {/* Step 5: Fund to Privacy Pool */}
+            {/* Step 3: Fund to Privacy Pool button */}
             <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
               <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1 }}>
                 {crossChainStatus.stage === 'completed' ? (
