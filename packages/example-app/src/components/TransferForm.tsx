@@ -704,7 +704,18 @@ export function TransferForm({
               </Typography>
               <Typography
                 variant="caption"
-                onClick={() => !loading && setAmount(solBalanceFormatted)}
+                onClick={() => {
+                  if (loading) return;
+                  // Convert SOL balance to selected asset if needed
+                  if (asset === 'SOL') {
+                    setAmount(solBalanceFormatted);
+                  } else if (convertAmount) {
+                    const converted = convertAmount('SOL', assetSymbol, solBalanceFormatted);
+                    setAmount(converted ?? solBalanceFormatted);
+                  } else {
+                    setAmount(solBalanceFormatted);
+                  }
+                }}
                 sx={{
                   color: 'rgba(255,255,255,0.3)',
                   cursor: loading ? 'default' : 'pointer',
@@ -714,7 +725,13 @@ export function TransferForm({
                   },
                 }}
               >
-                MAX: {privateBalanceLoading ? '...' : `${solBalanceFormatted} SOL`}
+                MAX: {privateBalanceLoading ? '...' : (
+                  asset === 'SOL'
+                    ? `${solBalanceFormatted} SOL`
+                    : convertAmount
+                      ? `${convertAmount('SOL', assetSymbol, solBalanceFormatted) ?? solBalanceFormatted} ${assetSymbol}`
+                      : `${solBalanceFormatted} SOL`
+                )}
               </Typography>
             </Box>
           </Box>
