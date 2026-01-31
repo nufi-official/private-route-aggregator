@@ -820,13 +820,13 @@ export function FundForm({
             {/* Step 3: Fund to Privacy Pool button */}
             <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
               <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1 }}>
-                {loading ? (
+                {crossChainStatus.stage === 'completed' && loading ? (
                   <CircularProgress size={18} sx={{ color: '#14F195' }} />
                 ) : (
                   <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
                 )}
               </Box>
-              {loading ? (
+              {crossChainStatus.stage === 'completed' && loading ? (
                 <Typography sx={{ color: '#fff', fontWeight: 600 }}>
                   {status?.stage === 'depositing' || status?.stage === 'confirming'
                     ? 'Submitting to private balance...'
@@ -838,7 +838,7 @@ export function FundForm({
                   variant="contained"
                   size="large"
                   onClick={() => void handleFund()}
-                  disabled={crossChainStatus.stage !== 'completed'}
+                  disabled={crossChainStatus.stage !== 'completed' || loading}
                   sx={{
                     py: 1.25,
                     borderRadius: '32px',
