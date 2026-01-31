@@ -1106,9 +1106,9 @@ export function TransferForm({
           ) : loading ? (
             <CircularProgress size={24} color="inherit" />
           ) : needsSwap ? (
-            `Transfer SOL → ${assetSymbol}${assetChain !== 'sol' ? ` (${assetChain.toUpperCase()})` : ''}`
+            `Withdraw SOL → ${assetSymbol}${assetChain !== 'sol' ? ` (${assetChain.toUpperCase()})` : ''}`
           ) : (
-            `Transfer ${asset}`
+            `Withdraw ${asset}`
           )}
         </Button>
       </Box>

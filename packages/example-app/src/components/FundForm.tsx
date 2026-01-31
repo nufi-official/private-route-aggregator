@@ -1057,7 +1057,7 @@ export function FundForm({
                 ? `Get ${assetSymbol} deposit address`
                 : `Swap ${assetSymbol} → SOL`
             ) : (
-              `Fund ${asset}`
+              `Deposit ${asset}`
             )}
           </Button>
         )}
