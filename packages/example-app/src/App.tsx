@@ -809,7 +809,7 @@ function AppContent() {
             onSuccess={() => setTimeout(() => {
               void refreshPrivateBalance();
               void refreshWalletBalance();
-            }, 3000)}
+            }, 10000)}
             asset={fundAsset}
             decimals={getDecimals(fundAsset)}
             availableAssets={availableAssets}
@@ -833,7 +833,10 @@ function AppContent() {
             provider={withdrawProvider}
             privateBalance={privateBalance}
             privateBalanceLoading={privateBalanceLoading}
-            onSuccess={() => void refreshWalletBalance()}
+            onSuccess={() => setTimeout(() => {
+              void refreshPrivateBalance();
+              void refreshWalletBalance();
+            }, 10000)}
             asset={withdrawAsset}
             decimals={getDecimals(withdrawAsset)}
             availableAssets={availableAssets}
