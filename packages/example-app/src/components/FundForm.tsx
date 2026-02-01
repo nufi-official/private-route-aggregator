@@ -488,6 +488,18 @@ export function FundForm({
     onSuccess(); // Refresh balances
   };
 
+  const handleDone = () => {
+    setCrossChainStatus({ stage: 'idle' });
+    setStatus(null);
+    setLoading(false);
+    setError(null);
+    setAmount('');
+    setOriginAddress('');
+    setFundingStage('idle');
+    onAssetChange('SOL');
+    onSuccess(); // Refresh balances
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 4, position: 'relative' }}>
       <Box display="flex" alignItems="baseline" gap={1} mb={3} mt={0}>
@@ -747,6 +759,24 @@ export function FundForm({
                   {status.stage === 'completed' && `Deposit completed!`}
                 </Typography>
               </Box>
+              {status.stage === 'completed' && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleDone}
+                  sx={{
+                    color: '#14F195',
+                    borderColor: '#14F195',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: '#14F195',
+                      bgcolor: 'rgba(20, 241, 149, 0.1)',
+                    },
+                  }}
+                >
+                  Done
+                </Button>
+              )}
             </Box>
           </Box>
         )}
@@ -951,9 +981,27 @@ export function FundForm({
                 )}
               </Box>
               {status?.stage === 'completed' ? (
-                <Typography sx={{ color: '#14F195', fontWeight: 600 }}>
-                  Deposited to private balance
-                </Typography>
+                <>
+                  <Typography sx={{ color: '#14F195', fontWeight: 600, flex: 1 }}>
+                    Deposited to private balance
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleDone}
+                    sx={{
+                      color: '#14F195',
+                      borderColor: '#14F195',
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderColor: '#14F195',
+                        bgcolor: 'rgba(20, 241, 149, 0.1)',
+                      },
+                    }}
+                  >
+                    Done
+                  </Button>
+                </>
               ) : crossChainStatus.stage === 'completed' && loading ? (
                 <Typography sx={{ color: '#fff', fontWeight: 600 }}>
                   {fundingStage === 'submitting'

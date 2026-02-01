@@ -781,6 +781,19 @@ export function TransferForm({
     }
   };
 
+  const handleDone = () => {
+    setStatus(null);
+    setSwapStatus({ stage: 'idle' });
+    setSwapDepositAddress(null);
+    setLoading(false);
+    setError(null);
+    setAmount('');
+    setDestinationAddress('');
+    setFeePreview(null);
+    onAssetChange('SOL');
+    onSuccess(); // Refresh balances
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 4, position: 'relative' }}>
       <Box display="flex" alignItems="baseline" gap={1} mb={3} mt={0}>
@@ -1140,6 +1153,24 @@ export function TransferForm({
                   {status.stage === 'completed' && 'Withdrawal completed!'}
                 </Typography>
               </Box>
+              {status.stage === 'completed' && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleDone}
+                  sx={{
+                    color: '#14F195',
+                    borderColor: '#14F195',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: '#14F195',
+                      bgcolor: 'rgba(20, 241, 149, 0.1)',
+                    },
+                  }}
+                >
+                  Done
+                </Button>
+              )}
             </Box>
           </Box>
         )}
@@ -1230,17 +1261,37 @@ export function TransferForm({
                         {step2Done && `${amount} ${assetSymbol} withdrawn`}
                         {swapStatus.stage === 'idle' && !step2Done && `Swap SOL → ${assetSymbol}`}
                       </Typography>
-                      {swapDepositAddress && (
-                        <Typography
-                          component="a"
-                          href={`https://explorer.near-intents.org/transactions/${swapDepositAddress}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0, ml: 1 }}
-                        >
-                          View on Explorer →
-                        </Typography>
-                      )}
+                      <Box display="flex" alignItems="center" gap={1}>
+                        {swapDepositAddress && (
+                          <Typography
+                            component="a"
+                            href={`https://explorer.near-intents.org/transactions/${swapDepositAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0 }}
+                          >
+                            View on Explorer →
+                          </Typography>
+                        )}
+                        {step2Done && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={handleDone}
+                            sx={{
+                              color: '#14F195',
+                              borderColor: '#14F195',
+                              fontWeight: 600,
+                              '&:hover': {
+                                borderColor: '#14F195',
+                                bgcolor: 'rgba(20, 241, 149, 0.1)',
+                              },
+                            }}
+                          >
+                            Done
+                          </Button>
+                        )}
+                      </Box>
                     </Box>
                   </Box>
                 </Box>
