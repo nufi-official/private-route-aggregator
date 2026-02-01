@@ -521,8 +521,10 @@ function AppContent() {
               background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
               color: '#000',
               fontWeight: 600,
+              transition: 'box-shadow 0.2s ease-out',
               '&:hover': {
                 background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
+                boxShadow: '0 0 20px rgba(20, 241, 149, 0.5), 0 0 40px rgba(153, 69, 255, 0.3)',
               },
             }}
           >
