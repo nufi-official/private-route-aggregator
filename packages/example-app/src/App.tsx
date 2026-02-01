@@ -808,7 +808,7 @@ function AppContent() {
         <Box
           sx={{
             height: progressVisible ? 0 : 120,
-            mt: progressVisible ? 0 : 6,
+            mt: progressVisible ? '10px' : 6,
             mb: progressVisible ? 0 : 4,
             opacity: progressVisible ? 0 : 1,
             overflow: 'hidden',
