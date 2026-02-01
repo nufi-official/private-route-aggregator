@@ -535,7 +535,7 @@ function AppContent() {
 
   return (
     <>
-      {/* Fixed top left About button */}
+      {/* Fixed top left Logo */}
       <Box
         sx={{
           position: 'fixed',
@@ -544,23 +544,57 @@ function AppContent() {
           zIndex: 1000,
           opacity: splashComplete ? 1 : 0,
           transition: 'opacity 0.3s ease-out 0.2s',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
         }}
       >
-        <Button
-          variant="outlined"
+        <Box
+          component="img"
+          src="/favicon.svg"
+          alt="FUNDX"
+          sx={{ width: 36, height: 36 }}
+        />
+        <Typography
+          sx={{
+            fontWeight: 800,
+            fontSize: '1.6rem',
+            letterSpacing: '-0.02em',
+            background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          FUNDX
+        </Typography>
+      </Box>
+
+      {/* Fixed bottom left About link */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          left: 16,
+          zIndex: 1000,
+          opacity: splashComplete ? 1 : 0,
+          transition: 'opacity 0.3s ease-out 0.2s',
+        }}
+      >
+        <Typography
+          component="span"
           onClick={() => setShowAboutDialog(true)}
           sx={{
-            borderColor: 'rgba(20, 241, 149, 0.5)',
-            color: '#14F195',
-            fontWeight: 600,
+            color: 'text.secondary',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
             '&:hover': {
-              borderColor: '#14F195',
-              bgcolor: 'rgba(20, 241, 149, 0.1)',
+              color: '#14F195',
             },
           }}
         >
           About
-        </Button>
+        </Typography>
       </Box>
 
       {/* About Dialog */}
