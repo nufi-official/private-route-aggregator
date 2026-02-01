@@ -758,8 +758,9 @@ export function TransferForm({
     setError(null);
 
     try {
-      // Require message signature to confirm withdrawal intent
-      if (account.signMessage) {
+      // Require message signature to confirm withdrawal intent (only for PrivacyCash)
+      const providerName = (provider as { name?: string }).name;
+      if (providerName === 'privacy-cash' && account.signMessage) {
         const timestamp = Date.now();
         const message = `Confirm withdrawal of ${amount} ${asset} to ${destinationAddress.slice(0, 8)}...${destinationAddress.slice(-4)}\n\nTimestamp: ${timestamp}`;
         const messageBytes = new TextEncoder().encode(message);
