@@ -626,10 +626,10 @@ function AppContent() {
             About FUNDX
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            This prototype enables users to seamlessly exchange assets between shielded Solana accounts and major currencies across leading blockchain networks, as well as to fund shielded Solana accounts from external blockchains. Outbound swaps from shielded accounts are executed through a streamlined, single-transaction flow.
+            This prototype enables users to seamlessly exchange assets between private Solana accounts and major currencies across leading blockchain networks, as well as to fund private Solana accounts from external blockchains. Outbound swaps from private accounts are executed through a streamlined, single-transaction flow.
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Inbound funding of shielded accounts involves a more complex, two-step process: first, the originating asset is swapped into the user's unshielded Solana wallet balance; subsequently, the funds can be deposited into the user's shielded balance.
+            Inbound funding of private accounts involves a more complex, two-step process: first, the originating asset is swapped into the user's Solana wallet balance; subsequently, the funds can be deposited into the user's private balance.
           </Typography>
           <Typography variant="body1" color="text.secondary">
             The system supports both the Privacy Cash and ShadowWire privacy protocols, providing robust privacy guarantees and interoperability across supported networks.
