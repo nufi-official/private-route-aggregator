@@ -134,7 +134,7 @@ export function FundForm({
     onProgressVisibleChange?.(showProgress);
   }, [crossChainStatus.stage, onProgressVisibleChange]);
 
-  // Clear errors when amount or refund address changes
+  // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
     setError(null);
     if (status?.stage === 'failed') {
@@ -143,15 +143,16 @@ export function FundForm({
     if (crossChainStatus.stage === 'failed') {
       setCrossChainStatus({ stage: 'idle' });
     }
-  }, [amount, originAddress]);
-
-  // Auto-hide success status after 10 seconds
-  useEffect(() => {
-    if (status?.stage === 'completed') {
-      const timer = setTimeout(() => setStatus(null), 10000);
-      return () => clearTimeout(timer);
+    // Clear success only when user types something new (not on form reset to empty)
+    if (amount || originAddress) {
+      if (status?.stage === 'completed') {
+        setStatus(null);
+      }
+      if (crossChainStatus.stage === 'completed') {
+        setCrossChainStatus({ stage: 'idle' });
+      }
     }
-  }, [status?.stage]);
+  }, [amount, originAddress]);
 
   // Check if current asset needs swapping to SOL
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);

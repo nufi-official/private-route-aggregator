@@ -128,7 +128,7 @@ export function TransferForm({
     setMaxSolAfterFees(null);
   }, [provider]);
 
-  // Clear errors when amount or destination address changes
+  // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
     setError(null);
     if (status?.stage === 'failed') {
@@ -137,15 +137,16 @@ export function TransferForm({
     if (swapStatus.stage === 'failed') {
       setSwapStatus({ stage: 'idle' });
     }
-  }, [amount, destinationAddress]);
-
-  // Auto-hide success status after 10 seconds
-  useEffect(() => {
-    if (status?.stage === 'completed') {
-      const timer = setTimeout(() => setStatus(null), 10000);
-      return () => clearTimeout(timer);
+    // Clear success only when user types something new (not on form reset to empty)
+    if (amount || destinationAddress) {
+      if (status?.stage === 'completed') {
+        setStatus(null);
+      }
+      if (swapStatus.stage === 'completed') {
+        setSwapStatus({ stage: 'idle' });
+      }
     }
-  }, [status?.stage]);
+  }, [amount, destinationAddress]);
 
   // Check if we need to swap (any non-SOL asset needs swap via NEAR Intents)
   const needsSwap = asset !== 'SOL';
