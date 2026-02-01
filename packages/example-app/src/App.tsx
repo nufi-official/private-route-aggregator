@@ -543,7 +543,8 @@ function AppContent() {
           left: 16,
           zIndex: 1000,
           opacity: splashComplete ? 1 : 0,
-          transition: 'opacity 0.3s ease-out 0.2s',
+          transform: splashComplete ? 'scale(1)' : 'scale(0)',
+          transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
@@ -578,7 +579,8 @@ function AppContent() {
           left: 16,
           zIndex: 1000,
           opacity: splashComplete ? 1 : 0,
-          transition: 'opacity 0.3s ease-out 0.2s',
+          transform: splashComplete ? 'scale(1)' : 'scale(0)',
+          transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
         }}
       >
         <Typography
@@ -652,7 +654,9 @@ function AppContent() {
           right: 16,
           zIndex: 1000,
           opacity: splashComplete ? 1 : 0,
-          transition: 'opacity 0.3s ease-out 0.2s',
+          transform: splashComplete ? 'scale(1)' : 'scale(0)',
+          transformOrigin: 'top right',
+          transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
         }}
       >
         {!account ? (
@@ -935,8 +939,6 @@ function AppContent() {
           transform: 'scale(0.8)',
           transformOrigin: 'top center',
           height: 'fit-content',
-          opacity: splashComplete ? 1 : 0,
-          transition: 'opacity 0.3s ease-out 0.3s',
         }}
       >
         <Container maxWidth="lg" sx={{
@@ -952,9 +954,10 @@ function AppContent() {
             height: progressVisible ? 0 : 120,
             mt: progressVisible ? '10px' : 6,
             mb: progressVisible ? 0 : 4,
-            opacity: progressVisible ? 0 : 1,
+            opacity: progressVisible ? 0 : (splashComplete ? 1 : 0),
+            transform: splashComplete ? 'scale(1)' : 'scale(0)',
             overflow: 'hidden',
-            transition: 'height 1s ease-out, margin-top 1s ease-out, margin-bottom 1s ease-out, opacity 1s ease-out',
+            transition: 'height 1s ease-out, margin-top 1s ease-out, margin-bottom 1s ease-out, opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
           }}
         >
           <Box textAlign="center">
@@ -1027,7 +1030,14 @@ function AppContent() {
 
       {/* Forms */}
       <Grid container spacing={3} sx={{ mt: 4 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid
+          size={{ xs: 12, md: 6 }}
+          sx={{
+            opacity: splashComplete ? 1 : 0,
+            transform: splashComplete ? 'scale(1)' : 'scale(0)',
+            transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
+          }}
+        >
           <FundForm
             account={account}
             provider={fundProvider}
@@ -1053,7 +1063,14 @@ function AppContent() {
             }}
           />
         </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid
+          size={{ xs: 12, md: 6 }}
+          sx={{
+            opacity: splashComplete ? 1 : 0,
+            transform: splashComplete ? 'scale(1)' : 'scale(0)',
+            transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
+          }}
+        >
           <TransferForm
             account={account}
             provider={withdrawProvider}
