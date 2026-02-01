@@ -1074,7 +1074,7 @@ export function TransferForm({
         )}
 
         {/* Info about swap when non-SOL asset selected */}
-        {needsSwap && swapStatus.stage === 'idle' && (
+        {needsSwap && swapStatus.stage !== 'failed' && (
           <Alert severity="info" sx={{ mb: 2 }}>
             <Typography variant="body2">
               SOL will be transferred from your private balance and swapped to {assetSymbol}
