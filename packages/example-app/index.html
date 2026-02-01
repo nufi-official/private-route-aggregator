@@ -87,16 +87,16 @@
       }
       #splash-content {
         text-align: center;
-        /* animation: pulse 1.5s ease-in-out infinite; */
+        animation: pulse 1.5s ease-in-out infinite;
       }
       @keyframes pulse {
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.08); }
       }
-      #splash.hidden #splash-content {
-        animation: none;
-        opacity: 0;
-        transition: opacity 0.4s ease-out;
+      @keyframes shrink-away {
+        0% { transform: scale(1); opacity: 1; }
+        25% { transform: scale(1.2); opacity: 1; }
+        100% { transform: scale(0); opacity: 0; }
       }
       #splash-content {
         display: flex;

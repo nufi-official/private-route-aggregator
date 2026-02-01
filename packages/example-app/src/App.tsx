@@ -188,17 +188,21 @@ function AppContent() {
 
   // Trigger splash animation after mount - hide HTML splash
   useEffect(() => {
-    // TEMP: Keep splash visible for testing
-    return;
     const timer = setTimeout(() => {
       const splash = document.getElementById('splash');
-      if (splash) {
-        splash.classList.add('hidden');
+      const splashContent = document.getElementById('splash-content');
+      if (splash && splashContent) {
+        // Stop pulse and start shrink animation
+        splashContent.style.animation = 'shrink-away 0.6s ease-in forwards';
+        // Fade background after logo shrinks
+        setTimeout(() => {
+          splash.style.opacity = '0';
+        }, 400);
         // Remove from DOM after animation
         setTimeout(() => splash.remove(), 1000);
       }
       setSplashComplete(true);
-    }, 800); // Wait 0.8s before animating up
+    }, 800);
     return () => clearTimeout(timer);
   }, []);
 
