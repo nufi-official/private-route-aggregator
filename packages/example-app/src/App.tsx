@@ -701,25 +701,24 @@ function AppContent() {
                 },
               }}
             >
-              <Box display="flex" alignItems="center" gap={1.5}>
+              <Box display="flex" alignItems="center" gap={2}>
                 <Typography
                   sx={{
                     fontWeight: 600,
-                    fontSize: '1rem',
+                    fontSize: '1.25rem',
                     color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
                   }}
                 >
                   ShadowWire
                 </Typography>
                 <Typography
-                  variant="caption"
                   sx={{
                     bgcolor: 'rgba(20, 241, 149, 0.2)',
                     color: '#14F195',
-                    px: 1.5,
+                    px: 2,
                     py: 0.5,
                     borderRadius: '8px',
-                    fontSize: '0.8rem',
+                    fontSize: '1rem',
                     fontWeight: 600,
                   }}
                 >
@@ -741,33 +740,32 @@ function AppContent() {
                   ? 'linear-gradient(135deg, rgba(20, 241, 149, 0.2) 0%, rgba(153, 69, 255, 0.2) 100%)'
                   : 'transparent',
                 border: selectedProvider === 'privacy-cash'
-                  ? '1px solid rgba(153, 69, 255, 0.3)'
+                  ? '1px solid rgba(20, 241, 149, 0.3)'
                   : '1px solid transparent',
                 '&:hover': {
                   bgcolor: selectedProvider === 'privacy-cash' ? undefined : 'rgba(255,255,255,0.05)',
                 },
               }}
             >
-              <Box display="flex" alignItems="center" gap={1.5}>
+              <Box display="flex" alignItems="center" gap={2}>
                 <Typography
                   sx={{
                     fontWeight: 600,
-                    fontSize: '1rem',
-                    color: selectedProvider === 'privacy-cash' ? '#9945FF' : 'text.secondary',
+                    fontSize: '1.25rem',
+                    color: selectedProvider === 'privacy-cash' ? '#14F195' : 'text.secondary',
                   }}
                 >
                   PrivacyCash
                 </Typography>
                 {cachedPrivacyCashProvider ? (
                   <Typography
-                    variant="caption"
                     sx={{
-                      bgcolor: 'rgba(153, 69, 255, 0.2)',
-                      color: '#9945FF',
-                      px: 1.5,
+                      bgcolor: 'rgba(20, 241, 149, 0.2)',
+                      color: '#14F195',
+                      px: 2,
                       py: 0.5,
                       borderRadius: '8px',
-                      fontSize: '0.8rem',
+                      fontSize: '1rem',
                       fontWeight: 600,
                     }}
                   >
@@ -784,9 +782,9 @@ function AppContent() {
                       handleProviderChange(null, 'privacy-cash');
                     }}
                     sx={{
-                      fontSize: '0.8rem',
+                      fontSize: '1rem',
                       py: 0.5,
-                      px: 1.5,
+                      px: 2,
                       minWidth: 'auto',
                       borderColor: '#9945FF',
                       color: '#9945FF',
