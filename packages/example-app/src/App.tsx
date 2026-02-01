@@ -506,9 +506,83 @@ function AppContent() {
   };
 
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
 
   return (
     <>
+      {/* Fixed top left About button */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 16,
+          left: 16,
+          zIndex: 1000,
+        }}
+      >
+        <Button
+          variant="outlined"
+          onClick={() => setShowAboutDialog(true)}
+          sx={{
+            borderColor: 'rgba(20, 241, 149, 0.5)',
+            color: '#14F195',
+            fontWeight: 600,
+            '&:hover': {
+              borderColor: '#14F195',
+              bgcolor: 'rgba(20, 241, 149, 0.1)',
+            },
+          }}
+        >
+          About
+        </Button>
+      </Box>
+
+      {/* About Dialog */}
+      <Dialog
+        open={showAboutDialog}
+        onClose={() => setShowAboutDialog(false)}
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            bgcolor: '#111111',
+            backgroundImage: 'none',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            p: 2,
+          },
+        }}
+      >
+        <DialogContent>
+          <Typography variant="h5" fontWeight={600} sx={{ mb: 2, background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            About FUNDX
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+            This prototype enables users to seamlessly exchange assets between shielded Solana accounts and major currencies across leading blockchain networks, as well as to fund shielded Solana accounts from external blockchains. Outbound swaps from shielded accounts are executed through a streamlined, single-transaction flow.
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+            Inbound funding of shielded accounts involves a more complex, two-step process: first, the originating asset is swapped into the user's unshielded Solana wallet balance; subsequently, the funds can be deposited into the user's shielded balance.
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            The system supports both the Privacy Cash and ShadowWire privacy protocols, providing robust privacy guarantees and interoperability across supported networks.
+          </Typography>
+          <Box display="flex" justifyContent="flex-end" mt={3}>
+            <Button
+              variant="contained"
+              onClick={() => setShowAboutDialog(false)}
+              sx={{
+                background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
+                color: '#000',
+                fontWeight: 600,
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
+                },
+              }}
+            >
+              Close
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
       {/* Fixed top right connect/wallet - outside scaled container */}
       <Box
         sx={{
