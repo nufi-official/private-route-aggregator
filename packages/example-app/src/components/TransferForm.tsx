@@ -142,6 +142,11 @@ export function TransferForm({
     setError(null);
     if (status?.stage === 'failed') {
       setStatus(null);
+      // Also reset swapStatus if withdrawal failed during swap flow
+      if (swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed') {
+        setSwapStatus({ stage: 'idle' });
+        setSwapDepositAddress(null);
+      }
     }
     if (swapStatus.stage === 'failed') {
       setSwapStatus({ stage: 'idle' });
@@ -161,8 +166,10 @@ export function TransferForm({
   // Check if we need to swap (any non-SOL asset needs swap via NEAR Intents)
   const needsSwap = asset !== 'SOL';
 
-  // Form is frozen while swap/withdrawal is in progress
-  const isInProgress = loading || (status && status.stage !== 'completed' && status.stage !== 'failed') || (swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed');
+  // Form is frozen while swap/withdrawal is in progress (but not when failed - allow retry)
+  const isInProgress = loading ||
+    (status && status.stage !== 'completed' && status.stage !== 'failed') ||
+    (swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed' && status?.stage !== 'failed');
 
   // Parse asset: "ADA:cardano" -> { symbol: "ADA", chain: "cardano" }
   const [assetSymbol, assetChain] = asset.includes(':')
@@ -1256,8 +1263,8 @@ export function TransferForm({
           </Alert>
         )}
 
-        {/* Hide button when progress is showing */}
-        {!(status && !needsSwap && status.stage !== 'failed') && !(needsSwap && (status || swapStatus.stage !== 'idle') && swapStatus.stage !== 'failed') && (
+        {/* Hide button when progress is showing (but show when failed for retry) */}
+        {!(status && !needsSwap && status.stage !== 'failed') && !(needsSwap && (status || swapStatus.stage !== 'idle') && swapStatus.stage !== 'failed' && status?.stage !== 'failed') && (
           <Button
             fullWidth
             variant="contained"
