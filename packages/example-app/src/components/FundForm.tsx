@@ -129,7 +129,6 @@ export function FundForm({
 
   // Success notification state
   const [successNotification, setSuccessNotification] = useState<{ message: string; visible: boolean } | null>(null);
-  const lastSubmittedAmountRef = useRef<{ amount: string; asset: string } | null>(null);
 
   // Show/hide progress stepper
   useEffect(() => {
@@ -173,9 +172,7 @@ export function FundForm({
   // Show success notification when deposit completes
   useEffect(() => {
     if (status?.stage === 'completed') {
-      const submitted = lastSubmittedAmountRef.current;
-      const amountText = submitted ? `${submitted.amount} ${submitted.asset}` : '';
-      showSuccess(amountText);
+      showSuccess('Successful deposit');
       // Reset status after showing notification
       const timer = setTimeout(() => setStatus(null), 500);
       return () => clearTimeout(timer);
@@ -526,7 +523,6 @@ export function FundForm({
     setLoading(true);
     setError(null);
     setStatus({ stage: 'preparing' });
-    lastSubmittedAmountRef.current = { amount, asset };
 
     try {
       // Convert to base units
@@ -633,9 +629,6 @@ export function FundForm({
             zIndex: 10,
           }}
         >
-          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', mb: 0.5 }}>
-            Deposited
-          </Typography>
           <Typography sx={{ fontWeight: 600, color: '#14F195' }}>
             {successNotification.message}
           </Typography>

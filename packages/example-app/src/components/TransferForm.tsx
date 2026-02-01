@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Paper,
   Typography,
@@ -118,7 +118,6 @@ export function TransferForm({
 
   // Success notification state
   const [successNotification, setSuccessNotification] = useState<{ message: string; visible: boolean } | null>(null);
-  const lastSubmittedAmountRef = useRef<{ amount: string; asset: string } | null>(null);
 
   // Reset form when provider changes
   useEffect(() => {
@@ -161,9 +160,7 @@ export function TransferForm({
   // Show success notification when withdrawal completes
   useEffect(() => {
     if (status?.stage === 'completed') {
-      const submitted = lastSubmittedAmountRef.current;
-      const amountText = submitted ? `${submitted.amount} ${submitted.asset}` : '';
-      setSuccessNotification({ message: amountText, visible: true });
+      setSuccessNotification({ message: 'Successful withdraw', visible: true });
       // Reset status after showing notification
       const timer = setTimeout(() => setStatus(null), 500);
       return () => clearTimeout(timer);
@@ -750,7 +747,6 @@ export function TransferForm({
     setError(null);
     setStatus({ stage: 'preparing' });
     setSwapStatus({ stage: 'idle' });
-    lastSubmittedAmountRef.current = { amount, asset };
 
     try {
       if (needsSwap) {
@@ -850,9 +846,6 @@ export function TransferForm({
             zIndex: 10,
           }}
         >
-          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', mb: 0.5 }}>
-            Withdrawn
-          </Typography>
           <Typography sx={{ fontWeight: 600, color: '#14F195' }}>
             {successNotification.message}
           </Typography>
