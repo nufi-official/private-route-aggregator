@@ -284,10 +284,10 @@ export function TransferForm({
       const sufficient = privateBalance >= totalWithdraw;
       const totalWithdrawSol = Number(totalWithdraw) / 1e9;
 
-      // Check minimum amount for ShadowWire
+      // Check minimum amount for ShadowWire (only for direct SOL withdrawals, not swaps)
       let belowMinimum = false;
       let minimumAmount = 0;
-      if (isShadowWire) {
+      if (isShadowWire && !needsSwap) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         minimumAmount = (provider as any).getMinimumAmount();
         belowMinimum = totalWithdrawSol < minimumAmount;
@@ -575,12 +575,6 @@ export function TransferForm({
       feeInfo.feeRate = feeRate;
       feeInfo.totalFee = account.assetToBaseUnits(feeBreakdown.fee.toFixed(9));
 
-      // Check minimum amount
-      const minimumAmount = swProvider.getMinimumAmount();
-      if (withdrawAmountSol < minimumAmount) {
-        throw new Error(`Amount ${withdrawAmountSol.toFixed(4)} SOL is below ShadowWire minimum of ${minimumAmount} SOL`);
-      }
-
       // eslint-disable-next-line no-console
       console.log('[TransferForm] ShadowWire fee calculation:', {
         feeRate,
@@ -589,7 +583,6 @@ export function TransferForm({
         withdrawAmount: withdrawAmountSol,
         fee: feeBreakdown.fee,
         netAmount: feeBreakdown.netAmount,
-        minimumAmount,
       });
     } else {
       // Fallback: no fee adjustment
