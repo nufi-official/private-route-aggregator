@@ -179,8 +179,25 @@ function AppContent() {
   // Title visibility - hide when progress is visible
   const [progressVisible, setProgressVisible] = useState(false);
 
+  // Splash screen animation
+  const [splashComplete, setSplashComplete] = useState(false);
+
   const handleProgressVisibleChange = useCallback((visible: boolean) => {
     setProgressVisible(visible);
+  }, []);
+
+  // Trigger splash animation after mount - hide HTML splash
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const splash = document.getElementById('splash');
+      if (splash) {
+        splash.classList.add('hidden');
+        // Remove from DOM after animation
+        setTimeout(() => splash.remove(), 1000);
+      }
+      setSplashComplete(true);
+    }, 800); // Wait 0.8s before animating up
+    return () => clearTimeout(timer);
   }, []);
 
   // Initialize WASM for ShadowWire on mount
@@ -519,6 +536,8 @@ function AppContent() {
           top: 16,
           left: 16,
           zIndex: 1000,
+          opacity: splashComplete ? 1 : 0,
+          transition: 'opacity 0.3s ease-out 0.2s',
         }}
       >
         <Button
@@ -592,6 +611,8 @@ function AppContent() {
           top: 16,
           right: 16,
           zIndex: 1000,
+          opacity: splashComplete ? 1 : 0,
+          transition: 'opacity 0.3s ease-out 0.2s',
         }}
       >
         {!account ? (
@@ -874,6 +895,8 @@ function AppContent() {
           transform: 'scale(0.8)',
           transformOrigin: 'top center',
           height: 'fit-content',
+          opacity: splashComplete ? 1 : 0,
+          transition: 'opacity 0.3s ease-out 0.3s',
         }}
       >
         <Container maxWidth="lg" sx={{
