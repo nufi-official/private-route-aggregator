@@ -129,29 +129,6 @@ export function TransferForm({
     setMaxSolAfterFees(null);
   }, [provider]);
 
-  // Reset form when swap or withdrawal fails, but keep error visible
-  useEffect(() => {
-    if (swapStatus.stage === 'failed') {
-      const errorMsg = swapStatus.error;
-      setAmount('');
-      setDestinationAddress('');
-      onAssetChange('SOL');
-      setStatus(null);
-      setSwapStatus({ stage: 'idle' });
-      setSwapDepositAddress(null);
-      setError(errorMsg);
-    } else if (asset !== 'SOL' && status?.stage === 'failed') {
-      const errorMsg = status.error;
-      setAmount('');
-      setDestinationAddress('');
-      onAssetChange('SOL');
-      setStatus(null);
-      setSwapStatus({ stage: 'idle' });
-      setSwapDepositAddress(null);
-      setError(errorMsg ?? 'Withdrawal failed');
-    }
-  }, [swapStatus.stage, status?.stage, asset, onAssetChange]);
-
   // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
     setError(null);

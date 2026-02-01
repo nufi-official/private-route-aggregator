@@ -134,15 +134,6 @@ export function FundForm({
     onProgressVisibleChange?.(showProgress);
   }, [crossChainStatus.stage, onProgressVisibleChange]);
 
-  // Reset form when swap fails
-  useEffect(() => {
-    if (crossChainStatus.stage === 'failed') {
-      setAmount('');
-      setOriginAddress('');
-      onAssetChange('SOL');
-    }
-  }, [crossChainStatus.stage, onAssetChange]);
-
   // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
     setError(null);
