@@ -1044,7 +1044,7 @@ export function TransferForm({
               mb: 2,
               p: 2,
               bgcolor: feeError ? 'error.dark' : feePreview?.sufficient === false ? 'error.dark' : 'action.hover',
-              borderRadius: 1,
+              borderRadius: '16px',
               opacity: feeLoading ? 0.7 : 1,
             }}
           >
