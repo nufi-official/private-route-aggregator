@@ -576,28 +576,34 @@ function AppContent() {
       <Box
         sx={{
           position: 'fixed',
-          bottom: 16,
-          left: 16,
+          bottom: 20,
+          left: 20,
           zIndex: 1000,
           opacity: splashComplete ? 1 : 0,
           transform: splashComplete ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.95)',
           transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s',
         }}
       >
-        <Typography
-          component="span"
+        <Button
+          variant="outlined"
+          size="small"
           onClick={() => setShowAboutDialog(true)}
           sx={{
-            color: 'text.secondary',
-            fontSize: '0.85rem',
-            cursor: 'pointer',
+            color: '#ffffff',
+            borderColor: 'rgba(255,255,255,0.3)',
+            fontSize: '0.75rem',
+            px: 1.5,
+            py: 0.25,
+            minWidth: 'auto',
             '&:hover': {
               color: '#14F195',
+              borderColor: '#14F195',
+              bgcolor: 'rgba(20, 241, 149, 0.1)',
             },
           }}
         >
           About
-        </Typography>
+        </Button>
       </Box>
 
       {/* About Dialog */}
