@@ -7,6 +7,7 @@ import {
   Box,
   Alert,
   CircularProgress,
+  InputAdornment,
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -970,6 +971,37 @@ export function TransferForm({
           onChange={(e) => setDestinationAddress(e.target.value)}
           placeholder={assetChain === 'sol' ? 'Enter Solana address' : `Enter ${assetChain.toUpperCase()} address`}
           disabled={loading}
+          slotProps={{
+            input: {
+              endAdornment: !destinationAddress && assetChain === 'sol' && account ? (
+                <InputAdornment position="end">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={async () => {
+                      const addr = await account.getAddress();
+                      setDestinationAddress(addr);
+                    }}
+                    disabled={loading}
+                    sx={{
+                      color: 'text.secondary',
+                      fontSize: '0.75rem',
+                      textTransform: 'none',
+                      minWidth: 'auto',
+                      borderColor: 'rgba(255,255,255,0.2)',
+                      '&:hover': {
+                        color: 'primary.main',
+                        borderColor: 'primary.main',
+                        bgcolor: 'transparent',
+                      },
+                    }}
+                  >
+                    My wallet
+                  </Button>
+                </InputAdornment>
+              ) : null,
+            },
+          }}
           sx={{
             mb: 2,
             '& .MuiOutlinedInput-root': {
