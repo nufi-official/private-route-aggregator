@@ -151,8 +151,8 @@ export function FundForm({
   useEffect(() => {
     if (status?.stage === 'completed') {
       onTransactionSuccess?.('Successful deposit');
-      // Reset status after notifying
-      const timer = setTimeout(() => setStatus(null), 500);
+      // Show success in form for 10 seconds, then reset
+      const timer = setTimeout(() => setStatus(null), 10000);
       return () => clearTimeout(timer);
     }
   }, [status?.stage, onTransactionSuccess]);
