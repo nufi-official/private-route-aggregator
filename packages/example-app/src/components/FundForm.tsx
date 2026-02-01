@@ -127,12 +127,13 @@ export function FundForm({
   // Track progress visibility for animation
   const [progressVisible, setProgressVisible] = useState(false);
 
-  // Show/hide progress stepper
+  // Show/hide progress stepper (keep visible after deposit success for cross-chain)
   useEffect(() => {
-    const showProgress = crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed';
+    const showProgress = (crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed') ||
+      (needsSwapToSol && status?.stage === 'completed');
     setProgressVisible(showProgress);
     onProgressVisibleChange?.(showProgress);
-  }, [crossChainStatus.stage, onProgressVisibleChange]);
+  }, [crossChainStatus.stage, status?.stage, needsSwapToSol, onProgressVisibleChange]);
 
   // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
@@ -760,8 +761,8 @@ export function FundForm({
           </Alert>
         )}
 
-        {/* Swap progress stepper - animates in when swap starts */}
-        {(crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed') && (
+        {/* Swap progress stepper - animates in when swap starts, stays visible after deposit success */}
+        {((crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed') || (needsSwapToSol && status?.stage === 'completed')) && (
           <>
             <Box
               sx={{
@@ -942,13 +943,21 @@ export function FundForm({
             {/* Step 3: Fund to Privacy Pool button */}
             <Box display="flex" alignItems="center" gap={2} sx={{ height: 56, position: 'relative' }}>
               <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1 }}>
-                {crossChainStatus.stage === 'completed' && loading ? (
+                {status?.stage === 'completed' ? (
+                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
+                  </Box>
+                ) : crossChainStatus.stage === 'completed' && loading ? (
                   <CircularProgress size={18} sx={{ color: '#14F195' }} />
                 ) : (
                   <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
                 )}
               </Box>
-              {crossChainStatus.stage === 'completed' && loading ? (
+              {status?.stage === 'completed' ? (
+                <Typography sx={{ color: '#14F195', fontWeight: 600 }}>
+                  Deposited to private balance
+                </Typography>
+              ) : crossChainStatus.stage === 'completed' && loading ? (
                 <Typography sx={{ color: '#fff', fontWeight: 600 }}>
                   {fundingStage === 'submitting'
                     ? 'Submitting to private balance...'
@@ -960,7 +969,7 @@ export function FundForm({
                   variant="contained"
                   size="large"
                   onClick={() => void handleFund()}
-                  disabled={crossChainStatus.stage !== 'completed' || loading}
+                  disabled={crossChainStatus.stage !== 'completed' || loading || status?.stage === 'completed'}
                   sx={{
                     py: 1.25,
                     borderRadius: '32px',
