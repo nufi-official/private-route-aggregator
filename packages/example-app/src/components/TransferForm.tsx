@@ -128,14 +128,26 @@ export function TransferForm({
     setMaxSolAfterFees(null);
   }, [provider]);
 
-  // Reset form when swap fails
+  // Reset form when swap or withdrawal fails, but keep error visible
   useEffect(() => {
     if (swapStatus.stage === 'failed') {
+      const errorMsg = swapStatus.error;
       setAmount('');
       setDestinationAddress('');
       onAssetChange('SOL');
+      setStatus(null);
+      setSwapStatus({ stage: 'idle' });
+      setError(errorMsg);
+    } else if (asset !== 'SOL' && status?.stage === 'failed') {
+      const errorMsg = status.error;
+      setAmount('');
+      setDestinationAddress('');
+      onAssetChange('SOL');
+      setStatus(null);
+      setSwapStatus({ stage: 'idle' });
+      setError(errorMsg ?? 'Withdrawal failed');
     }
-  }, [swapStatus.stage, onAssetChange]);
+  }, [swapStatus.stage, status?.stage, asset, onAssetChange]);
 
   // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
@@ -1215,8 +1227,8 @@ export function TransferForm({
 
               return (
                 <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 48, position: 'relative' }}>
-                  {/* Connector line */}
-                  <Box sx={{ position: 'absolute', left: 10, top: 28, width: 2, height: 'calc(100% + 8px)', bgcolor: step1Done ? '#14F195' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
+                  {/* Connector line to step 2 */}
+                  <Box sx={{ position: 'absolute', left: 10, top: 28, width: 2, height: 28, bgcolor: step1Done ? '#14F195' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
                   <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '4px' }}>
                     {step1Active ? (
                       <CircularProgress size={18} sx={{ color: '#14F195' }} />
@@ -1272,7 +1284,7 @@ export function TransferForm({
                       }}>
                         {swapStatus.stage === 'getting_quote' && 'Getting swap quote...'}
                         {swapStatus.stage === 'transferring' && 'Sending to swap...'}
-                        {swapStatus.stage === 'swapping' && `Swapping: ${swapStatus.status}`}
+                        {swapStatus.stage === 'swapping' && 'Processing swap...'}
                         {step2Done && `${amount} ${assetSymbol} withdrawn`}
                         {swapStatus.stage === 'idle' && !step2Done && `Swap SOL → ${assetSymbol}`}
                       </Typography>
