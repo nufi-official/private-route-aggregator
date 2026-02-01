@@ -130,10 +130,10 @@ export function FundForm({
   // Show/hide progress stepper (keep visible after deposit success for cross-chain)
   useEffect(() => {
     const showProgress = (crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed') ||
-      (needsSwapToSol && status?.stage === 'completed');
+      (asset !== 'SOL' && status?.stage === 'completed');
     setProgressVisible(showProgress);
     onProgressVisibleChange?.(showProgress);
-  }, [crossChainStatus.stage, status?.stage, needsSwapToSol, onProgressVisibleChange]);
+  }, [crossChainStatus.stage, status?.stage, asset, onProgressVisibleChange]);
 
   // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
