@@ -465,36 +465,6 @@ export function FundForm({
     }
   };
 
-  const getStatusColor = () => {
-    if (!status) return 'info';
-    switch (status.stage) {
-      case 'completed':
-        return 'success';
-      case 'failed':
-        return 'error';
-      default:
-        return 'info';
-    }
-  };
-
-  const getStatusText = () => {
-    if (!status) return '';
-    switch (status.stage) {
-      case 'preparing':
-        return 'Preparing transaction...';
-      case 'depositing':
-        return 'Depositing to private balance...';
-      case 'confirming':
-        return 'Confirming transaction...';
-      case 'completed':
-        return `Funding completed! TX: ${status.txHash?.slice(0, 8)}...`;
-      case 'failed':
-        return `Failed: ${status.error}`;
-      default:
-        return '';
-    }
-  };
-
   const getCrossChainStatusText = () => {
     switch (crossChainStatus.stage) {
       case 'getting_quote':
@@ -1036,7 +1006,7 @@ export function FundForm({
                 void handleFund();
               }
             }}
-            disabled={account ? (loading || !amount || (!provider && !needsSwapToSol) || (isCrossChainAsset && !originAddress) || isBelowMinimum) : false}
+            disabled={account ? !!(loading || !amount || (!provider && !needsSwapToSol) || (isCrossChainAsset && !originAddress) || isBelowMinimum) : false}
             sx={{
               py: 1.5,
               borderRadius: '32px',

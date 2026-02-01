@@ -789,64 +789,6 @@ export function TransferForm({
     }
   };
 
-  const getStatusColor = () => {
-    if (!status) return 'info';
-    switch (status.stage) {
-      case 'completed':
-        return 'success';
-      case 'failed':
-        return 'error';
-      default:
-        return 'info';
-    }
-  };
-
-  const getStatusText = () => {
-    if (!status) return '';
-    switch (status.stage) {
-      case 'preparing':
-        return 'Preparing transfer...';
-      case 'processing':
-        return 'Processing through privacy pool...';
-      case 'confirming':
-        return 'Confirming transaction...';
-      case 'completed':
-        return needsSwap ? 'Transfer sent, waiting for swap...' : `Transfer completed! TX: ${status.txHash?.slice(0, 8)}...`;
-      case 'failed':
-        return `Failed: ${status.error}`;
-      default:
-        return '';
-    }
-  };
-
-  const getSwapStatusText = () => {
-    switch (swapStatus.stage) {
-      case 'getting_quote':
-        return 'Getting swap quote...';
-      case 'transferring':
-        return 'Transferring SOL from privacy pool...';
-      case 'swapping':
-        return `Swapping SOL → ${asset}: ${swapStatus.status}`;
-      case 'completed':
-        return `Swap completed! ${asset} sent to destination.`;
-      case 'failed':
-        return `Swap failed: ${swapStatus.error}`;
-      default:
-        return '';
-    }
-  };
-
-  const getSwapStatusColor = () => {
-    switch (swapStatus.stage) {
-      case 'completed':
-        return 'success';
-      case 'failed':
-        return 'error';
-      default:
-        return 'info';
-    }
-  };
-
   return (
     <Paper elevation={3} sx={{ p: 4, position: 'relative' }}>
       <Box display="flex" alignItems="baseline" gap={1} mb={3} mt={0}>
@@ -1342,7 +1284,7 @@ export function TransferForm({
                 void handleTransfer();
               }
             }}
-            disabled={account ? (loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed') || (feePreview && (!feePreview.sufficient || feePreview.belowMinimum))) : false}
+            disabled={account ? !!(loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed') || (feePreview && (!feePreview.sufficient || feePreview.belowMinimum))) : false}
             sx={{
               py: 1.5,
               fontWeight: 600,
