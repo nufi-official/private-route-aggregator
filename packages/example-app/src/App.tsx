@@ -188,6 +188,8 @@ function AppContent() {
 
   // Trigger splash animation after mount - hide HTML splash
   useEffect(() => {
+    // TEMP: Keep splash visible for testing
+    return;
     const timer = setTimeout(() => {
       const splash = document.getElementById('splash');
       if (splash) {
