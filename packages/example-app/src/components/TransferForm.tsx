@@ -902,24 +902,36 @@ export function TransferForm({
               },
             }}
           >
-            {getAssetIcon(asset) && (
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  bgcolor: 'transparent',
-                  flexShrink: 0,
-                }}
-              >
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                bgcolor: 'rgba(255,255,255,0.1)',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '14px',
+                color: 'primary.main',
+              }}
+            >
+              {getAssetIcon(asset) ? (
                 <img
                   src={getAssetIcon(asset)!}
                   alt={getAssetDisplayName(asset)}
                   style={{ width: 36, height: 36, objectFit: 'cover' }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerText = getAssetDisplayName(asset).slice(0, 2);
+                  }}
                 />
-              </Box>
-            )}
+              ) : (
+                getAssetDisplayName(asset).slice(0, 2)
+              )}
+            </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
               <Typography sx={{ fontSize: '18px', fontWeight: 600, lineHeight: 1 }}>
                 {getAssetDisplayName(asset)}
