@@ -708,30 +708,28 @@ function AppContent() {
                   alt="ShadowWire"
                   sx={{ width: 36, height: 36, borderRadius: '6px' }}
                 />
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: '1.25rem',
-                    color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
-                  }}
-                >
-                  ShadowWire
-                </Typography>
-                <Typography
-                  sx={{
-                    bgcolor: 'rgba(20, 241, 149, 0.2)',
-                    color: '#14F195',
-                    px: 2,
-                    py: 0.5,
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  {selectedProvider === 'shadowwire'
-                    ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
-                    : (shadowWireBalance !== null ? `${(Number(shadowWireBalance) / 1e9).toFixed(4)} SOL` : '...')}
-                </Typography>
+                <Box>
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '1.25rem',
+                      color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
+                    }}
+                  >
+                    ShadowWire
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: '#14F195',
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {selectedProvider === 'shadowwire'
+                      ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
+                      : (shadowWireBalance !== null ? `${(Number(shadowWireBalance) / 1e9).toFixed(4)} SOL` : '...')}
+                  </Typography>
+                </Box>
               </Box>
             </Box>
             <Box
@@ -760,55 +758,53 @@ function AppContent() {
                   alt="PrivacyCash"
                   sx={{ width: 36, height: 36, borderRadius: '6px' }}
                 />
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: '1.25rem',
-                    color: selectedProvider === 'privacy-cash' ? '#14F195' : 'text.secondary',
-                  }}
-                >
-                  PrivacyCash
-                </Typography>
-                {cachedPrivacyCashProvider ? (
+                <Box>
                   <Typography
                     sx={{
-                      bgcolor: 'rgba(20, 241, 149, 0.2)',
-                      color: '#14F195',
-                      px: 2,
-                      py: 0.5,
-                      borderRadius: '8px',
-                      fontSize: '1rem',
                       fontWeight: 600,
+                      fontSize: '1.25rem',
+                      color: selectedProvider === 'privacy-cash' ? '#14F195' : 'text.secondary',
                     }}
                   >
-                    {selectedProvider === 'privacy-cash'
-                      ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
-                      : (privacyCashBalance !== null ? `${(Number(privacyCashBalance) / 1e9).toFixed(4)} SOL` : '...')}
+                    PrivacyCash
                   </Typography>
-                ) : (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleProviderChange(null, 'privacy-cash');
-                    }}
-                    sx={{
-                      fontSize: '1rem',
-                      py: 0.5,
-                      px: 2,
-                      minWidth: 'auto',
-                      borderColor: '#9945FF',
-                      color: '#9945FF',
-                      '&:hover': {
+                  {cachedPrivacyCashProvider ? (
+                    <Typography
+                      sx={{
+                        color: '#14F195',
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {selectedProvider === 'privacy-cash'
+                        ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
+                        : (privacyCashBalance !== null ? `${(Number(privacyCashBalance) / 1e9).toFixed(4)} SOL` : '...')}
+                    </Typography>
+                  ) : (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProviderChange(null, 'privacy-cash');
+                      }}
+                      sx={{
+                        fontSize: '0.75rem',
+                        py: 0.25,
+                        px: 1.5,
+                        minWidth: 'auto',
                         borderColor: '#9945FF',
-                        bgcolor: 'rgba(153, 69, 255, 0.1)',
-                      },
-                    }}
-                  >
-                    Connect
-                  </Button>
-                )}
+                        color: '#9945FF',
+                        '&:hover': {
+                          borderColor: '#9945FF',
+                          bgcolor: 'rgba(153, 69, 255, 0.1)',
+                        },
+                      }}
+                    >
+                      Connect
+                    </Button>
+                  )}
+                </Box>
               </Box>
             </Box>
           </Box>
