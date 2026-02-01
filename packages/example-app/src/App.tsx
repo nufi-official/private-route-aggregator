@@ -737,10 +737,11 @@ function AppContent() {
         <Box
           sx={{
             height: progressVisible ? 0 : 120,
+            mt: progressVisible ? 0 : 6,
             mb: progressVisible ? 0 : 4,
             opacity: progressVisible ? 0 : 1,
             overflow: 'hidden',
-            transition: 'height 1s ease-out, margin-bottom 1s ease-out, opacity 1s ease-out',
+            transition: 'height 1s ease-out, margin-top 1s ease-out, margin-bottom 1s ease-out, opacity 1s ease-out',
           }}
         >
           <Box textAlign="center">
