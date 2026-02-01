@@ -172,33 +172,9 @@ function AppContent() {
   // Title visibility - hide when progress is visible
   const [progressVisible, setProgressVisible] = useState(false);
 
-  // Success notification state
-  const [successNotification, setSuccessNotification] = useState<{ message: string; visible: boolean } | null>(null);
-
   const handleProgressVisibleChange = useCallback((visible: boolean) => {
     setProgressVisible(visible);
   }, []);
-
-  // Show success notification
-  const showSuccessNotification = useCallback((message: string) => {
-    setSuccessNotification({ message, visible: true });
-  }, []);
-
-  // Auto-hide success notification
-  useEffect(() => {
-    if (successNotification?.visible) {
-      const fadeTimer = setTimeout(() => {
-        setSuccessNotification(prev => prev ? { ...prev, visible: false } : null);
-      }, 10000);
-      const removeTimer = setTimeout(() => {
-        setSuccessNotification(null);
-      }, 11000);
-      return () => {
-        clearTimeout(fadeTimer);
-        clearTimeout(removeTimer);
-      };
-    }
-  }, [successNotification?.visible]);
 
   // Initialize WASM for ShadowWire on mount
   useEffect(() => {
@@ -573,30 +549,6 @@ function AppContent() {
         )}
       </Box>
 
-      {/* Success notification - fixed position below top bar */}
-      {successNotification && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 60,
-            right: 16,
-            background: 'rgba(20, 241, 149, 0.1)',
-            border: '1px solid rgba(20, 241, 149, 0.3)',
-            color: '#fff',
-            px: 2.5,
-            py: 1.5,
-            borderRadius: '12px',
-            opacity: successNotification.visible ? 1 : 0,
-            transition: 'opacity 1s ease-out',
-            zIndex: 1000,
-          }}
-        >
-          <Typography sx={{ fontWeight: 600, color: '#14F195' }}>
-            {successNotification.message}
-          </Typography>
-        </Box>
-      )}
-
       {/* Scaled main content */}
       <Box
         sx={{
@@ -824,7 +776,6 @@ function AppContent() {
               void refreshWalletBalance();
               void refreshPrivateBalance();
             }}
-            onTransactionSuccess={showSuccessNotification}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
@@ -846,7 +797,6 @@ function AppContent() {
             nearIntentsTokens={nearIntentsTokens}
             pricesLoading={pricesLoading}
             onConnectClick={() => setShowLoginDialog(true)}
-            onTransactionSuccess={showSuccessNotification}
           />
         </Grid>
       </Grid>

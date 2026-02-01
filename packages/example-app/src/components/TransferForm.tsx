@@ -74,7 +74,6 @@ interface TransferFormProps {
   nearIntentsTokens?: SwapApiAsset[];
   pricesLoading?: boolean;
   onConnectClick?: () => void;
-  onTransactionSuccess?: (message: string) => void;
 }
 
 export function TransferForm({
@@ -92,7 +91,6 @@ export function TransferForm({
   nearIntentsTokens = [],
   pricesLoading: _pricesLoading = false,
   onConnectClick,
-  onTransactionSuccess,
 }: TransferFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
@@ -141,15 +139,13 @@ export function TransferForm({
     }
   }, [amount, destinationAddress]);
 
-  // Notify parent when withdrawal completes
+  // Auto-hide success status after 10 seconds
   useEffect(() => {
     if (status?.stage === 'completed') {
-      onTransactionSuccess?.('Successful withdraw');
-      // Show success in form for 10 seconds, then reset
       const timer = setTimeout(() => setStatus(null), 10000);
       return () => clearTimeout(timer);
     }
-  }, [status?.stage, onTransactionSuccess]);
+  }, [status?.stage]);
 
   // Check if we need to swap (any non-SOL asset needs swap via NEAR Intents)
   const needsSwap = asset !== 'SOL';

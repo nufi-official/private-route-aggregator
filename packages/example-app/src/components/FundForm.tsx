@@ -81,7 +81,6 @@ interface FundFormProps {
   walletBalanceLoading?: boolean;
   onProgressVisibleChange?: (visible: boolean) => void;
   onSwapComplete?: () => void;
-  onTransactionSuccess?: (message: string) => void;
 }
 
 // Helper to parse asset string - returns { symbol, chain } for cross-chain or { symbol, chain: 'sol' } for Solana
@@ -110,7 +109,6 @@ export function FundForm({
   walletBalanceLoading = false,
   onProgressVisibleChange,
   onSwapComplete,
-  onTransactionSuccess,
 }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
@@ -147,15 +145,13 @@ export function FundForm({
     }
   }, [amount, originAddress]);
 
-  // Notify parent when deposit completes
+  // Auto-hide success status after 10 seconds
   useEffect(() => {
     if (status?.stage === 'completed') {
-      onTransactionSuccess?.('Successful deposit');
-      // Show success in form for 10 seconds, then reset
       const timer = setTimeout(() => setStatus(null), 10000);
       return () => clearTimeout(timer);
     }
-  }, [status?.stage, onTransactionSuccess]);
+  }, [status?.stage]);
 
   // Check if current asset needs swapping to SOL
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);
