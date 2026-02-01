@@ -726,13 +726,26 @@ export function TransferForm({
       setError('Provider not initialized');
       return;
     }
+    if (!account) {
+      setError('Account not connected');
+      return;
+    }
 
     setLoading(true);
     setError(null);
-    setStatus({ stage: 'preparing' });
-    setSwapStatus({ stage: 'idle' });
 
     try {
+      // Require message signature to confirm withdrawal intent
+      if (account.signMessage) {
+        const timestamp = Date.now();
+        const message = `Confirm withdrawal of ${amount} ${asset} to ${destinationAddress.slice(0, 8)}...${destinationAddress.slice(-4)}\n\nTimestamp: ${timestamp}`;
+        const messageBytes = new TextEncoder().encode(message);
+        await account.signMessage(messageBytes);
+      }
+
+      setStatus({ stage: 'preparing' });
+      setSwapStatus({ stage: 'idle' });
+
       if (needsSwap) {
         // Transfer with swap: SOL -> target asset
         await handleSwapTransfer();
@@ -1188,15 +1201,132 @@ export function TransferForm({
           </Alert>
         )}
 
-        {/* Swap status display */}
-        {needsSwap && swapStatus.stage !== 'idle' && (
-          <Alert severity={getSwapStatusColor()} sx={{ mb: 2 }}>
-            {getSwapStatusText()}
+        {/* Swap withdrawal progress stepper */}
+        {needsSwap && (status || swapStatus.stage !== 'idle') && swapStatus.stage !== 'failed' && !(status?.stage === 'failed') && (
+          <Box
+            sx={{
+              width: '100%',
+              borderRadius: '32px',
+              background: 'linear-gradient(135deg, rgba(153, 69, 255, 0.05) 0%, rgba(20, 241, 149, 0.05) 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              px: 4,
+              py: 3,
+            }}
+          >
+            {/* Step 1: Withdrawal from privacy pool */}
+            {(() => {
+              const step1Done = status?.stage === 'completed';
+              const step1Active = status && status.stage !== 'completed';
+
+              return (
+                <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 48, position: 'relative' }}>
+                  {/* Connector line */}
+                  <Box sx={{ position: 'absolute', left: 10, top: 28, width: 2, height: 'calc(100% + 8px)', bgcolor: step1Done ? '#9945FF' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
+                  <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '4px' }}>
+                    {step1Active ? (
+                      <CircularProgress size={18} sx={{ color: '#9945FF' }} />
+                    ) : step1Done ? (
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#9945FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography sx={{ fontSize: '12px', color: '#fff' }}>✓</Typography>
+                      </Box>
+                    ) : (
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
+                    )}
+                  </Box>
+                  <Box flex={1}>
+                    <Typography sx={{
+                      color: step1Done ? '#9945FF' : step1Active ? '#fff' : 'rgba(255,255,255,0.5)',
+                      fontWeight: 600
+                    }}>
+                      {status?.stage === 'preparing' && 'Preparing withdrawal...'}
+                      {status?.stage === 'processing' && 'Processing withdrawal...'}
+                      {status?.stage === 'confirming' && 'Confirming transaction...'}
+                      {step1Done && 'Withdrawn from private balance'}
+                      {!status && 'Withdraw from private balance'}
+                    </Typography>
+                    {step1Done && status?.txHash && (
+                      <Typography
+                        component="a"
+                        href={`https://solscan.io/tx/${status.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ fontSize: '0.75rem', color: '#9945FF', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                      >
+                        View on Solscan →
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              );
+            })()}
+
+            {/* Step 2: NEAR Intents swap */}
+            {(() => {
+              const step1Done = status?.stage === 'completed';
+              const step2Active = step1Done && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed';
+              const step2Done = swapStatus.stage === 'completed';
+              const depositAddress = 'depositAddress' in swapStatus ? swapStatus.depositAddress : null;
+
+              return (
+                <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 48, position: 'relative' }}>
+                  <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '4px' }}>
+                    {step2Active ? (
+                      <CircularProgress size={18} sx={{ color: '#14F195' }} />
+                    ) : step2Done ? (
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
+                      </Box>
+                    ) : (
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
+                    )}
+                  </Box>
+                  <Box flex={1}>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography sx={{
+                        color: step2Done ? '#14F195' : step2Active ? '#fff' : 'rgba(255,255,255,0.5)',
+                        fontWeight: 600
+                      }}>
+                        {swapStatus.stage === 'getting_quote' && 'Getting swap quote...'}
+                        {swapStatus.stage === 'transferring' && 'Sending to swap...'}
+                        {swapStatus.stage === 'swapping' && `Swapping: ${swapStatus.status}`}
+                        {step2Done && `${amount} ${assetSymbol} withdrawn`}
+                        {swapStatus.stage === 'idle' && !step2Done && `Swap SOL → ${assetSymbol}`}
+                      </Typography>
+                      {depositAddress && (
+                        <Typography
+                          component="a"
+                          href={`https://explorer.defuse.org/intents/${depositAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0, ml: 1 }}
+                        >
+                          View on Explorer →
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+              );
+            })()}
+          </Box>
+        )}
+
+        {/* Swap failed */}
+        {needsSwap && swapStatus.stage === 'failed' && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {`Swap failed: ${swapStatus.error}`}
           </Alert>
         )}
 
-        {/* Hide button when direct SOL withdrawal progress is showing */}
-        {!(status && !needsSwap && status.stage !== 'failed') && (
+        {/* Withdrawal failed during swap */}
+        {needsSwap && status?.stage === 'failed' && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {`Withdrawal failed: ${status.error}`}
+          </Alert>
+        )}
+
+        {/* Hide button when progress is showing */}
+        {!(status && !needsSwap && status.stage !== 'failed') && !(needsSwap && (status || swapStatus.stage !== 'idle') && swapStatus.stage !== 'failed') && (
           <Button
             fullWidth
             variant="contained"
