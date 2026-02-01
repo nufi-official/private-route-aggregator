@@ -189,10 +189,10 @@ function AppContent() {
     if (successNotification?.visible) {
       const fadeTimer = setTimeout(() => {
         setSuccessNotification(prev => prev ? { ...prev, visible: false } : null);
-      }, 2000);
+      }, 10000);
       const removeTimer = setTimeout(() => {
         setSuccessNotification(null);
-      }, 2500);
+      }, 11000);
       return () => {
         clearTimeout(fadeTimer);
         clearTimeout(removeTimer);
@@ -587,7 +587,7 @@ function AppContent() {
             py: 1.5,
             borderRadius: '12px',
             opacity: successNotification.visible ? 1 : 0,
-            transition: 'opacity 0.5s ease-out',
+            transition: 'opacity 1s ease-out',
             zIndex: 1000,
           }}
         >
