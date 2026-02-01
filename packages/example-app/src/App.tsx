@@ -702,6 +702,12 @@ function AppContent() {
               }}
             >
               <Box display="flex" alignItems="center" gap={2}>
+                <Box
+                  component="img"
+                  src="https://www.radrlabs.io/favicon.png"
+                  alt="ShadowWire"
+                  sx={{ width: 36, height: 36, borderRadius: '6px' }}
+                />
                 <Typography
                   sx={{
                     fontWeight: 600,
@@ -748,6 +754,12 @@ function AppContent() {
               }}
             >
               <Box display="flex" alignItems="center" gap={2}>
+                <Box
+                  component="img"
+                  src="https://www.privacycash.org/logo.png"
+                  alt="PrivacyCash"
+                  sx={{ width: 36, height: 36, borderRadius: '6px' }}
+                />
                 <Typography
                   sx={{
                     fontWeight: 600,
