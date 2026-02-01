@@ -128,6 +128,15 @@ export function TransferForm({
     setMaxSolAfterFees(null);
   }, [provider]);
 
+  // Reset form when swap fails
+  useEffect(() => {
+    if (swapStatus.stage === 'failed') {
+      setAmount('');
+      setDestinationAddress('');
+      onAssetChange('SOL');
+    }
+  }, [swapStatus.stage, onAssetChange]);
+
   // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
     setError(null);
