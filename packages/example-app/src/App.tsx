@@ -589,8 +589,8 @@ function AppContent() {
           size="small"
           onClick={() => setShowAboutDialog(true)}
           sx={{
-            color: '#ffffff',
-            borderColor: 'rgba(255,255,255,0.3)',
+            color: 'text.secondary',
+            borderColor: 'rgba(255,255,255,0.2)',
             fontSize: '0.75rem',
             px: 1.5,
             py: 0.25,
