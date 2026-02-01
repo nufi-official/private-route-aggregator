@@ -160,6 +160,9 @@ export function TransferForm({
   // Check if we need to swap (any non-SOL asset needs swap via NEAR Intents)
   const needsSwap = asset !== 'SOL';
 
+  // Form is frozen while swap/withdrawal is in progress
+  const isInProgress = loading || (status && status.stage !== 'completed' && status.stage !== 'failed') || (swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed');
+
   // Parse asset: "ADA:cardano" -> { symbol: "ADA", chain: "cardano" }
   const [assetSymbol, assetChain] = asset.includes(':')
     ? [asset.split(':')[0] ?? asset, asset.split(':')[1] ?? 'sol']
@@ -175,6 +178,10 @@ export function TransferForm({
 
   // Calculate fee preview when amount changes
   const calculateFeePreview = useCallback(async () => {
+    // Skip recalculation if swap is in progress (keep current fee preview frozen)
+    if (status && status.stage !== 'failed') return;
+    if (swapStatus.stage !== 'idle' && swapStatus.stage !== 'failed') return;
+
     if (!amount || !provider || !account || parseFloat(amount) <= 0) {
       setFeePreview(null);
       setFeeError(null);
@@ -304,7 +311,7 @@ export function TransferForm({
     } finally {
       setFeeLoading(false);
     }
-  }, [amount, provider, needsSwap, assetSymbol, convertAmount, account, privateBalance]);
+  }, [amount, provider, needsSwap, assetSymbol, convertAmount, account, privateBalance, status, swapStatus.stage]);
 
   // Recalculate fee preview when inputs change
   useEffect(() => {
@@ -866,14 +873,14 @@ export function TransferForm({
                 }
               }}
               placeholder="0"
-              disabled={loading}
+              disabled={isInProgress}
               style={{
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
                 fontSize: '36px',
                 fontWeight: 600,
-                color: '#ffffff',
+                color: isInProgress ? 'rgba(255,255,255,0.5)' : '#ffffff',
                 width: '100%',
                 fontFamily: 'inherit',
               }}
@@ -885,7 +892,7 @@ export function TransferForm({
               <Typography
                 variant="body2"
                 onClick={() => {
-                  if (loading || !maxSolAfterFees) return;
+                  if (isInProgress || !maxSolAfterFees) return;
                   // Use fee-adjusted max amount
                   if (asset === 'SOL') {
                     setAmount(maxSolAfterFees);
@@ -898,10 +905,10 @@ export function TransferForm({
                 }}
                 sx={{
                   color: 'rgba(255,255,255,0.5)',
-                  cursor: (loading || !maxSolAfterFees) ? 'default' : 'pointer',
+                  cursor: (isInProgress || !maxSolAfterFees) ? 'default' : 'pointer',
                   mr: 1,
                   '&:hover': {
-                    color: (loading || !maxSolAfterFees) ? 'rgba(255,255,255,0.5)' : 'primary.main',
+                    color: (isInProgress || !maxSolAfterFees) ? 'rgba(255,255,255,0.5)' : 'primary.main',
                   },
                 }}
               >
@@ -918,7 +925,7 @@ export function TransferForm({
             </Box>
           </Box>
           <Box
-            onClick={() => !loading && setTokenSelectorOpen(true)}
+            onClick={() => !isInProgress && setTokenSelectorOpen(true)}
             sx={{
               position: 'absolute',
               right: 24,
@@ -927,10 +934,10 @@ export function TransferForm({
               display: 'flex',
               alignItems: 'center',
               gap: 1,
-              cursor: loading ? 'default' : 'pointer',
-              opacity: loading ? 0.5 : 1,
+              cursor: isInProgress ? 'default' : 'pointer',
+              opacity: isInProgress ? 0.5 : 1,
               '&:hover': {
-                opacity: loading ? 0.5 : 0.8,
+                opacity: isInProgress ? 0.5 : 0.8,
               },
             }}
           >
@@ -989,7 +996,7 @@ export function TransferForm({
           value={destinationAddress}
           onChange={(e) => setDestinationAddress(e.target.value)}
           placeholder={assetChain === 'sol' ? 'Enter Solana address' : `Enter ${assetChain.toUpperCase()} address`}
-          disabled={loading}
+          disabled={isInProgress}
           slotProps={{
             input: {
               endAdornment: !destinationAddress && assetChain === 'sol' && account ? (
@@ -1001,7 +1008,7 @@ export function TransferForm({
                       const addr = await account.getAddress();
                       setDestinationAddress(addr);
                     }}
-                    disabled={loading}
+                    disabled={isInProgress}
                     sx={{
                       color: 'text.secondary',
                       fontSize: '0.75rem',
@@ -1171,7 +1178,7 @@ export function TransferForm({
                     <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
                   </Box>
                 ) : (
-                  <CircularProgress size={18} sx={{ color: '#9945FF' }} />
+                  <CircularProgress size={18} sx={{ color: '#14F195' }} />
                 )}
               </Box>
               <Box flex={1}>
@@ -1216,13 +1223,13 @@ export function TransferForm({
               return (
                 <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 48, position: 'relative' }}>
                   {/* Connector line */}
-                  <Box sx={{ position: 'absolute', left: 10, top: 28, width: 2, height: 'calc(100% + 8px)', bgcolor: step1Done ? '#9945FF' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
+                  <Box sx={{ position: 'absolute', left: 10, top: 28, width: 2, height: 'calc(100% + 8px)', bgcolor: step1Done ? '#14F195' : 'rgba(255,255,255,0.3)', zIndex: 0 }} />
                   <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '4px' }}>
                     {step1Active ? (
-                      <CircularProgress size={18} sx={{ color: '#9945FF' }} />
+                      <CircularProgress size={18} sx={{ color: '#14F195' }} />
                     ) : step1Done ? (
-                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#9945FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Typography sx={{ fontSize: '12px', color: '#fff' }}>✓</Typography>
+                      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
                       </Box>
                     ) : (
                       <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.3)' }} />
@@ -1230,7 +1237,7 @@ export function TransferForm({
                   </Box>
                   <Box flex={1}>
                     <Typography sx={{
-                      color: step1Done ? '#9945FF' : step1Active ? '#fff' : 'rgba(255,255,255,0.5)',
+                      color: step1Done ? '#14F195' : step1Active ? '#fff' : 'rgba(255,255,255,0.5)',
                       fontWeight: 600
                     }}>
                       {status?.stage === 'preparing' && 'Preparing withdrawal...'}
@@ -1252,7 +1259,7 @@ export function TransferForm({
               const depositAddress = 'depositAddress' in swapStatus ? swapStatus.depositAddress : null;
 
               return (
-                <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 48, position: 'relative' }}>
+                <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 48 }}>
                   <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '4px' }}>
                     {step2Active ? (
                       <CircularProgress size={18} sx={{ color: '#14F195' }} />

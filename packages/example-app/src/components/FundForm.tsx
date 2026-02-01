@@ -370,18 +370,15 @@ export function FundForm({
     setFundingStage('signing');
 
     try {
-      // Get the actual wallet balance to determine how much to fund
-      const currentBalance = await account.getBalance();
-      const currentBalanceSol = Number(currentBalance) / 1e9;
-      const feeReserveSol = 0.003; // Small reserve for transaction fees (~0.003 SOL is plenty)
+      // Use the swap output amount (what was actually received from the swap)
+      const amountOutSol = parseFloat(crossChainStatus.amountOut);
+      const feeReserveSol = 0.003; // Small reserve for transaction fees
+      const amountToFundSol = amountOutSol - feeReserveSol;
 
-      // Use wallet balance minus fee reserve
-      const amountToFundSol = currentBalanceSol - feeReserveSol;
-
-      console.log('[FundForm] Funding calculation:', { currentBalanceSol, feeReserveSol, amountToFundSol });
+      console.log('[FundForm] Funding calculation:', { amountOutSol, feeReserveSol, amountToFundSol });
 
       if (amountToFundSol <= 0) {
-        throw new Error(`Insufficient SOL balance to fund (balance: ${currentBalanceSol.toFixed(4)} SOL)`);
+        throw new Error(`Swap output too small to fund (received: ${amountOutSol.toFixed(4)} SOL)`);
       }
 
       // Convert to lamports (1 SOL = 1e9 lamports)
