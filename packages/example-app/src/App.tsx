@@ -166,6 +166,11 @@ function AppContent() {
   const [privateBalance, setPrivateBalance] = useState<bigint>(0n); // Always SOL balance
   const [privateBalanceLoading, setPrivateBalanceLoading] = useState(false);
 
+  // Separate balance tracking for each provider
+  const [shadowWireBalance, setShadowWireBalance] = useState<bigint | null>(null);
+  const [privacyCashBalance, setPrivacyCashBalance] = useState<bigint | null>(null);
+  const [shadowWireProvider, setShadowWireProvider] = useState<ShadowWireProvider | null>(null);
+
   // Cached PrivacyCash provider to avoid re-signing (signature cached per session)
   const [cachedPrivacyCashProvider, setCachedPrivacyCashProvider] = useState<PrivacyCashProvider | null>(null);
 
@@ -264,10 +269,11 @@ function AppContent() {
     // Create initial providers using ShadowWire (PrivacyCash requires signing, so user must select it explicitly)
     const newFundProvider = createProvider(acc, 'shadowwire', fundAsset);
     const newWithdrawProvider = createProvider(acc, 'shadowwire', withdrawAsset);
-    const newSolProvider = createProvider(acc, 'shadowwire', 'SOL');
+    const newSolProvider = createProvider(acc, 'shadowwire', 'SOL') as ShadowWireProvider | null;
     setFundProvider(newFundProvider);
     setWithdrawProvider(newWithdrawProvider);
     setSolProvider(newSolProvider);
+    setShadowWireProvider(newSolProvider);
   };
 
   const handleProviderChange = (_: React.MouseEvent<HTMLElement> | null, newProviderName: ProviderName | null) => {
@@ -290,9 +296,6 @@ function AppContent() {
 
       setFundAsset(newFundAsset);
       setWithdrawAsset(newWithdrawAsset);
-      // Only reset private balance (different pools per provider)
-      // Wallet balance is independent of provider - don't reset it
-      setPrivateBalance(0n);
 
       if (newProviderName === 'privacy-cash') {
         // For PrivacyCash, reuse cached provider to avoid re-signing
@@ -317,10 +320,11 @@ function AppContent() {
         // For ShadowWire, create new providers (they don't require signing)
         const newFundProvider = createProvider(account, newProviderName, newFundAsset);
         const newWithdrawProvider = createProvider(account, newProviderName, newWithdrawAsset);
-        const newSolProvider = createProvider(account, newProviderName, 'SOL');
+        const newSolProvider = createProvider(account, newProviderName, 'SOL') as ShadowWireProvider | null;
         setFundProvider(newFundProvider);
         setWithdrawProvider(newWithdrawProvider);
         setSolProvider(newSolProvider);
+        setShadowWireProvider(newSolProvider);
       }
     }
   };
@@ -362,8 +366,11 @@ function AppContent() {
     setFundProvider(null);
     setWithdrawProvider(null);
     setSolProvider(null);
+    setShadowWireProvider(null);
     setCachedPrivacyCashProvider(null); // Clear cached provider so next login starts fresh
     setPrivateBalance(0n);
+    setShadowWireBalance(null);
+    setPrivacyCashBalance(null);
     setWalletBalance(0n);
     setSolWalletBalance(0n);
     setProviderError(null);
@@ -451,12 +458,19 @@ function AppContent() {
       }
       const balance = await solProvider.getPrivateBalance();
       setPrivateBalance(balance);
+
+      // Update the specific provider balance based on current selection
+      if (selectedProvider === 'shadowwire') {
+        setShadowWireBalance(balance);
+      } else if (selectedProvider === 'privacy-cash') {
+        setPrivacyCashBalance(balance);
+      }
     } catch (err) {
       console.error('Failed to fetch private balance:', err);
     } finally {
       setPrivateBalanceLoading(false);
     }
-  }, [solProvider]);
+  }, [solProvider, selectedProvider]);
 
   // Fetch balances when providers change
   useEffect(() => {
@@ -470,6 +484,21 @@ function AppContent() {
       void refreshPrivateBalance();
     }
   }, [solProvider, refreshPrivateBalance]);
+
+  // Fetch ShadowWire balance when it exists but is not selected
+  useEffect(() => {
+    if (shadowWireProvider && selectedProvider === 'privacy-cash') {
+      shadowWireProvider.getPrivateBalance().then(setShadowWireBalance).catch(console.error);
+    }
+  }, [shadowWireProvider, selectedProvider]);
+
+  // Fetch PrivacyCash balance when it exists but is not selected
+  useEffect(() => {
+    if (cachedPrivacyCashProvider && selectedProvider === 'shadowwire') {
+      cachedPrivacyCashProvider.setAsset('SOL');
+      cachedPrivacyCashProvider.getPrivateBalance().then(setPrivacyCashBalance).catch(console.error);
+    }
+  }, [cachedPrivacyCashProvider, selectedProvider]);
 
   const shortenAddress = (addr: string): string => {
     if (addr.length <= 12) return addr;
@@ -693,17 +722,19 @@ function AppContent() {
                     fontWeight: 600,
                   }}
                 >
-                  22 tokens
+                  {selectedProvider === 'shadowwire'
+                    ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
+                    : (shadowWireBalance !== null ? `${(Number(shadowWireBalance) / 1e9).toFixed(4)} SOL` : '...')}
                 </Typography>
               </Box>
             </Box>
             <Box
-              onClick={() => handleProviderChange(null, 'privacy-cash')}
+              onClick={() => selectedProvider !== 'privacy-cash' && handleProviderChange(null, 'privacy-cash')}
               sx={{
                 px: 3,
                 py: 1,
                 borderRadius: '12px',
-                cursor: 'pointer',
+                cursor: selectedProvider === 'privacy-cash' ? 'default' : 'pointer',
                 transition: 'all 0.2s',
                 background: selectedProvider === 'privacy-cash'
                   ? 'linear-gradient(135deg, rgba(20, 241, 149, 0.2) 0%, rgba(153, 69, 255, 0.2) 100%)'
@@ -725,20 +756,47 @@ function AppContent() {
                 >
                   PrivacyCash
                 </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    bgcolor: 'rgba(153, 69, 255, 0.2)',
-                    color: '#9945FF',
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: '8px',
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  Trustless
-                </Typography>
+                {cachedPrivacyCashProvider ? (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      bgcolor: 'rgba(153, 69, 255, 0.2)',
+                      color: '#9945FF',
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: '8px',
+                      fontSize: '0.65rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {selectedProvider === 'privacy-cash'
+                      ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
+                      : (privacyCashBalance !== null ? `${(Number(privacyCashBalance) / 1e9).toFixed(4)} SOL` : '...')}
+                  </Typography>
+                ) : (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleProviderChange(null, 'privacy-cash');
+                    }}
+                    sx={{
+                      fontSize: '0.65rem',
+                      py: 0.25,
+                      px: 1,
+                      minWidth: 'auto',
+                      borderColor: '#9945FF',
+                      color: '#9945FF',
+                      '&:hover': {
+                        borderColor: '#9945FF',
+                        bgcolor: 'rgba(153, 69, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    Connect
+                  </Button>
+                )}
               </Box>
             </Box>
           </Box>
