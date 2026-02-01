@@ -81,6 +81,7 @@ interface FundFormProps {
   walletBalanceLoading?: boolean;
   onProgressVisibleChange?: (visible: boolean) => void;
   onSwapComplete?: () => void;
+  onTransactionSuccess?: (message: string) => void;
 }
 
 // Helper to parse asset string - returns { symbol, chain } for cross-chain or { symbol, chain: 'sol' } for Solana
@@ -109,6 +110,7 @@ export function FundForm({
   walletBalanceLoading = false,
   onProgressVisibleChange,
   onSwapComplete,
+  onTransactionSuccess,
 }: FundFormProps) {
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<FundingStatus | null>(null);
@@ -126,9 +128,6 @@ export function FundForm({
 
   // Track progress visibility for animation
   const [progressVisible, setProgressVisible] = useState(false);
-
-  // Success notification state
-  const [successNotification, setSuccessNotification] = useState<{ message: string; visible: boolean } | null>(null);
 
   // Show/hide progress stepper
   useEffect(() => {
@@ -148,36 +147,15 @@ export function FundForm({
     }
   }, [amount, originAddress]);
 
-  // Auto-hide success notification
-  useEffect(() => {
-    if (successNotification?.visible) {
-      const fadeTimer = setTimeout(() => {
-        setSuccessNotification(prev => prev ? { ...prev, visible: false } : null);
-      }, 2000);
-      const removeTimer = setTimeout(() => {
-        setSuccessNotification(null);
-      }, 2500);
-      return () => {
-        clearTimeout(fadeTimer);
-        clearTimeout(removeTimer);
-      };
-    }
-  }, [successNotification?.visible]);
-
-  // Show success notification helper
-  const showSuccess = (message: string) => {
-    setSuccessNotification({ message, visible: true });
-  };
-
-  // Show success notification when deposit completes
+  // Notify parent when deposit completes
   useEffect(() => {
     if (status?.stage === 'completed') {
-      showSuccess('Successful deposit');
-      // Reset status after showing notification
+      onTransactionSuccess?.('Successful deposit');
+      // Reset status after notifying
       const timer = setTimeout(() => setStatus(null), 500);
       return () => clearTimeout(timer);
     }
-  }, [status?.stage]);
+  }, [status?.stage, onTransactionSuccess]);
 
   // Check if current asset needs swapping to SOL
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);
@@ -611,30 +589,6 @@ export function FundForm({
 
   return (
     <Paper elevation={3} sx={{ p: 4, position: 'relative' }}>
-      {/* Success notification */}
-      {successNotification && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 60,
-            right: 16,
-            background: 'rgba(20, 241, 149, 0.1)',
-            border: '1px solid rgba(20, 241, 149, 0.3)',
-            color: '#fff',
-            px: 2.5,
-            py: 1.5,
-            borderRadius: '12px',
-            opacity: successNotification.visible ? 1 : 0,
-            transition: 'opacity 0.5s ease-out',
-            zIndex: 10,
-          }}
-        >
-          <Typography sx={{ fontWeight: 600, color: '#14F195' }}>
-            {successNotification.message}
-          </Typography>
-        </Box>
-      )}
-
       <Box display="flex" alignItems="center" gap={1} mb={3} mt={0}>
         <ArrowDownwardIcon sx={{ color: '#14F195', fontSize: 28 }} />
         <Typography variant="h5" fontWeight={600}>
