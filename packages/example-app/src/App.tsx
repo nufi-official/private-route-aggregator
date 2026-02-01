@@ -466,7 +466,7 @@ function AppContent() {
         setPrivacyCashBalance(balance);
       }
     } catch (err) {
-      console.error('Failed to fetch private balance:', err);
+      console.error('Failed to fetch Private balance:', err);
     } finally {
       setPrivateBalanceLoading(false);
     }
@@ -660,6 +660,7 @@ function AppContent() {
                 bgcolor: '#0a0a0a',
                 borderRadius: '12px',
                 p: 0.5,
+                mt: 1,
                 border: '1px solid rgba(255,255,255,0.1)',
               }}
             >
@@ -687,22 +688,39 @@ function AppContent() {
                     component="img"
                     src="https://www.radrlabs.io/favicon.png"
                     alt="ShadowWire"
-                    sx={{ width: 24, height: 24, borderRadius: '4px' }}
+                    sx={{ width: 32, height: 32, borderRadius: '6px' }}
                   />
                   <Box>
-                    <Typography
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
-                      }}
-                    >
-                      ShadowWire
-                    </Typography>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '1rem',
+                          color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
+                        }}
+                      >
+                        ShadowWire
+                      </Typography>
+                      <Typography
+                        component="a"
+                        href="https://www.radrlabs.io/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        sx={{
+                          color: 'text.secondary',
+                          fontSize: '0.8rem',
+                          textDecoration: 'none',
+                          '&:hover': { textDecoration: 'underline', color: '#14F195' },
+                        }}
+                      >
+                        ↗
+                      </Typography>
+                    </Box>
                     <Typography
                       sx={{
                         color: '#14F195',
-                        fontSize: '0.75rem',
+                        fontSize: '0.9rem',
                         fontWeight: 500,
                       }}
                     >
@@ -735,23 +753,40 @@ function AppContent() {
                     component="img"
                     src="https://www.privacycash.org/logo.png"
                     alt="PrivacyCash"
-                    sx={{ width: 24, height: 24, borderRadius: '4px' }}
+                    sx={{ width: 32, height: 32, borderRadius: '6px' }}
                   />
                   <Box>
-                    <Typography
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        color: selectedProvider === 'privacy-cash' ? '#14F195' : 'text.secondary',
-                      }}
-                    >
-                      PrivacyCash
-                    </Typography>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '1rem',
+                          color: selectedProvider === 'privacy-cash' ? '#14F195' : 'text.secondary',
+                        }}
+                      >
+                        PrivacyCash
+                      </Typography>
+                      <Typography
+                        component="a"
+                        href="https://www.privacycash.org/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        sx={{
+                          color: 'text.secondary',
+                          fontSize: '0.8rem',
+                          textDecoration: 'none',
+                          '&:hover': { textDecoration: 'underline', color: '#14F195' },
+                        }}
+                      >
+                        ↗
+                      </Typography>
+                    </Box>
                     {cachedPrivacyCashProvider ? (
                       <Typography
                         sx={{
                           color: '#14F195',
-                          fontSize: '0.75rem',
+                          fontSize: '0.9rem',
                           fontWeight: 500,
                         }}
                       >
@@ -766,7 +801,7 @@ function AppContent() {
                           handleProviderChange(null, 'privacy-cash');
                         }}
                         sx={{
-                          fontSize: '0.65rem',
+                          fontSize: '0.75rem',
                           py: 0,
                           px: 1,
                           minWidth: 'auto',
