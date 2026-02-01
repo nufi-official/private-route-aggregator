@@ -201,7 +201,8 @@ function AppContent() {
         // Remove from DOM after animation
         setTimeout(() => splash.remove(), 1000);
       }
-      setSplashComplete(true);
+      // Delay splashComplete so elements animate after splash fades
+      setTimeout(() => setSplashComplete(true), 500);
     }, 800);
     return () => clearTimeout(timer);
   }, []);
@@ -543,8 +544,8 @@ function AppContent() {
           left: 16,
           zIndex: 1000,
           opacity: splashComplete ? 1 : 0,
-          transform: splashComplete ? 'scale(1)' : 'scale(0)',
-          transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
+          transform: splashComplete ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+          transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
@@ -579,8 +580,8 @@ function AppContent() {
           left: 16,
           zIndex: 1000,
           opacity: splashComplete ? 1 : 0,
-          transform: splashComplete ? 'scale(1)' : 'scale(0)',
-          transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
+          transform: splashComplete ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.95)',
+          transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s',
         }}
       >
         <Typography
@@ -654,9 +655,8 @@ function AppContent() {
           right: 16,
           zIndex: 1000,
           opacity: splashComplete ? 1 : 0,
-          transform: splashComplete ? 'scale(1)' : 'scale(0)',
-          transformOrigin: 'top right',
-          transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
+          transform: splashComplete ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+          transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
         {!account ? (
@@ -955,9 +955,9 @@ function AppContent() {
             mt: progressVisible ? '10px' : 6,
             mb: progressVisible ? 0 : 4,
             opacity: progressVisible ? 0 : (splashComplete ? 1 : 0),
-            transform: splashComplete ? 'scale(1)' : 'scale(0)',
+            transform: splashComplete ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.95)',
             overflow: 'hidden',
-            transition: 'height 1s ease-out, margin-top 1s ease-out, margin-bottom 1s ease-out, opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
+            transition: 'height 1s ease-out, margin-top 1s ease-out, margin-bottom 1s ease-out, opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s',
           }}
         >
           <Box textAlign="center">
@@ -1034,8 +1034,8 @@ function AppContent() {
           size={{ xs: 12, md: 6 }}
           sx={{
             opacity: splashComplete ? 1 : 0,
-            transform: splashComplete ? 'scale(1)' : 'scale(0)',
-            transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
+            transform: splashComplete ? 'translateY(0) scale(1)' : 'translateY(40px) scale(0.95)',
+            transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s',
           }}
         >
           <FundForm
@@ -1067,8 +1067,8 @@ function AppContent() {
           size={{ xs: 12, md: 6 }}
           sx={{
             opacity: splashComplete ? 1 : 0,
-            transform: splashComplete ? 'scale(1)' : 'scale(0)',
-            transition: 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s',
+            transform: splashComplete ? 'translateY(0) scale(1)' : 'translateY(40px) scale(0.95)',
+            transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s',
           }}
         >
           <TransferForm
