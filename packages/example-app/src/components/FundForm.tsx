@@ -777,17 +777,6 @@ export function FundForm({
                   {status.stage === 'confirming' && 'Confirming transaction...'}
                   {status.stage === 'completed' && `Deposit completed!`}
                 </Typography>
-                {status.stage === 'completed' && status.txHash && (
-                  <Typography
-                    component="a"
-                    href={`https://solscan.io/tx/${status.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                  >
-                    View on Solscan →
-                  </Typography>
-                )}
               </Box>
             </Box>
           </Box>

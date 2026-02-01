@@ -1174,17 +1174,6 @@ export function TransferForm({
                   {status.stage === 'confirming' && 'Confirming transaction...'}
                   {status.stage === 'completed' && 'Withdrawal completed!'}
                 </Typography>
-                {status.stage === 'completed' && status.txHash && (
-                  <Typography
-                    component="a"
-                    href={`https://solscan.io/tx/${status.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                  >
-                    View on Solscan →
-                  </Typography>
-                )}
               </Box>
             </Box>
           </Box>
@@ -1240,17 +1229,6 @@ export function TransferForm({
                       {step1Done && 'Withdrawn from private balance'}
                       {!status && 'Withdraw from private balance'}
                     </Typography>
-                    {step1Done && status?.txHash && (
-                      <Typography
-                        component="a"
-                        href={`https://solscan.io/tx/${status.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{ fontSize: '0.75rem', color: '#9945FF', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                      >
-                        View on Solscan →
-                      </Typography>
-                    )}
                   </Box>
                 </Box>
               );
