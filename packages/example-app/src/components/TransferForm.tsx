@@ -1037,13 +1037,20 @@ export function TransferForm({
           }}
         />
 
+        {/* Fee calculation error */}
+        {feeError && amount && parseFloat(amount) > 0 && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Fee calculation error: {feeError}
+          </Alert>
+        )}
+
         {/* Fee preview */}
-        {(feePreview || feeLoading || feeError) && amount && parseFloat(amount) > 0 && (
+        {(feePreview || feeLoading) && !feeError && amount && parseFloat(amount) > 0 && (
           <Box
             sx={{
               mb: 2,
               p: 2,
-              bgcolor: feeError ? 'error.dark' : feePreview?.sufficient === false ? 'error.dark' : 'action.hover',
+              bgcolor: 'action.hover',
               borderRadius: '16px',
               opacity: feeLoading ? 0.7 : 1,
             }}
@@ -1055,10 +1062,6 @@ export function TransferForm({
                   Calculating fees...
                 </Typography>
               </Box>
-            ) : feeError ? (
-              <Typography variant="body2" color="error.light">
-                Fee calculation error: {feeError}
-              </Typography>
             ) : feePreview ? (
               <Box>
                 {needsSwap && (
