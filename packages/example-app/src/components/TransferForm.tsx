@@ -1128,9 +1128,61 @@ export function TransferForm({
           </Alert>
         )}
 
-        {status && !needsSwap && (
-          <Alert severity={getStatusColor()} sx={{ mb: 2 }}>
-            {getStatusText()}
+        {/* Direct SOL withdrawal progress - replaces button */}
+        {status && !needsSwap && status.stage !== 'failed' && (
+          <Box
+            sx={{
+              width: '100%',
+              borderRadius: '32px',
+              background: 'linear-gradient(135deg, rgba(153, 69, 255, 0.15) 0%, rgba(20, 241, 149, 0.15) 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              px: 3,
+              py: 1.5,
+              minHeight: 52,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={2} sx={{ width: '100%' }}>
+              <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%' }}>
+                {status.stage === 'completed' ? (
+                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
+                  </Box>
+                ) : (
+                  <CircularProgress size={18} sx={{ color: '#9945FF' }} />
+                )}
+              </Box>
+              <Box flex={1}>
+                <Typography sx={{
+                  color: status.stage === 'completed' ? '#14F195' : '#fff',
+                  fontWeight: 600
+                }}>
+                  {status.stage === 'preparing' && 'Preparing withdrawal...'}
+                  {status.stage === 'processing' && 'Processing withdrawal...'}
+                  {status.stage === 'confirming' && 'Confirming transaction...'}
+                  {status.stage === 'completed' && 'Withdrawal completed!'}
+                </Typography>
+                {status.stage === 'completed' && status.txHash && (
+                  <Typography
+                    component="a"
+                    href={`https://solscan.io/tx/${status.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                  >
+                    View on Solscan →
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Direct SOL withdrawal failed */}
+        {status && !needsSwap && status.stage === 'failed' && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {`Failed: ${status.error}`}
           </Alert>
         )}
 
@@ -1141,26 +1193,28 @@ export function TransferForm({
           </Alert>
         )}
 
-        <Button
-          fullWidth
-          variant="contained"
-          size="large"
-          onClick={() => {
-            if (!account && onConnectClick) {
-              onConnectClick();
-            } else {
-              void handleTransfer();
-            }
-          }}
-          disabled={account ? (loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed') || (feePreview && (!feePreview.sufficient || feePreview.belowMinimum))) : false}
-          sx={{
-            py: 1.5,
-            background: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #8739E6 0%, #12D986 100%)',
-            },
-          }}
-        >
+        {/* Hide button when direct SOL withdrawal progress is showing */}
+        {!(status && !needsSwap && status.stage !== 'failed') && (
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            onClick={() => {
+              if (!account && onConnectClick) {
+                onConnectClick();
+              } else {
+                void handleTransfer();
+              }
+            }}
+            disabled={account ? (loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed') || (feePreview && (!feePreview.sufficient || feePreview.belowMinimum))) : false}
+            sx={{
+              py: 1.5,
+              background: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #8739E6 0%, #12D986 100%)',
+              },
+            }}
+          >
           {!account ? (
             'Connect Wallet'
           ) : loading ? (
@@ -1170,7 +1224,8 @@ export function TransferForm({
           ) : (
             `Withdraw ${asset}`
           )}
-        </Button>
+          </Button>
+        )}
       </Box>
     </Paper>
   );
