@@ -10,6 +10,8 @@ import {
   Button,
   Dialog,
   DialogContent,
+  Tooltip,
+  Link,
 } from '@mui/material';
 import { WalletProvider } from './providers/WalletProvider';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -691,7 +693,7 @@ function AppContent() {
                     sx={{ width: 32, height: 32, borderRadius: '6px' }}
                   />
                   <Box>
-                    <Box display="flex" alignItems="center" gap={1}>
+                    <Box display="flex" alignItems="center" gap={0.75}>
                       <Typography
                         sx={{
                           fontWeight: 600,
@@ -701,21 +703,42 @@ function AppContent() {
                       >
                         ShadowWire
                       </Typography>
-                      <Typography
-                        component="a"
-                        href="https://www.radrlabs.io/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        sx={{
-                          color: 'text.secondary',
-                          fontSize: '0.8rem',
-                          textDecoration: 'none',
-                          '&:hover': { textDecoration: 'underline', color: '#14F195' },
-                        }}
+                      <Tooltip
+                        title={
+                          <Link
+                            href="https://www.radrlabs.io/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            sx={{ color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                          >
+                            Learn more →
+                          </Link>
+                        }
+                        arrow
+                        placement="top"
                       >
-                        ↗
-                      </Typography>
+                        <Box
+                          component="span"
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 14,
+                            height: 14,
+                            borderRadius: '50%',
+                            border: '1px solid',
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            fontSize: '0.6rem',
+                            color: 'rgba(255,255,255,0.4)',
+                            cursor: 'help',
+                            '&:hover': { borderColor: '#14F195', color: '#14F195' },
+                          }}
+                        >
+                          ?
+                        </Box>
+                      </Tooltip>
                     </Box>
                     <Typography
                       sx={{
@@ -756,7 +779,7 @@ function AppContent() {
                     sx={{ width: 32, height: 32, borderRadius: '6px' }}
                   />
                   <Box>
-                    <Box display="flex" alignItems="center" gap={1}>
+                    <Box display="flex" alignItems="center" gap={0.75}>
                       <Typography
                         sx={{
                           fontWeight: 600,
@@ -766,21 +789,42 @@ function AppContent() {
                       >
                         PrivacyCash
                       </Typography>
-                      <Typography
-                        component="a"
-                        href="https://www.privacycash.org/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        sx={{
-                          color: 'text.secondary',
-                          fontSize: '0.8rem',
-                          textDecoration: 'none',
-                          '&:hover': { textDecoration: 'underline', color: '#14F195' },
-                        }}
+                      <Tooltip
+                        title={
+                          <Link
+                            href="https://www.privacycash.org/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            sx={{ color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                          >
+                            Learn more →
+                          </Link>
+                        }
+                        arrow
+                        placement="top"
                       >
-                        ↗
-                      </Typography>
+                        <Box
+                          component="span"
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 14,
+                            height: 14,
+                            borderRadius: '50%',
+                            border: '1px solid',
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            fontSize: '0.6rem',
+                            color: 'rgba(255,255,255,0.4)',
+                            cursor: 'help',
+                            '&:hover': { borderColor: '#14F195', color: '#14F195' },
+                          }}
+                        >
+                          ?
+                        </Box>
+                      </Tooltip>
                     </Box>
                     {cachedPrivacyCashProvider ? (
                       <Typography
