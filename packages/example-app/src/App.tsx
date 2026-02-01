@@ -777,7 +777,7 @@ function AppContent() {
                       <Tooltip
                         title={
                           <Link
-                            href="https://www.radrlabs.io/"
+                            href="https://www.radrlabs.io/pitchdeck"
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e: React.MouseEvent) => e.stopPropagation()}
@@ -863,7 +863,7 @@ function AppContent() {
                       <Tooltip
                         title={
                           <Link
-                            href="https://www.privacycash.org/"
+                            href="https://privacycash.mintlify.app/"
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e: React.MouseEvent) => e.stopPropagation()}
