@@ -280,12 +280,26 @@ export function FundForm({
 
         if (SWAP_END_STATES.has(event.status)) {
           if (event.status === 'SUCCESS') {
-            // TODO: Get actual amounts from API response
+            // Extract actual output amount from status response
+            let amountOut = '0';
+            if ('statusResponse' in event && event.statusResponse) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const resp = event.statusResponse as any;
+              console.log('[FundForm] Swap completed, statusResponse:', resp);
+              // The amount is in swapDetails.amountOutFormatted (already formatted as string)
+              if (resp.swapDetails?.amountOutFormatted) {
+                amountOut = resp.swapDetails.amountOutFormatted;
+              } else if (resp.swapDetails?.amountOut) {
+                // Convert from base units to SOL (9 decimals)
+                amountOut = (Number(resp.swapDetails.amountOut) / 1e9).toFixed(9);
+              }
+              console.log('[FundForm] Extracted amountOut:', amountOut);
+            }
             setCrossChainStatus({
               stage: 'completed',
               depositAddress: depositAddress!,
               amountIn: amount,
-              amountOut: '0', // Would come from API
+              amountOut,
               originSymbol: assetSymbol,
             });
             setLoading(false);
@@ -326,16 +340,21 @@ export function FundForm({
 
   // Fund SOL to privacy pool (after swap completed)
   const handleFundSolAfterSwap = async () => {
+    console.log('[FundForm] handleFundSolAfterSwap called', { crossChainStatus, solProvider: !!solProvider, account: !!account });
+
     if (!solProvider) {
       setError('SOL provider not initialized');
+      console.error('[FundForm] SOL provider not initialized');
       return;
     }
     if (!account) {
       setError('Account not connected');
+      console.error('[FundForm] Account not connected');
       return;
     }
     if (crossChainStatus.stage !== 'completed') {
       setError('Swap not completed');
+      console.error('[FundForm] Swap not completed');
       return;
     }
 
@@ -345,13 +364,18 @@ export function FundForm({
     setFundingStage('signing');
 
     try {
-      // Use the amount received from swap, minus fee reserve (0.01 SOL)
-      const swapOutputSol = parseFloat(crossChainStatus.amountOut);
-      const feeReserveSol = 0.01;
-      const amountToFundSol = swapOutputSol - feeReserveSol;
+      // Get the actual wallet balance to determine how much to fund
+      const currentBalance = await account.getBalance();
+      const currentBalanceSol = Number(currentBalance) / 1e9;
+      const feeReserveSol = 0.003; // Small reserve for transaction fees (~0.003 SOL is plenty)
+
+      // Use wallet balance minus fee reserve
+      const amountToFundSol = currentBalanceSol - feeReserveSol;
+
+      console.log('[FundForm] Funding calculation:', { currentBalanceSol, feeReserveSol, amountToFundSol });
 
       if (amountToFundSol <= 0) {
-        throw new Error('Insufficient SOL from swap to cover fees');
+        throw new Error(`Insufficient SOL balance to fund (balance: ${currentBalanceSol.toFixed(4)} SOL)`);
       }
 
       // Convert to lamports (1 SOL = 1e9 lamports)
@@ -387,8 +411,11 @@ export function FundForm({
   };
 
   const handleFund = async () => {
+    console.log('[FundForm] handleFund called', { crossChainStatus: crossChainStatus.stage, needsSwapToSol });
+
     // If swap already completed, fund the SOL to privacy pool
     if (crossChainStatus.stage === 'completed') {
+      console.log('[FundForm] Swap completed, calling handleFundSolAfterSwap');
       return handleFundSolAfterSwap();
     }
 
@@ -943,7 +970,7 @@ export function FundForm({
                     {(step2Active || step2Done) && 'depositAddress' in crossChainStatus && (
                       <Typography
                         component="a"
-                        href={`https://explorer.defuse.org/intents/${crossChainStatus.depositAddress}`}
+                        href={`https://explorer.near-intents.org/transactions/${crossChainStatus.depositAddress}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0, ml: 1 }}
@@ -1069,7 +1096,7 @@ export function FundForm({
           {'depositAddress' in crossChainStatus && (
             <Typography
               component="a"
-              href={`https://explorer.defuse.org/intents/${crossChainStatus.depositAddress}`}
+              href={`https://explorer.near-intents.org/transactions/${crossChainStatus.depositAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               sx={{

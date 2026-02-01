@@ -1295,7 +1295,7 @@ export function TransferForm({
                       {depositAddress && (
                         <Typography
                           component="a"
-                          href={`https://explorer.defuse.org/intents/${depositAddress}`}
+                          href={`https://explorer.near-intents.org/transactions/${depositAddress}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0, ml: 1 }}
