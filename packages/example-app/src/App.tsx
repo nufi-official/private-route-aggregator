@@ -631,9 +631,7 @@ function AppContent() {
                         fontWeight: 500,
                       }}
                     >
-                      {selectedProvider === 'shadowwire'
-                        ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
-                        : (shadowWireBalance !== null ? `${(Number(shadowWireBalance) / 1e9).toFixed(4)} SOL` : '...')}
+                      {shadowWireBalance !== null ? `${(Number(shadowWireBalance) / 1e9).toFixed(4)} SOL` : '...'}
                     </Typography>
                   </Box>
                 </Box>
@@ -682,9 +680,7 @@ function AppContent() {
                           fontWeight: 500,
                         }}
                       >
-                        {selectedProvider === 'privacy-cash'
-                          ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
-                          : (privacyCashBalance !== null ? `${(Number(privacyCashBalance) / 1e9).toFixed(4)} SOL` : '...')}
+                        {privacyCashBalance !== null ? `${(Number(privacyCashBalance) / 1e9).toFixed(4)} SOL` : '...'}
                       </Typography>
                     ) : (
                       <Button

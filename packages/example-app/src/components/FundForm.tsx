@@ -531,10 +531,13 @@ export function FundForm({
 
   return (
     <Paper elevation={3} sx={{ p: 4, position: 'relative' }}>
-      <Box display="flex" alignItems="center" gap={1} mb={3} mt={0}>
-        <ArrowDownwardIcon sx={{ color: '#14F195', fontSize: 28 }} />
+      <Box display="flex" alignItems="baseline" gap={1} mb={3} mt={0}>
+        <ArrowDownwardIcon sx={{ color: '#14F195', fontSize: 28, alignSelf: 'center' }} />
         <Typography variant="h5" fontWeight={600}>
           Deposit
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          to private balance
         </Typography>
       </Box>
 
