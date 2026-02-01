@@ -388,12 +388,9 @@ export function FundForm({
         },
       });
 
-      // Reset everything after successful funding
-      setAmount('');
-      setOriginAddress('');
-      setCrossChainStatus({ stage: 'idle' });
+      // Don't reset form or progress - keep showing success state
+      // Form will reset when user changes inputs (handled in useEffect)
       setFundingStage('idle');
-      onAssetChange('SOL');
       onSuccess();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
