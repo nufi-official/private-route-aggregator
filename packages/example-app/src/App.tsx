@@ -806,7 +806,10 @@ function AppContent() {
             provider={fundProvider}
             solProvider={solProvider}
             providerName={selectedProvider}
-            onSuccess={() => void refreshPrivateBalance()}
+            onSuccess={() => setTimeout(() => {
+              void refreshPrivateBalance();
+              void refreshWalletBalance();
+            }, 3000)}
             asset={fundAsset}
             decimals={getDecimals(fundAsset)}
             availableAssets={availableAssets}
