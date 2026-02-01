@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Paper,
   Typography,
@@ -116,6 +116,10 @@ export function TransferForm({
   // Max amount after fees (for MAX button)
   const [maxSolAfterFees, setMaxSolAfterFees] = useState<string | null>(null);
 
+  // Success notification state
+  const [successNotification, setSuccessNotification] = useState<{ message: string; visible: boolean } | null>(null);
+  const lastSubmittedAmountRef = useRef<{ amount: string; asset: string } | null>(null);
+
   // Reset form when provider changes
   useEffect(() => {
     setAmount('');
@@ -126,6 +130,34 @@ export function TransferForm({
     setFeePreview(null);
     setMaxSolAfterFees(null);
   }, [provider]);
+
+  // Auto-hide success notification
+  useEffect(() => {
+    if (successNotification?.visible) {
+      const fadeTimer = setTimeout(() => {
+        setSuccessNotification(prev => prev ? { ...prev, visible: false } : null);
+      }, 2000);
+      const removeTimer = setTimeout(() => {
+        setSuccessNotification(null);
+      }, 2500);
+      return () => {
+        clearTimeout(fadeTimer);
+        clearTimeout(removeTimer);
+      };
+    }
+  }, [successNotification?.visible]);
+
+  // Show success notification when withdrawal completes
+  useEffect(() => {
+    if (status?.stage === 'completed') {
+      const submitted = lastSubmittedAmountRef.current;
+      const amountText = submitted ? `${submitted.amount} ${submitted.asset}` : '';
+      setSuccessNotification({ message: amountText, visible: true });
+      // Reset status after showing notification
+      const timer = setTimeout(() => setStatus(null), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [status?.stage]);
 
   // Check if we need to swap (any non-SOL asset needs swap via NEAR Intents)
   const needsSwap = asset !== 'SOL';
@@ -707,6 +739,7 @@ export function TransferForm({
     setError(null);
     setStatus({ stage: 'preparing' });
     setSwapStatus({ stage: 'idle' });
+    lastSubmittedAmountRef.current = { amount, asset };
 
     try {
       if (needsSwap) {
@@ -787,7 +820,34 @@ export function TransferForm({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4 }}>
+    <Paper elevation={3} sx={{ p: 4, position: 'relative' }}>
+      {/* Success notification */}
+      {successNotification && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 60,
+            right: 16,
+            background: 'rgba(20, 241, 149, 0.1)',
+            border: '1px solid rgba(20, 241, 149, 0.3)',
+            color: '#fff',
+            px: 2.5,
+            py: 1.5,
+            borderRadius: '12px',
+            opacity: successNotification.visible ? 1 : 0,
+            transition: 'opacity 0.5s ease-out',
+            zIndex: 10,
+          }}
+        >
+          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', mb: 0.5 }}>
+            Withdrawn
+          </Typography>
+          <Typography sx={{ fontWeight: 600, color: '#14F195' }}>
+            {successNotification.message}
+          </Typography>
+        </Box>
+      )}
+
       <Box display="flex" alignItems="center" gap={1} mb={3} mt={0}>
         <ArrowUpwardIcon sx={{ color: '#9945FF', fontSize: 28 }} />
         <Typography variant="h5" fontWeight={600}>

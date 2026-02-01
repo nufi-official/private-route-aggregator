@@ -127,6 +127,10 @@ export function FundForm({
   // Track progress visibility for animation
   const [progressVisible, setProgressVisible] = useState(false);
 
+  // Success notification state
+  const [successNotification, setSuccessNotification] = useState<{ message: string; visible: boolean } | null>(null);
+  const lastSubmittedAmountRef = useRef<{ amount: string; asset: string } | null>(null);
+
   // Show/hide progress stepper
   useEffect(() => {
     const showProgress = crossChainStatus.stage !== 'idle' && crossChainStatus.stage !== 'failed';
@@ -144,6 +148,39 @@ export function FundForm({
       setCrossChainStatus({ stage: 'idle' });
     }
   }, [amount, originAddress]);
+
+  // Auto-hide success notification
+  useEffect(() => {
+    if (successNotification?.visible) {
+      const fadeTimer = setTimeout(() => {
+        setSuccessNotification(prev => prev ? { ...prev, visible: false } : null);
+      }, 2000);
+      const removeTimer = setTimeout(() => {
+        setSuccessNotification(null);
+      }, 2500);
+      return () => {
+        clearTimeout(fadeTimer);
+        clearTimeout(removeTimer);
+      };
+    }
+  }, [successNotification?.visible]);
+
+  // Show success notification helper
+  const showSuccess = (message: string) => {
+    setSuccessNotification({ message, visible: true });
+  };
+
+  // Show success notification when deposit completes
+  useEffect(() => {
+    if (status?.stage === 'completed') {
+      const submitted = lastSubmittedAmountRef.current;
+      const amountText = submitted ? `${submitted.amount} ${submitted.asset}` : '';
+      showSuccess(amountText);
+      // Reset status after showing notification
+      const timer = setTimeout(() => setStatus(null), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [status?.stage]);
 
   // Check if current asset needs swapping to SOL
   const { symbol: assetSymbol, chain: assetChain } = parseAsset(asset);
@@ -489,6 +526,7 @@ export function FundForm({
     setLoading(true);
     setError(null);
     setStatus({ stage: 'preparing' });
+    lastSubmittedAmountRef.current = { amount, asset };
 
     try {
       // Convert to base units
@@ -576,7 +614,34 @@ export function FundForm({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4 }}>
+    <Paper elevation={3} sx={{ p: 4, position: 'relative' }}>
+      {/* Success notification */}
+      {successNotification && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 60,
+            right: 16,
+            background: 'rgba(20, 241, 149, 0.1)',
+            border: '1px solid rgba(20, 241, 149, 0.3)',
+            color: '#fff',
+            px: 2.5,
+            py: 1.5,
+            borderRadius: '12px',
+            opacity: successNotification.visible ? 1 : 0,
+            transition: 'opacity 0.5s ease-out',
+            zIndex: 10,
+          }}
+        >
+          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', mb: 0.5 }}>
+            Deposited
+          </Typography>
+          <Typography sx={{ fontWeight: 600, color: '#14F195' }}>
+            {successNotification.message}
+          </Typography>
+        </Box>
+      )}
+
       <Box display="flex" alignItems="center" gap={1} mb={3} mt={0}>
         <ArrowDownwardIcon sx={{ color: '#14F195', fontSize: 28 }} />
         <Typography variant="h5" fontWeight={600}>
