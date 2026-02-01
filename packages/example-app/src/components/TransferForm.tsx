@@ -1176,6 +1176,7 @@ export function TransferForm({
             disabled={account ? (loading || !destinationAddress || !amount || !provider || (needsSwap && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed' && swapStatus.stage !== 'failed') || (feePreview && (!feePreview.sufficient || feePreview.belowMinimum))) : false}
             sx={{
               py: 1.5,
+              fontWeight: 600,
               background: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',
               '&:hover': {
                 background: 'linear-gradient(135deg, #8739E6 0%, #12D986 100%)',
@@ -1183,7 +1184,7 @@ export function TransferForm({
             }}
           >
           {!account ? (
-            'Connect Wallet'
+            'Connect'
           ) : loading ? (
             <CircularProgress size={24} color="inherit" />
           ) : needsSwap ? (

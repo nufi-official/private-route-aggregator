@@ -1106,6 +1106,7 @@ export function FundForm({
             sx={{
               py: 1.5,
               borderRadius: '32px',
+              fontWeight: 600,
               background: 'linear-gradient(135deg, #14F195 0%, #9945FF 100%)',
               '&:hover': {
                 background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
@@ -1113,7 +1114,7 @@ export function FundForm({
             }}
           >
             {!account ? (
-              'Connect Wallet'
+              'Connect'
             ) : loading ? (
               <CircularProgress size={24} color="inherit" />
             ) : needsSwapToSol ? (
