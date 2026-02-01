@@ -685,9 +685,9 @@ function AppContent() {
             <Box
               onClick={() => handleProviderChange(null, 'shadowwire')}
               sx={{
-                px: 3,
-                py: 1,
-                borderRadius: '12px',
+                px: 4,
+                py: 1.5,
+                borderRadius: '16px',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 background: selectedProvider === 'shadowwire'
@@ -701,10 +701,11 @@ function AppContent() {
                 },
               }}
             >
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box display="flex" alignItems="center" gap={1.5}>
                 <Typography
                   sx={{
                     fontWeight: 600,
+                    fontSize: '1rem',
                     color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
                   }}
                 >
@@ -715,10 +716,10 @@ function AppContent() {
                   sx={{
                     bgcolor: 'rgba(20, 241, 149, 0.2)',
                     color: '#14F195',
-                    px: 1,
-                    py: 0.25,
+                    px: 1.5,
+                    py: 0.5,
                     borderRadius: '8px',
-                    fontSize: '0.65rem',
+                    fontSize: '0.8rem',
                     fontWeight: 600,
                   }}
                 >
@@ -731,9 +732,9 @@ function AppContent() {
             <Box
               onClick={() => selectedProvider !== 'privacy-cash' && handleProviderChange(null, 'privacy-cash')}
               sx={{
-                px: 3,
-                py: 1,
-                borderRadius: '12px',
+                px: 4,
+                py: 1.5,
+                borderRadius: '16px',
                 cursor: selectedProvider === 'privacy-cash' ? 'default' : 'pointer',
                 transition: 'all 0.2s',
                 background: selectedProvider === 'privacy-cash'
@@ -747,10 +748,11 @@ function AppContent() {
                 },
               }}
             >
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box display="flex" alignItems="center" gap={1.5}>
                 <Typography
                   sx={{
                     fontWeight: 600,
+                    fontSize: '1rem',
                     color: selectedProvider === 'privacy-cash' ? '#9945FF' : 'text.secondary',
                   }}
                 >
@@ -762,10 +764,10 @@ function AppContent() {
                     sx={{
                       bgcolor: 'rgba(153, 69, 255, 0.2)',
                       color: '#9945FF',
-                      px: 1,
-                      py: 0.25,
+                      px: 1.5,
+                      py: 0.5,
                       borderRadius: '8px',
-                      fontSize: '0.65rem',
+                      fontSize: '0.8rem',
                       fontWeight: 600,
                     }}
                   >
@@ -782,9 +784,9 @@ function AppContent() {
                       handleProviderChange(null, 'privacy-cash');
                     }}
                     sx={{
-                      fontSize: '0.65rem',
-                      py: 0.25,
-                      px: 1,
+                      fontSize: '0.8rem',
+                      py: 0.5,
+                      px: 1.5,
                       minWidth: 'auto',
                       borderColor: '#9945FF',
                       color: '#9945FF',
