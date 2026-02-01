@@ -159,6 +159,10 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       {/* Main wallet selection view */}
       {view === 'main' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This app is for testing purposes only. Use with test funds only.
+          </Alert>
+
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}

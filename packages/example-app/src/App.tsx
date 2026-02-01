@@ -648,10 +648,10 @@ function AppContent() {
             borderRadius: '32px',
             border: '1px solid rgba(255,255,255,0.1)',
             m: 2,
-            mt: 8,
+            mt: 2,
             width: 360,
-            height: '80vh',
-            maxHeight: '800px',
+            height: 'auto',
+            maxHeight: '95vh',
           },
         }}
       >
