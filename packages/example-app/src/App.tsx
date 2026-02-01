@@ -930,6 +930,7 @@ function AppContent() {
             nearIntentsTokens={nearIntentsTokens}
             pricesLoading={pricesLoading}
             onConnectClick={() => setShowLoginDialog(true)}
+            onProgressVisibleChange={handleProgressVisibleChange}
           />
         </Grid>
       </Grid>

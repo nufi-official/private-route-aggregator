@@ -74,6 +74,7 @@ interface TransferFormProps {
   nearIntentsTokens?: SwapApiAsset[];
   pricesLoading?: boolean;
   onConnectClick?: () => void;
+  onProgressVisibleChange?: (visible: boolean) => void;
 }
 
 export function TransferForm({
@@ -91,6 +92,7 @@ export function TransferForm({
   nearIntentsTokens = [],
   pricesLoading: _pricesLoading = false,
   onConnectClick,
+  onProgressVisibleChange,
 }: TransferFormProps) {
   const [destinationAddress, setDestinationAddress] = useState('');
   const [amount, setAmount] = useState('');
@@ -128,6 +130,12 @@ export function TransferForm({
     setFeePreview(null);
     setMaxSolAfterFees(null);
   }, [provider]);
+
+  // Notify parent when cross-chain swap progress is visible
+  useEffect(() => {
+    const showProgress = swapStatus.stage !== 'idle' && swapStatus.stage !== 'failed';
+    onProgressVisibleChange?.(showProgress);
+  }, [swapStatus.stage, onProgressVisibleChange]);
 
   // Clear errors when inputs change, clear success only when user starts typing new values
   useEffect(() => {
