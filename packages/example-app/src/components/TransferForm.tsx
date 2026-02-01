@@ -98,6 +98,7 @@ export function TransferForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [swapStatus, setSwapStatus] = useState<SwapTransferStatus>({ stage: 'idle' });
+  const [swapDepositAddress, setSwapDepositAddress] = useState<string | null>(null);
   const [tokenSelectorOpen, setTokenSelectorOpen] = useState(false);
 
   // Fee preview state
@@ -137,6 +138,7 @@ export function TransferForm({
       onAssetChange('SOL');
       setStatus(null);
       setSwapStatus({ stage: 'idle' });
+      setSwapDepositAddress(null);
       setError(errorMsg);
     } else if (asset !== 'SOL' && status?.stage === 'failed') {
       const errorMsg = status.error;
@@ -145,6 +147,7 @@ export function TransferForm({
       onAssetChange('SOL');
       setStatus(null);
       setSwapStatus({ stage: 'idle' });
+      setSwapDepositAddress(null);
       setError(errorMsg ?? 'Withdrawal failed');
     }
   }, [swapStatus.stage, status?.stage, asset, onAssetChange]);
@@ -165,6 +168,7 @@ export function TransferForm({
       }
       if (swapStatus.stage === 'completed') {
         setSwapStatus({ stage: 'idle' });
+        setSwapDepositAddress(null);
       }
     }
   }, [amount, destinationAddress]);
@@ -654,6 +658,7 @@ export function TransferForm({
     }
 
     setSwapStatus({ stage: 'transferring', depositAddress });
+    setSwapDepositAddress(depositAddress);
 
     // Check private balance before transfer
     const currentPrivateBalance = await provider.getPrivateBalance();
@@ -1261,10 +1266,9 @@ export function TransferForm({
               const step1Done = status?.stage === 'completed';
               const step2Active = step1Done && swapStatus.stage !== 'idle' && swapStatus.stage !== 'completed';
               const step2Done = swapStatus.stage === 'completed';
-              const depositAddress = 'depositAddress' in swapStatus ? swapStatus.depositAddress : null;
 
               return (
-                <Box display="flex" alignItems="flex-start" gap={2} sx={{ minHeight: 48 }}>
+                <Box display="flex" alignItems="flex-start" gap={2}>
                   <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%', zIndex: 1, mt: '4px' }}>
                     {step2Active ? (
                       <CircularProgress size={18} sx={{ color: '#14F195' }} />
@@ -1288,10 +1292,10 @@ export function TransferForm({
                         {step2Done && `${amount} ${assetSymbol} withdrawn`}
                         {swapStatus.stage === 'idle' && !step2Done && `Swap SOL → ${assetSymbol}`}
                       </Typography>
-                      {depositAddress && (
+                      {swapDepositAddress && (
                         <Typography
                           component="a"
-                          href={`https://explorer.near-intents.org/transactions/${depositAddress}`}
+                          href={`https://explorer.near-intents.org/transactions/${swapDepositAddress}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' }, flexShrink: 0, ml: 1 }}
