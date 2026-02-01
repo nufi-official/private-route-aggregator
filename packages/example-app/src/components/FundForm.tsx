@@ -1111,6 +1111,10 @@ export function FundForm({
               '&:hover': {
                 background: 'linear-gradient(135deg, #12D986 0%, #8739E6 100%)',
               },
+              '&.Mui-disabled': {
+                background: 'linear-gradient(135deg, rgba(20, 241, 149, 0.3) 0%, rgba(153, 69, 255, 0.3) 100%)',
+                color: 'rgba(255, 255, 255, 0.5)',
+              },
             }}
           >
             {!account ? (
