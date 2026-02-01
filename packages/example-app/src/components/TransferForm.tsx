@@ -1073,7 +1073,7 @@ export function TransferForm({
                 )}
                 <Box display="flex" justifyContent="space-between" mb={0.5}>
                   <Typography variant="body2" color="text.secondary">
-                    Pool fee:
+                    Fee:
                   </Typography>
                   <Typography variant="body2" color="warning.main" fontWeight={500}>
                     ~{feePreview.fee} SOL {formatUsdValue ? `(${formatUsdValue('SOL', feePreview.fee) ?? ''})` : ''}
@@ -1086,7 +1086,7 @@ export function TransferForm({
                   sx={{ borderTop: 1, borderColor: 'divider' }}
                 >
                   <Typography variant="body2" fontWeight={600}>
-                    Total from pool:
+                    Total from private balance:
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {feePreview.totalWithdraw} SOL
