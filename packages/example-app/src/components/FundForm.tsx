@@ -795,9 +795,61 @@ export function FundForm({
           </Alert>
         )}
 
-        {status && !needsSwapToSol && (
-          <Alert severity={getStatusColor()} sx={{ mb: 2 }}>
-            {getStatusText()}
+        {/* Direct SOL deposit progress stepper - replaces button */}
+        {status && !needsSwapToSol && status.stage !== 'failed' && (
+          <Box
+            sx={{
+              width: '100%',
+              borderRadius: '32px',
+              background: 'linear-gradient(135deg, rgba(20, 241, 149, 0.15) 0%, rgba(153, 69, 255, 0.15) 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              px: 3,
+              py: 1.5,
+              minHeight: 52,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={2} sx={{ width: '100%' }}>
+              <Box sx={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0d0d0d', borderRadius: '50%' }}>
+                {status.stage === 'completed' ? (
+                  <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#14F195', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '12px', color: '#000' }}>✓</Typography>
+                  </Box>
+                ) : (
+                  <CircularProgress size={18} sx={{ color: '#14F195' }} />
+                )}
+              </Box>
+              <Box flex={1}>
+                <Typography sx={{
+                  color: status.stage === 'completed' ? '#14F195' : '#fff',
+                  fontWeight: 600
+                }}>
+                  {status.stage === 'preparing' && 'Preparing transaction...'}
+                  {status.stage === 'depositing' && 'Depositing to private balance...'}
+                  {status.stage === 'confirming' && 'Confirming transaction...'}
+                  {status.stage === 'completed' && `Deposit completed!`}
+                </Typography>
+                {status.stage === 'completed' && status.txHash && (
+                  <Typography
+                    component="a"
+                    href={`https://solscan.io/tx/${status.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ fontSize: '0.75rem', color: '#14F195', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                  >
+                    View on Solscan →
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Direct SOL deposit failed */}
+        {status && !needsSwapToSol && status.stage === 'failed' && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {`Failed: ${status.error}`}
           </Alert>
         )}
 
@@ -1025,8 +1077,8 @@ export function FundForm({
           </>
         )}
 
-        {(crossChainStatus.stage === 'idle' || crossChainStatus.stage === 'failed') && (
-          /* Button - shown when idle */
+        {(crossChainStatus.stage === 'idle' || crossChainStatus.stage === 'failed') && !(status && !needsSwapToSol && status.stage !== 'failed') && (
+          /* Button - shown when idle and no direct deposit in progress */
           <Button
             fullWidth
             variant="contained"
