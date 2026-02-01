@@ -193,91 +193,6 @@ export function FundForm({
     return (Number(amount) / divisor).toFixed(4);
   };
 
-  // Mock swap flow for testing - simulates the entire swap process
-  const handleMockSwapToSol = async () => {
-    if (!amount) {
-      setError('Please enter an amount');
-      return;
-    }
-
-    swapCancelledRef.current = false; // Reset cancelled flag
-    setLoading(true);
-    setError(null);
-
-    // Find or create a mock origin asset
-    const mockOriginAsset: SwapApiAsset = nearIntentsTokens.find(
-      (t) => t.symbol === assetSymbol && t.blockchain === assetChain
-    ) ?? {
-      assetId: `mock-${assetSymbol}-${assetChain}`,
-      symbol: assetSymbol,
-      blockchain: assetChain,
-      decimals: decimals,
-      price: 0,
-      priceUpdatedAt: new Date().toISOString(),
-      contractAddress: '0x0000000000000000000000000000000000000000',
-    };
-
-    const mockDepositAddress = assetChain === 'eth' || assetChain === 'base' || assetChain === 'arb'
-      ? '0x742d35Cc6634C0532925a3b844Bc9e7595f8bE2E'
-      : assetChain === 'btc'
-        ? 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'
-        : 'mock-deposit-address-' + Math.random().toString(36).substring(7);
-
-    // Real NEAR Intents statuses from SWAP_HAPPY_PATH_TIMELINE
-    const mockStatuses = [
-      'PENDING_DEPOSIT',
-      'KNOWN_DEPOSIT_TX',
-      'PROCESSING',
-    ];
-
-    // Stage 1: Getting quote (5 seconds)
-    if (swapCancelledRef.current) return;
-    setCrossChainStatus({ stage: 'getting_quote' });
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    // Stage 2: Awaiting deposit (5 seconds)
-    if (swapCancelledRef.current) return;
-    setCrossChainStatus({
-      stage: 'awaiting_deposit',
-      depositAddress: mockDepositAddress,
-      originAsset: mockOriginAsset,
-    });
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    // Stage 3-5: Processing through various statuses (5 seconds each)
-    for (const mockStatus of mockStatuses) {
-      if (swapCancelledRef.current) return;
-      setCrossChainStatus({
-        stage: 'processing',
-        status: mockStatus,
-        depositAddress: mockDepositAddress,
-      });
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
-
-    // Stage 6: Completed - keep form as-is, ready for user to click again to fund SOL
-    if (swapCancelledRef.current) return;
-    // Calculate approximate SOL output using token prices
-    const assetPrice = nearIntentsTokens.find(
-      (t) => t.symbol === assetSymbol && t.blockchain === assetChain
-    )?.price ?? 1;
-    const solPrice = nearIntentsTokens.find(
-      (t) => t.symbol === 'SOL' && t.blockchain === 'sol'
-    )?.price ?? 150;
-    const usdValue = parseFloat(amount) * assetPrice;
-    const mockSolOutput = (usdValue / solPrice * 0.99).toFixed(4); // 1% slippage
-    setCrossChainStatus({
-      stage: 'completed',
-      depositAddress: mockDepositAddress,
-      amountIn: amount,
-      amountOut: mockSolOutput,
-      originSymbol: assetSymbol,
-    });
-    setLoading(false);
-    onSwapComplete?.(); // Refresh balances
-    // Don't reset - user will click again to fund the SOL they received
-  };
-
   const handleSwapToSol = async () => {
     if (!amount) {
       setError('Please enter an amount');
@@ -293,15 +208,11 @@ export function FundForm({
       return;
     }
 
-    // TODO: Revert to real API later - always use mock for now
-    return handleMockSwapToSol();
-
-    /* eslint-disable @typescript-eslint/no-unreachable */
     const jwtToken = import.meta.env.VITE_NEAR_INTENTS_JWT_TOKEN as string | undefined;
 
-    // Use mock mode if no JWT token configured
     if (!jwtToken) {
-      return handleMockSwapToSol();
+      setError('NEAR Intents not configured');
+      return;
     }
 
     // Find the origin asset
@@ -378,6 +289,7 @@ export function FundForm({
               originSymbol: assetSymbol,
             });
             setLoading(false);
+            onSwapComplete?.(); // Refresh balances
           } else {
             setCrossChainStatus({
               stage: 'failed',
