@@ -656,6 +656,7 @@ function AppContent() {
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: 'column',
                 bgcolor: '#0a0a0a',
                 borderRadius: '12px',
                 p: 0.5,
