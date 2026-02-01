@@ -536,44 +536,184 @@ function AppContent() {
             Connect
           </Button>
         ) : (
-          <Box display="flex" alignItems="center" gap={1.5}>
-            {/* Wallet Balance */}
-            <Box display="flex" alignItems="baseline" gap={0.5}>
-              <Typography sx={{ color: '#14F195', fontWeight: 600, fontSize: '0.9rem' }}>
-                {(Number(solWalletBalance) / 1e9).toFixed(4)} SOL
-              </Typography>
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-                {formatUsdValue('SOL', (Number(solWalletBalance) / 1e9).toString())}
-              </Typography>
+          <Box display="flex" flexDirection="column" alignItems="flex-end" gap={1.5}>
+            {/* Top row: wallet info and controls */}
+            <Box display="flex" alignItems="center" gap={1.5}>
+              {/* Wallet Balance */}
+              <Box display="flex" alignItems="baseline" gap={0.5}>
+                <Typography sx={{ color: '#14F195', fontWeight: 600, fontSize: '0.9rem' }}>
+                  {(Number(solWalletBalance) / 1e9).toFixed(4)} SOL
+                </Typography>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                  {formatUsdValue('SOL', (Number(solWalletBalance) / 1e9).toString())}
+                </Typography>
+              </Box>
+              <Chip
+                label={shortenAddress(address)}
+                size="small"
+                onClick={() => void navigator.clipboard.writeText(address)}
+                sx={{ fontFamily: 'monospace', cursor: 'pointer', bgcolor: '#111', fontSize: '0.75rem', height: 26 }}
+                title="Click to copy"
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  void refreshWalletBalance();
+                  void refreshPrivateBalance();
+                }}
+                disabled={walletBalanceLoading || privateBalanceLoading}
+                sx={{ minWidth: 'auto', px: 1, fontSize: '0.85rem', height: 26 }}
+              >
+                {walletBalanceLoading || privateBalanceLoading ? '...' : '↻'}
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                onClick={handleLogout}
+                sx={{ minWidth: 'auto', px: 1, fontSize: '0.85rem', height: 26 }}
+              >
+                ✕
+              </Button>
             </Box>
-            <Chip
-              label={shortenAddress(address)}
-              size="small"
-              onClick={() => void navigator.clipboard.writeText(address)}
-              sx={{ fontFamily: 'monospace', cursor: 'pointer', bgcolor: '#111', fontSize: '0.75rem', height: 26 }}
-              title="Click to copy"
-            />
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => {
-                void refreshWalletBalance();
-                void refreshPrivateBalance();
+
+            {/* Provider Selector */}
+            <Box
+              sx={{
+                display: 'flex',
+                bgcolor: '#0a0a0a',
+                borderRadius: '12px',
+                p: 0.5,
+                border: '1px solid rgba(255,255,255,0.1)',
               }}
-              disabled={walletBalanceLoading || privateBalanceLoading}
-              sx={{ minWidth: 'auto', px: 1, fontSize: '0.85rem', height: 26 }}
             >
-              {walletBalanceLoading || privateBalanceLoading ? '...' : '↻'}
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              color="error"
-              onClick={handleLogout}
-              sx={{ minWidth: 'auto', px: 1, fontSize: '0.85rem', height: 26 }}
-            >
-              ✕
-            </Button>
+              <Box
+                onClick={() => handleProviderChange(null, 'shadowwire')}
+                sx={{
+                  px: 2,
+                  py: 1,
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  background: selectedProvider === 'shadowwire'
+                    ? 'linear-gradient(135deg, rgba(20, 241, 149, 0.2) 0%, rgba(153, 69, 255, 0.2) 100%)'
+                    : 'transparent',
+                  border: selectedProvider === 'shadowwire'
+                    ? '1px solid rgba(20, 241, 149, 0.3)'
+                    : '1px solid transparent',
+                  '&:hover': {
+                    bgcolor: selectedProvider === 'shadowwire' ? undefined : 'rgba(255,255,255,0.05)',
+                  },
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <Box
+                    component="img"
+                    src="https://www.radrlabs.io/favicon.png"
+                    alt="ShadowWire"
+                    sx={{ width: 24, height: 24, borderRadius: '4px' }}
+                  />
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
+                      }}
+                    >
+                      ShadowWire
+                    </Typography>
+                    <Typography
+                      sx={{
+                        color: '#14F195',
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {selectedProvider === 'shadowwire'
+                        ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
+                        : (shadowWireBalance !== null ? `${(Number(shadowWireBalance) / 1e9).toFixed(4)} SOL` : '...')}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+              <Box
+                onClick={() => selectedProvider !== 'privacy-cash' && handleProviderChange(null, 'privacy-cash')}
+                sx={{
+                  px: 2,
+                  py: 1,
+                  borderRadius: '10px',
+                  cursor: selectedProvider === 'privacy-cash' ? 'default' : 'pointer',
+                  transition: 'all 0.2s',
+                  background: selectedProvider === 'privacy-cash'
+                    ? 'linear-gradient(135deg, rgba(20, 241, 149, 0.2) 0%, rgba(153, 69, 255, 0.2) 100%)'
+                    : 'transparent',
+                  border: selectedProvider === 'privacy-cash'
+                    ? '1px solid rgba(20, 241, 149, 0.3)'
+                    : '1px solid transparent',
+                  '&:hover': {
+                    bgcolor: selectedProvider === 'privacy-cash' ? undefined : 'rgba(255,255,255,0.05)',
+                  },
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <Box
+                    component="img"
+                    src="https://www.privacycash.org/logo.png"
+                    alt="PrivacyCash"
+                    sx={{ width: 24, height: 24, borderRadius: '4px' }}
+                  />
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        color: selectedProvider === 'privacy-cash' ? '#14F195' : 'text.secondary',
+                      }}
+                    >
+                      PrivacyCash
+                    </Typography>
+                    {cachedPrivacyCashProvider ? (
+                      <Typography
+                        sx={{
+                          color: '#14F195',
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {selectedProvider === 'privacy-cash'
+                          ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
+                          : (privacyCashBalance !== null ? `${(Number(privacyCashBalance) / 1e9).toFixed(4)} SOL` : '...')}
+                      </Typography>
+                    ) : (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProviderChange(null, 'privacy-cash');
+                        }}
+                        sx={{
+                          fontSize: '0.65rem',
+                          py: 0,
+                          px: 1,
+                          minWidth: 'auto',
+                          borderColor: '#9945FF',
+                          color: '#9945FF',
+                          '&:hover': {
+                            borderColor: '#9945FF',
+                            bgcolor: 'rgba(153, 69, 255, 0.1)',
+                          },
+                        }}
+                      >
+                        Connect
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
           </Box>
         )}
       </Box>
@@ -664,151 +804,6 @@ function AppContent() {
           />
         </DialogContent>
       </Dialog>
-
-      {/* Provider Selector - always reserve space to keep forms at same position */}
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        mb={3}
-        sx={{ visibility: account ? 'visible' : 'hidden' }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            bgcolor: '#0a0a0a',
-            borderRadius: '16px',
-            p: 0.5,
-            border: '1px solid rgba(255,255,255,0.1)',
-          }}
-        >
-            <Box
-              onClick={() => handleProviderChange(null, 'shadowwire')}
-              sx={{
-                px: 4,
-                py: 1.5,
-                borderRadius: '16px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                background: selectedProvider === 'shadowwire'
-                  ? 'linear-gradient(135deg, rgba(20, 241, 149, 0.2) 0%, rgba(153, 69, 255, 0.2) 100%)'
-                  : 'transparent',
-                border: selectedProvider === 'shadowwire'
-                  ? '1px solid rgba(20, 241, 149, 0.3)'
-                  : '1px solid transparent',
-                '&:hover': {
-                  bgcolor: selectedProvider === 'shadowwire' ? undefined : 'rgba(255,255,255,0.05)',
-                },
-              }}
-            >
-              <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  component="img"
-                  src="https://www.radrlabs.io/favicon.png"
-                  alt="ShadowWire"
-                  sx={{ width: 36, height: 36, borderRadius: '6px' }}
-                />
-                <Box>
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.25rem',
-                      color: selectedProvider === 'shadowwire' ? '#14F195' : 'text.secondary',
-                    }}
-                  >
-                    ShadowWire
-                  </Typography>
-                  <Typography
-                    sx={{
-                      color: '#14F195',
-                      fontSize: '0.9rem',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {selectedProvider === 'shadowwire'
-                      ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
-                      : (shadowWireBalance !== null ? `${(Number(shadowWireBalance) / 1e9).toFixed(4)} SOL` : '...')}
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-            <Box
-              onClick={() => selectedProvider !== 'privacy-cash' && handleProviderChange(null, 'privacy-cash')}
-              sx={{
-                px: 4,
-                py: 1.5,
-                borderRadius: '16px',
-                cursor: selectedProvider === 'privacy-cash' ? 'default' : 'pointer',
-                transition: 'all 0.2s',
-                background: selectedProvider === 'privacy-cash'
-                  ? 'linear-gradient(135deg, rgba(20, 241, 149, 0.2) 0%, rgba(153, 69, 255, 0.2) 100%)'
-                  : 'transparent',
-                border: selectedProvider === 'privacy-cash'
-                  ? '1px solid rgba(20, 241, 149, 0.3)'
-                  : '1px solid transparent',
-                '&:hover': {
-                  bgcolor: selectedProvider === 'privacy-cash' ? undefined : 'rgba(255,255,255,0.05)',
-                },
-              }}
-            >
-              <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  component="img"
-                  src="https://www.privacycash.org/logo.png"
-                  alt="PrivacyCash"
-                  sx={{ width: 36, height: 36, borderRadius: '6px' }}
-                />
-                <Box>
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.25rem',
-                      color: selectedProvider === 'privacy-cash' ? '#14F195' : 'text.secondary',
-                    }}
-                  >
-                    PrivacyCash
-                  </Typography>
-                  {cachedPrivacyCashProvider ? (
-                    <Typography
-                      sx={{
-                        color: '#14F195',
-                        fontSize: '0.9rem',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {selectedProvider === 'privacy-cash'
-                        ? (privateBalanceLoading ? '...' : `${(Number(privateBalance) / 1e9).toFixed(4)} SOL`)
-                        : (privacyCashBalance !== null ? `${(Number(privacyCashBalance) / 1e9).toFixed(4)} SOL` : '...')}
-                    </Typography>
-                  ) : (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleProviderChange(null, 'privacy-cash');
-                      }}
-                      sx={{
-                        fontSize: '0.75rem',
-                        py: 0.25,
-                        px: 1.5,
-                        minWidth: 'auto',
-                        borderColor: '#9945FF',
-                        color: '#9945FF',
-                        '&:hover': {
-                          borderColor: '#9945FF',
-                          bgcolor: 'rgba(153, 69, 255, 0.1)',
-                        },
-                      }}
-                    >
-                      Connect
-                    </Button>
-                  )}
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
 
       {providerError && (
         <Alert severity="error" sx={{ mb: 3 }}>
