@@ -1035,6 +1035,10 @@ export function TransferForm({
                 borderColor: 'rgba(255,255,255,0.1)',
                 borderWidth: '1px',
               },
+              '&.Mui-disabled fieldset': {
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: '1px',
+              },
             },
             '& .MuiInputLabel-root': {
               color: 'rgba(255,255,255,0.3)',
