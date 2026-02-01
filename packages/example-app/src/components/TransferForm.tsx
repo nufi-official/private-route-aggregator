@@ -131,6 +131,17 @@ export function TransferForm({
     setMaxSolAfterFees(null);
   }, [provider]);
 
+  // Clear errors when amount or destination address changes
+  useEffect(() => {
+    setError(null);
+    if (status?.stage === 'failed') {
+      setStatus(null);
+    }
+    if (swapStatus.stage === 'failed') {
+      setSwapStatus({ stage: 'idle' });
+    }
+  }, [amount, destinationAddress]);
+
   // Auto-hide success notification
   useEffect(() => {
     if (successNotification?.visible) {
