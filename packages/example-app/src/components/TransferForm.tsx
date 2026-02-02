@@ -503,9 +503,6 @@ export function TransferForm({
     );
     // console.log('[TransferForm] Target asset:', targetAsset);
     if (!targetAsset) {
-      // Debug: show available assets on the requested chain
-      const assetsOnChain = nearIntentsTokens.filter((t) => t.blockchain === assetChain);
-      // console.log('[TransferForm] Available assets on', assetChain, ':', assetsOnChain.map(t => t.symbol));
       throw new Error(`Target asset ${asset} not found in NEAR Intents`);
     }
 
@@ -597,8 +594,6 @@ export function TransferForm({
       console.warn('[TransferForm] Unknown provider type, no fee adjustment');
       solBaseUnitsToWithdraw = solBaseUnitsForQuote;
     }
-
-    const solAmountToWithdraw = (Number(solBaseUnitsToWithdraw) / 1e9).toFixed(9);
 
     // console.log('[TransferForm] SOL conversion:', {
       // targetAmount: amount,
