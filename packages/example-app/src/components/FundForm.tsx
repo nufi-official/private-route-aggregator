@@ -1026,7 +1026,7 @@ export function FundForm({
                   variant="contained"
                   size="large"
                   onClick={() => void handleFund()}
-                  disabled={crossChainStatus.stage !== 'completed' || loading || status?.stage === 'completed'}
+                  disabled={crossChainStatus.stage !== 'completed' || loading}
                   sx={{
                     py: 1.25,
                     borderRadius: '32px',

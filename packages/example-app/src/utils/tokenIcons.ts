@@ -131,13 +131,11 @@ const TOKEN_ICONS: Record<string, string> = {
   AGIX: 'https://assets.coingecko.com/coins/images/2138/standard/singularitynet.png',
   OCEAN: 'https://assets.coingecko.com/coins/images/3687/standard/ocean-protocol-logo.jpg',
   TAO: 'https://assets.coingecko.com/coins/images/28452/standard/ARUsPeNQ_400x400.jpeg',
-  RNDR: 'https://assets.coingecko.com/coins/images/11636/standard/rndr.png',
   AIOZ: 'https://assets.coingecko.com/coins/images/14631/standard/aioz-logo-200.png',
   AKT: 'https://assets.coingecko.com/coins/images/12785/standard/akash-logo.png',
   ARKM: 'https://assets.coingecko.com/coins/images/30929/standard/Arkham_Logo_CG.png',
   RUNE: 'https://assets.coingecko.com/coins/images/6595/standard/Rune200x200.png',
   OSMO: 'https://assets.coingecko.com/coins/images/16724/standard/osmo.png',
-  INJ: 'https://assets.coingecko.com/coins/images/12882/standard/Secondary_Symbol.png',
   TIA: 'https://assets.coingecko.com/coins/images/31967/standard/tia.jpg',
   DYM: 'https://assets.coingecko.com/coins/images/34182/standard/dym.png',
   MANTA: 'https://assets.coingecko.com/coins/images/34289/standard/manta.jpg',
@@ -321,7 +319,6 @@ const TOKEN_ICONS: Record<string, string> = {
 
   // Coinbase wrapped
   cbBTC: 'https://assets.coingecko.com/coins/images/40143/standard/cbbtc.webp',
-  cbETH: 'https://assets.coingecko.com/coins/images/27008/standard/cbeth.png',
 
   // New L1/L2 chains
   BERA: 'https://assets.coingecko.com/coins/images/36122/standard/bera.jpeg',
@@ -333,10 +330,8 @@ const TOKEN_ICONS: Record<string, string> = {
   KNC: 'https://assets.coingecko.com/coins/images/14899/standard/RwdVsGcw_400x400.jpg',
   TURBO: 'https://assets.coingecko.com/coins/images/30116/standard/turbo.jpeg',
   HAPI: 'https://assets.coingecko.com/coins/images/14298/standard/hapi.png',
-  GNO: 'https://assets.coingecko.com/coins/images/662/standard/logo_square_simple_300px.png',
 
   // Base ecosystem
-  BRETT: 'https://assets.coingecko.com/coins/images/35529/standard/1000050750.png',
   KAITO: 'https://assets.coingecko.com/coins/images/54104/standard/kaito.jpg',
 
   // Stablecoins variants
@@ -347,7 +342,6 @@ const TOKEN_ICONS: Record<string, string> = {
   sUSDC: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png',
 
   // Meme tokens
-  MELANIA: 'https://assets.coingecko.com/coins/images/53893/standard/melania.png',
   LOUD: 'https://assets.coingecko.com/coins/images/53940/standard/loud.jpeg',
 
   // Other tokens
@@ -378,17 +372,17 @@ export function getTokenIcon(symbol: string, _chain?: string): string | null {
 
   // Check if we have a direct mapping
   if (TOKEN_ICONS[normalizedSymbol]) {
-    return TOKEN_ICONS[normalizedSymbol];
+    return TOKEN_ICONS[normalizedSymbol] ?? null;
   }
 
   // Check original case
   if (TOKEN_ICONS[symbol]) {
-    return TOKEN_ICONS[symbol];
+    return TOKEN_ICONS[symbol] ?? null;
   }
 
   // Check without $ prefix in original case
   if (symbol.startsWith('$') && TOKEN_ICONS[symbol.slice(1)]) {
-    return TOKEN_ICONS[symbol.slice(1)];
+    return TOKEN_ICONS[symbol.slice(1)] ?? null;
   }
 
   return null;
