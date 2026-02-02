@@ -273,12 +273,12 @@ export function TransferForm({
 
         // eslint-disable-next-line no-console
         // console.log('[TransferForm] ShadowWire fee breakdown:', {
-          feeRate,
-          feePercentDisplay: feePercent,
-          desiredNetSol,
-          withdrawAmountSol,
-          feeBreakdown,
-        });
+        //   feeRate,
+        //   feePercentDisplay: feePercent,
+        //   desiredNetSol,
+        //   withdrawAmountSol,
+        //   feeBreakdown,
+        // });
 
         totalWithdraw = account.assetToBaseUnits(withdrawAmountSol.toFixed(9));
         fee = account.assetToBaseUnits(feeBreakdown.fee.toFixed(9));
@@ -550,12 +550,12 @@ export function TransferForm({
       feeInfo.totalFee = fee as bigint;
 
       // console.log('[TransferForm] PrivacyCash fee calculation:', {
-        desiredNet: solBaseUnitsForQuote.toString(),
-        withdrawAmount: withdrawAmount.toString(),
-        fee: fee.toString(),
-        feeRate: feeConfig.withdrawFeeRate,
-        rentFee: feeConfig.withdrawRentFee,
-      });
+      //   desiredNet: solBaseUnitsForQuote.toString(),
+      //   withdrawAmount: withdrawAmount.toString(),
+      //   fee: fee.toString(),
+      //   feeRate: feeConfig.withdrawFeeRate,
+      //   rentFee: feeConfig.withdrawRentFee,
+      // });
     } else if (isShadowWire) {
       // ShadowWire: use SDK's calculateFee for accurate fee calculation
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -585,13 +585,13 @@ export function TransferForm({
 
       // eslint-disable-next-line no-console
       // console.log('[TransferForm] ShadowWire fee calculation:', {
-        feeRate,
-        feeRatePercent: feeRate * 100,
-        desiredNet: desiredNetSol,
-        withdrawAmount: withdrawAmountSol,
-        fee: feeBreakdown.fee,
-        netAmount: feeBreakdown.netAmount,
-      });
+        // feeRate,
+      //   feeRatePercent: feeRate * 100,
+      //   desiredNet: desiredNetSol,
+      //   withdrawAmount: withdrawAmountSol,
+      //   fee: feeBreakdown.fee,
+      //   netAmount: feeBreakdown.netAmount,
+      // });
     } else {
       // Fallback: no fee adjustment
       console.warn('[TransferForm] Unknown provider type, no fee adjustment');
@@ -601,17 +601,17 @@ export function TransferForm({
     const solAmountToWithdraw = (Number(solBaseUnitsToWithdraw) / 1e9).toFixed(9);
 
     // console.log('[TransferForm] SOL conversion:', {
-      targetAmount: amount,
-      targetAsset: assetSymbol,
-      solAmount,
-      priceBuffer,
-      isShadowWire,
-      solAmountForSwap,
-      solAmountToWithdraw,
-      solBaseUnitsForQuote: solBaseUnitsForQuote.toString(),
-      solBaseUnitsToWithdraw: solBaseUnitsToWithdraw.toString(),
-      feeInfo,
-    });
+      // targetAmount: amount,
+      // targetAsset: assetSymbol,
+      // solAmount,
+      // priceBuffer,
+      // isShadowWire,
+      // solAmountForSwap,
+      // solAmountToWithdraw,
+      // solBaseUnitsForQuote: solBaseUnitsForQuote.toString(),
+      // solBaseUnitsToWithdraw: solBaseUnitsToWithdraw.toString(),
+      // feeInfo,
+    // });
 
     setSwapStatus({ stage: 'getting_quote' });
 
@@ -657,15 +657,15 @@ export function TransferForm({
     const hasSufficientBalance = currentPrivateBalance >= solBaseUnitsToWithdraw;
 
     // console.log('[TransferForm] Pre-transfer state:', {
-      depositAddress,
-      privateBalance: currentPrivateBalance.toString(),
-      privateBalanceSOL: Number(currentPrivateBalance) / 1e9,
-      amountToWithdraw: solBaseUnitsToWithdraw.toString(),
-      amountToWithdrawSOL: Number(solBaseUnitsToWithdraw) / 1e9,
-      expectedNetAmount: solBaseUnitsForQuote.toString(),
-      expectedNetAmountSOL: Number(solBaseUnitsForQuote) / 1e9,
-      sufficientBalance: hasSufficientBalance,
-    });
+    //   depositAddress,
+    //   privateBalance: currentPrivateBalance.toString(),
+    //   privateBalanceSOL: Number(currentPrivateBalance) / 1e9,
+    //   amountToWithdraw: solBaseUnitsToWithdraw.toString(),
+    //   amountToWithdrawSOL: Number(solBaseUnitsToWithdraw) / 1e9,
+    //   expectedNetAmount: solBaseUnitsForQuote.toString(),
+    //   expectedNetAmountSOL: Number(solBaseUnitsForQuote) / 1e9,
+    //   sufficientBalance: hasSufficientBalance,
+    // });
 
     // Warn if insufficient balance - PrivacyCash will do a partial withdrawal!
     if (!hasSufficientBalance) {
@@ -722,12 +722,12 @@ export function TransferForm({
 
   const handleTransfer = async () => {
     // console.log('[TransferForm] handleTransfer called', {
-      destinationAddress,
-      amount,
-      provider: provider ? (provider as { name?: string }).name : null,
-      needsSwap,
-      asset,
-    });
+    //   destinationAddress,
+    //   amount,
+    //   provider: provider ? (provider as { name?: string }).name : null,
+    //   needsSwap,
+    //   asset,
+    // });
 
     if (!destinationAddress) {
       setError('Please enter a destination address');
