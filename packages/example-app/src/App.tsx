@@ -553,7 +553,7 @@ function AppContent() {
       >
         <Box
           component="img"
-          src="/favicon.svg"
+          src="/favicon.svg?v=2"
           alt="FUNDX"
           sx={{ width: 36, height: 36 }}
         />
