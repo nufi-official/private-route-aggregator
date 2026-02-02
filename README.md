@@ -1,6 +1,6 @@
 # FUNDX - Private Cross-Chain Funding
 
-Demo video: https://www.youtube.com/watch?v=PFNp9PI3dag
+Demo video: https://youtu.be/OJ93iusWYdk
 
 A privacy-focused application for seamlessly exchanging assets between shielded Solana accounts and major currencies across leading blockchain networks.
 
