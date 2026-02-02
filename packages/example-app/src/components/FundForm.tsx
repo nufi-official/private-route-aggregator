@@ -270,7 +270,7 @@ export function FundForm({
       // Start polling for status
       const handleStatusChange = (event: SwapStateChangeEvent) => {
         // eslint-disable-next-line no-console
-        console.log('[FundForm] Cross-chain status:', event);
+        // console.log('[FundForm] Cross-chain status:', event);
 
         if (event.status === 'QUOTE_RECEIVED' || event.status === 'DEPOSIT_SENT') {
           return;
@@ -283,7 +283,7 @@ export function FundForm({
             if ('statusResponse' in event && event.statusResponse) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const resp = event.statusResponse as any;
-              console.log('[FundForm] Swap completed, statusResponse:', resp);
+              // console.log('[FundForm] Swap completed, statusResponse:', resp);
               // The amount is in swapDetails.amountOutFormatted (already formatted as string)
               if (resp.swapDetails?.amountOutFormatted) {
                 amountOut = resp.swapDetails.amountOutFormatted;
@@ -291,7 +291,7 @@ export function FundForm({
                 // Convert from base units to SOL (9 decimals)
                 amountOut = (Number(resp.swapDetails.amountOut) / 1e9).toFixed(9);
               }
-              console.log('[FundForm] Extracted amountOut:', amountOut);
+              // console.log('[FundForm] Extracted amountOut:', amountOut);
             }
             setCrossChainStatus({
               stage: 'completed',
@@ -338,7 +338,7 @@ export function FundForm({
 
   // Fund SOL to privacy pool (after swap completed)
   const handleFundSolAfterSwap = async () => {
-    console.log('[FundForm] handleFundSolAfterSwap called', { crossChainStatus, solProvider: !!solProvider, account: !!account });
+    // console.log('[FundForm] handleFundSolAfterSwap called', { crossChainStatus, solProvider: !!solProvider, account: !!account });
 
     if (!solProvider) {
       setError('SOL provider not initialized');
@@ -367,7 +367,7 @@ export function FundForm({
       const feeReserveSol = 0.003; // Small reserve for transaction fees
       const amountToFundSol = amountOutSol - feeReserveSol;
 
-      console.log('[FundForm] Funding calculation:', { amountOutSol, feeReserveSol, amountToFundSol });
+      // console.log('[FundForm] Funding calculation:', { amountOutSol, feeReserveSol, amountToFundSol });
 
       if (amountToFundSol <= 0) {
         throw new Error(`Swap output too small to fund (received: ${amountOutSol.toFixed(4)} SOL)`);
@@ -403,11 +403,11 @@ export function FundForm({
   };
 
   const handleFund = async () => {
-    console.log('[FundForm] handleFund called', { crossChainStatus: crossChainStatus.stage, needsSwapToSol });
+    // console.log('[FundForm] handleFund called', { crossChainStatus: crossChainStatus.stage, needsSwapToSol });
 
     // If swap already completed, fund the SOL to privacy pool
     if (crossChainStatus.stage === 'completed') {
-      console.log('[FundForm] Swap completed, calling handleFundSolAfterSwap');
+      // console.log('[FundForm] Swap completed, calling handleFundSolAfterSwap');
       return handleFundSolAfterSwap();
     }
 

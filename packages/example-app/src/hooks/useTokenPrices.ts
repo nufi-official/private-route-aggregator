@@ -21,7 +21,7 @@ async function fetchFromCoinGecko(): Promise<TokenPrices> {
   const ids = Object.values(COINGECKO_IDS).join(',');
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`;
 
-  console.log('[useTokenPrices] Fetching from CoinGecko:', url);
+  // console.log('[useTokenPrices] Fetching from CoinGecko:', url);
 
   const response = await fetch(url);
 
@@ -30,7 +30,7 @@ async function fetchFromCoinGecko(): Promise<TokenPrices> {
   }
 
   const data = await response.json() as Record<string, { usd: number }>;
-  console.log('[useTokenPrices] CoinGecko response:', data);
+  // console.log('[useTokenPrices] CoinGecko response:', data);
 
   // Map back to symbols
   const priceMap: TokenPrices = {};
@@ -40,7 +40,7 @@ async function fetchFromCoinGecko(): Promise<TokenPrices> {
     }
   }
 
-  console.log('[useTokenPrices] Price map:', priceMap);
+  // console.log('[useTokenPrices] Price map:', priceMap);
   return priceMap;
 }
 
@@ -70,19 +70,19 @@ export function useTokenPrices() {
   const [source, setSource] = useState<'near-intents' | 'coingecko' | null>(null);
 
   const fetchPrices = useCallback(async () => {
-    console.log('[useTokenPrices] fetchPrices called');
+    // console.log('[useTokenPrices] fetchPrices called');
     setLoading(true);
     setError(null);
 
     // Try NEAR Intents first if JWT is configured
     const jwtToken = import.meta.env.VITE_NEAR_INTENTS_JWT_TOKEN as string | undefined;
-    console.log('[useTokenPrices] JWT token configured:', !!jwtToken);
+    // console.log('[useTokenPrices] JWT token configured:', !!jwtToken);
 
     if (jwtToken) {
-      console.log('[useTokenPrices] Trying NEAR Intents...');
+      // console.log('[useTokenPrices] Trying NEAR Intents...');
       try {
         const result = await fetchFromNearIntents(jwtToken);
-        console.log('[useTokenPrices] NEAR Intents success:', result.prices);
+        // console.log('[useTokenPrices] NEAR Intents success:', result.prices);
         setPrices(result.prices);
         setTokens(result.tokens);
         setSource('near-intents');
@@ -92,13 +92,13 @@ export function useTokenPrices() {
         console.warn('[useTokenPrices] NEAR Intents API failed, falling back to CoinGecko:', err);
       }
     } else {
-      console.log('[useTokenPrices] No JWT token, using CoinGecko directly');
+      // console.log('[useTokenPrices] No JWT token, using CoinGecko directly');
     }
 
     // Fallback to CoinGecko
     try {
       const priceMap = await fetchFromCoinGecko();
-      console.log('[useTokenPrices] Setting prices from CoinGecko:', priceMap);
+      // console.log('[useTokenPrices] Setting prices from CoinGecko:', priceMap);
       setPrices(priceMap);
       setTokens([]);
       setSource('coingecko');
@@ -111,7 +111,7 @@ export function useTokenPrices() {
   }, []);
 
   useEffect(() => {
-    console.log('[useTokenPrices] useEffect running, fetching prices...');
+    // console.log('[useTokenPrices] useEffect running, fetching prices...');
     fetchPrices();
     // Refresh prices every 60 seconds
     const interval = setInterval(fetchPrices, 60000);
@@ -124,7 +124,7 @@ export function useTokenPrices() {
 
   const formatUsdValue = useCallback((symbol: string, amount: string): string | null => {
     const price = getPrice(symbol);
-    console.log('[useTokenPrices] formatUsdValue called:', { symbol, amount, price, allPrices: prices });
+    // console.log('[useTokenPrices] formatUsdValue called:', { symbol, amount, price, allPrices: prices });
     if (price === null || !amount || isNaN(parseFloat(amount))) {
       return null;
     }

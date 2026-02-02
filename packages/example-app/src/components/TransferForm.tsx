@@ -204,14 +204,14 @@ export function TransferForm({
       const isPrivacyCash = providerName === 'privacy-cash';
       const isShadowWire = providerName?.toLowerCase() === 'shadowwire' || 'transfer' in provider;
 
-      console.log('[TransferForm] Fee preview - provider:', providerName, 'isPrivacyCash:', isPrivacyCash, 'isShadowWire:', isShadowWire);
+      // console.log('[TransferForm] Fee preview - provider:', providerName, 'isPrivacyCash:', isPrivacyCash, 'isShadowWire:', isShadowWire);
 
       // Convert target amount to SOL
       let solAmount: string;
       if (needsSwap) {
         const converted = convertAmount?.(assetSymbol, 'SOL', amount);
         if (!converted) {
-          console.log('[TransferForm] Fee preview - no conversion available for', assetSymbol);
+          // console.log('[TransferForm] Fee preview - no conversion available for', assetSymbol);
           setFeePreview(null);
           setFeeLoading(false);
           return;
@@ -226,7 +226,7 @@ export function TransferForm({
       const solAmountWithBuffer = (parseFloat(solAmount) * priceBuffer).toFixed(9);
       const solBaseUnits = account.assetToBaseUnits(solAmountWithBuffer);
 
-      console.log('[TransferForm] Fee preview - solAmount:', solAmount, 'withBuffer:', solAmountWithBuffer, 'baseUnits:', solBaseUnits.toString());
+      // console.log('[TransferForm] Fee preview - solAmount:', solAmount, 'withBuffer:', solAmountWithBuffer, 'baseUnits:', solBaseUnits.toString());
 
       let fee: bigint;
       let totalWithdraw: bigint;
@@ -238,16 +238,16 @@ export function TransferForm({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pcProvider = provider as any;
         // eslint-disable-next-line no-console
-        console.log('[TransferForm] Calling getFeeConfig...');
+        // console.log('[TransferForm] Calling getFeeConfig...');
         const config = await pcProvider.getFeeConfig();
         // eslint-disable-next-line no-console
-        console.log('[TransferForm] PrivacyCash fee config:', config);
+        // console.log('[TransferForm] PrivacyCash fee config:', config);
         // withdrawFeeRate is decimal (e.g., 0.001 for 0.1%), convert to percentage for display
         feePercent = config.withdrawFeeRate * 100;
         rentFee = config.withdrawRentFee;
-        console.log('[TransferForm] Calling calculateWithdrawAmount with', solBaseUnits.toString());
+        // console.log('[TransferForm] Calling calculateWithdrawAmount with', solBaseUnits.toString());
         const result = await pcProvider.calculateWithdrawAmount(solBaseUnits);
-        console.log('[TransferForm] PrivacyCash calculateWithdrawAmount result:', result);
+        // console.log('[TransferForm] PrivacyCash calculateWithdrawAmount result:', result);
         totalWithdraw = result.withdrawAmount as bigint;
         fee = result.fee as bigint;
       } else if (isShadowWire) {
@@ -272,7 +272,7 @@ export function TransferForm({
         }
 
         // eslint-disable-next-line no-console
-        console.log('[TransferForm] ShadowWire fee breakdown:', {
+        // console.log('[TransferForm] ShadowWire fee breakdown:', {
           feeRate,
           feePercentDisplay: feePercent,
           desiredNetSol,
@@ -360,7 +360,7 @@ export function TransferForm({
         const isPrivacyCash = hasCalculateWithdrawAmount || providerName === 'privacy-cash';
         const isShadowWire = !isPrivacyCash && (hasGetFeePercentage || providerName?.toLowerCase() === 'shadowwire');
 
-        console.log('[TransferForm] MAX calc starting - provider:', providerName, 'isPrivacyCash:', isPrivacyCash, 'isShadowWire:', isShadowWire, 'balance:', balanceSol);
+        // console.log('[TransferForm] MAX calc starting - provider:', providerName, 'isPrivacyCash:', isPrivacyCash, 'isShadowWire:', isShadowWire, 'balance:', balanceSol);
 
         // Fee preview adds 2% price buffer, so we need to account for it
         const priceBuffer = 1.02;
@@ -375,11 +375,11 @@ export function TransferForm({
           const minFeeCheck = await providerAny.calculateWithdrawAmount(tinyAmount);
           const minFeeSol = Number(minFeeCheck.fee as bigint) / 1e9;
 
-          console.log('[TransferForm] MAX calc - PrivacyCash minFee:', minFeeSol, 'balance:', balanceSol);
+          // console.log('[TransferForm] MAX calc - PrivacyCash minFee:', minFeeSol, 'balance:', balanceSol);
 
           // If minimum fee exceeds balance, max is 0
           if (minFeeSol >= balanceSol) {
-            console.log('[TransferForm] MAX calc - fee exceeds balance, setting max to 0');
+            // console.log('[TransferForm] MAX calc - fee exceeds balance, setting max to 0');
             maxNetSol = 0;
           } else {
             // Binary search to find max amount that fits in balance
@@ -401,7 +401,7 @@ export function TransferForm({
               }
             }
             maxNetSol = low * safetyMargin;
-            console.log('[TransferForm] MAX calc - binary search result:', maxNetSol);
+            // console.log('[TransferForm] MAX calc - binary search result:', maxNetSol);
           }
         } else if (isShadowWire) {
           // ShadowWire: percentage fee
@@ -485,14 +485,14 @@ export function TransferForm({
     }
 
     // Debug: log available tokens
-    console.log('[TransferForm] Available tokens:', nearIntentsTokens.length);
-    console.log('[TransferForm] Looking for SOL on sol, and', assetSymbol, 'on', assetChain);
+    // console.log('[TransferForm] Available tokens:', nearIntentsTokens.length);
+    // console.log('[TransferForm] Looking for SOL on sol, and', assetSymbol, 'on', assetChain);
 
     // Find SOL asset
     const solAsset = nearIntentsTokens.find(
       (t) => t.symbol === 'SOL' && t.blockchain === 'sol'
     );
-    console.log('[TransferForm] SOL asset:', solAsset);
+    // console.log('[TransferForm] SOL asset:', solAsset);
     if (!solAsset) {
       throw new Error('SOL asset not found in NEAR Intents');
     }
@@ -501,11 +501,11 @@ export function TransferForm({
     const targetAsset = nearIntentsTokens.find(
       (t) => t.symbol === assetSymbol && t.blockchain === assetChain
     );
-    console.log('[TransferForm] Target asset:', targetAsset);
+    // console.log('[TransferForm] Target asset:', targetAsset);
     if (!targetAsset) {
       // Debug: show available assets on the requested chain
       const assetsOnChain = nearIntentsTokens.filter((t) => t.blockchain === assetChain);
-      console.log('[TransferForm] Available assets on', assetChain, ':', assetsOnChain.map(t => t.symbol));
+      // console.log('[TransferForm] Available assets on', assetChain, ':', assetsOnChain.map(t => t.symbol));
       throw new Error(`Target asset ${asset} not found in NEAR Intents`);
     }
 
@@ -549,7 +549,7 @@ export function TransferForm({
       solBaseUnitsToWithdraw = withdrawAmount as bigint;
       feeInfo.totalFee = fee as bigint;
 
-      console.log('[TransferForm] PrivacyCash fee calculation:', {
+      // console.log('[TransferForm] PrivacyCash fee calculation:', {
         desiredNet: solBaseUnitsForQuote.toString(),
         withdrawAmount: withdrawAmount.toString(),
         fee: fee.toString(),
@@ -584,7 +584,7 @@ export function TransferForm({
       feeInfo.totalFee = account.assetToBaseUnits(feeBreakdown.fee.toFixed(9));
 
       // eslint-disable-next-line no-console
-      console.log('[TransferForm] ShadowWire fee calculation:', {
+      // console.log('[TransferForm] ShadowWire fee calculation:', {
         feeRate,
         feeRatePercent: feeRate * 100,
         desiredNet: desiredNetSol,
@@ -600,7 +600,7 @@ export function TransferForm({
 
     const solAmountToWithdraw = (Number(solBaseUnitsToWithdraw) / 1e9).toFixed(9);
 
-    console.log('[TransferForm] SOL conversion:', {
+    // console.log('[TransferForm] SOL conversion:', {
       targetAmount: amount,
       targetAsset: assetSymbol,
       solAmount,
@@ -630,7 +630,7 @@ export function TransferForm({
       slippageTolerance: 100, // 1% in basis points
       deadline: new Date(Date.now() + deadlineMs).toISOString(),
     };
-    console.log('[TransferForm] Quote request params:', quoteParams);
+    // console.log('[TransferForm] Quote request params:', quoteParams);
 
     // Get quote: SOL -> target asset
     // For cross-chain: recipientAddress is on the target chain (e.g., Cardano address)
@@ -638,7 +638,7 @@ export function TransferForm({
     let quoteResponse;
     try {
       quoteResponse = await api.getQuote(quoteParams);
-      console.log('[TransferForm] Quote response:', quoteResponse);
+      // console.log('[TransferForm] Quote response:', quoteResponse);
     } catch (quoteErr) {
       console.error('[TransferForm] Quote error details:', quoteErr);
       throw quoteErr;
@@ -656,7 +656,7 @@ export function TransferForm({
     const currentPrivateBalance = await provider.getPrivateBalance();
     const hasSufficientBalance = currentPrivateBalance >= solBaseUnitsToWithdraw;
 
-    console.log('[TransferForm] Pre-transfer state:', {
+    // console.log('[TransferForm] Pre-transfer state:', {
       depositAddress,
       privateBalance: currentPrivateBalance.toString(),
       privateBalanceSOL: Number(currentPrivateBalance) / 1e9,
@@ -696,7 +696,7 @@ export function TransferForm({
 
     const handleStatusChange = (event: SwapStateChangeEvent) => {
       // eslint-disable-next-line no-console
-      console.log('[TransferForm] Swap status:', event);
+      // console.log('[TransferForm] Swap status:', event);
 
       // Check for end states
       if (event.status === 'SUCCESS') {
@@ -721,7 +721,7 @@ export function TransferForm({
   };
 
   const handleTransfer = async () => {
-    console.log('[TransferForm] handleTransfer called', {
+    // console.log('[TransferForm] handleTransfer called', {
       destinationAddress,
       amount,
       provider: provider ? (provider as { name?: string }).name : null,
